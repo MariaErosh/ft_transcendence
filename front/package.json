@@ -1,0 +1,12 @@
+{
+  "name": "ft-transcendence-frontend",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"No dev server yet\"",
+    "build": "echo \"No build yet\"",
+    "start": "echo \"No start yet\"",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
