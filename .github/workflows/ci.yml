@@ -74,4 +74,4 @@ jobs:
         run: docker build -t ft_frontend ./front
 
       - name: Build infrastructure (optional)
-        run: docker-compose -f infrastructure/docker-compose.yml build
+        run: docker compose -f infrastructure/docker-compose.yml build
