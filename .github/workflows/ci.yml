@@ -75,3 +75,5 @@ jobs:
 
       - name: Build infrastructure (optional)
         run: docker compose -f infrastructure/docker-compose.yml build
+
+

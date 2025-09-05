@@ -2,10 +2,23 @@
   "name": "ft-transcendence-backend",
   "version": "0.1.0",
   "scripts": {
-    "dev": "echo \"No dev server yet\"",
-    "start": "echo \"No start yet\"",
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "echo \"No tests yet\""
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/jwt": "^10.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "bcrypt": "^6.0.0",
+    "fastify": "^5.5.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
 }
