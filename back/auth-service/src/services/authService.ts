@@ -23,6 +23,7 @@ interface UserRow {
 }
 
 export class AuthService {
+
   async createUser(username: string, password: string) {
     const hash = await bcrypt.hash(password, 10);
     return new Promise((resolve, reject) => {
