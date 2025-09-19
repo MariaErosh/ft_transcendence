@@ -1,13 +1,17 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import jwt from "@fastify/jwt";
+//import jwt from "@fastify/jwt";
 import { initDB } from "./db/database";
 import { authRoutes } from "./routes/auth";
+import  authPlugin  from "./plugins/authPlugins";
+
 
 const server = Fastify({ logger: true });
 
+server.register(authPlugin);
 server.register(cors, { origin: true });
-server.register(jwt, { secret: "!TheLastProjectIn42!" });
+//todo: store the secret key in normal way
+//server.register(jwt, { secret: "!TheLastProjectIn42!" });
 
 initDB();
 

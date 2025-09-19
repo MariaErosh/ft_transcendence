@@ -45,10 +45,11 @@ function initDB() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         token_hash TEXT NOT NULL,
-        expires_at DATETIME,
+        expires_at DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
+      );
+	  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
     `, (err) => {
             if (err) {
                 console.error('Failed to create "refresh_tokens" table:', err.message);

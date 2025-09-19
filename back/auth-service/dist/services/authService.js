@@ -10,13 +10,13 @@ const crypto_1 = require("crypto");
 const otplib_1 = require("otplib");
 const qrcode_1 = __importDefault(require("qrcode"));
 class AuthService {
-    async createUser(username, password) {
+    async createUser(username, password, two_factor_enabled) {
         const hash = await bcrypt_1.default.hash(password, 10);
         return new Promise((resolve, reject) => {
             database_1.db.run("INSERT INTO users (username, password_hash) VALUES (?, ?)", [username, hash], function (err) {
                 if (err)
                     return reject(err);
-                resolve({ id: this.lastID, username });
+                resolve({ id: this.lastID, username, two_factor_enabled });
             });
         });
     }
@@ -44,12 +44,18 @@ class AuthService {
     async createRefreshToken(userId, ttlSeconds = 60 * 60 * 24 * 30) {
         const raw = (0, crypto_1.randomUUID)();
         const hash = await bcrypt_1.default.hash(raw, 10);
-        const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+        const days = Math.floor(ttlSeconds / (60 * 60 * 24));
         return new Promise((resolve, reject) => {
-            database_1.db.run("INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)", [userId, hash, expiresAt], function (err) {
+            const days = Math.floor(ttlSeconds / (60 * 60 * 24));
+            database_1.db.run("INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, datetime('now', '+' || ? || ' days'))", [userId, hash, days], function (err) {
                 if (err)
                     return reject(err);
-                resolve({ refreshToken: raw, expiresAt });
+                // fetch expires_at back from the db (to avoid rounding difference)
+                database_1.db.get("SELECT expires_at FROM refresh_tokens WHERE id = ?", [this.lastID], (err2, row) => {
+                    if (err2)
+                        return reject(err2);
+                    resolve({ refreshToken: raw, expiresAt: row.expires_at });
+                });
             });
         });
     }
@@ -117,6 +123,21 @@ class AuthService {
                     return resolve(false);
                 const isValid = otplib_1.authenticator.check(token, row.two_factor_secret);
                 resolve(isValid);
+            });
+        });
+    }
+    async deleteUser(userId) {
+        return new Promise((resolve, reject) => {
+            database_1.db.run("DELETE FROM refresh_tokens WHERE user_id = ?", [userId], err => {
+                if (err) {
+                    return reject(err);
+                }
+                database_1.db.run("DELETE FROM users WHERE id = ?", [userId], function (err2) {
+                    if (err2) {
+                        return reject(err2);
+                    }
+                    resolve(this.changes > 0); // true, if deleted
+                });
             });
         });
     }

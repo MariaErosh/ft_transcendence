@@ -54,7 +54,7 @@ export class UserService {
 
   async getAll() : Promise<UserRow[]> {
     return new Promise((resolve, reject) => {
-		this.db_inst.all("SELECT * FROM users", (err, rows) =>	{
+		this.db_inst.all("SELECT username, email FROM users", (err, rows) =>	{
 			if (err) return reject(err);
 			resolve(rows as UserRow[]);
 		});

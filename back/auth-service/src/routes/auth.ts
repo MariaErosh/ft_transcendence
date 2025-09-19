@@ -1,17 +1,51 @@
 import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
+import { AuthUser } from "../services/authService";
 
 export async function authRoutes(fastify: FastifyInstance) {
   const auth = new AuthService();
 
   	// Registration
 	fastify.post("/auth/register", async (req, reply) => {
-		const { username, password } = req.body as any;
+		const { username, password, email } = req.body as { username: string; password: string; email: string };
 		try {
-		const user = await auth.createUser(username, password);
-		reply.code(201).send(user);
+			//create record in AuthService
+			//todo: update two_factor_auth = true
+			const user: AuthUser = await auth.createUser(username, password, false );
+			if (!user || !user.id) throw new Error ("User creation failed");
+
+			const systemToken = fastify.jwt.sign(
+					{ service: "auth", sub: user.id },
+      				{ expiresIn: "1m" } );
+			//create record in UserSrvice
+			const response = await fetch("http://localhost:3002/users", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+									"Authorization": `Bearer ${systemToken}`
+										},
+								body: JSON.stringify({
+										auth_user_id: user.id,
+										username: username,
+										email: email
+								}),
+			});
+
+			if (!response.ok) {
+				await auth.deleteUser(user.id);
+				const text = await response.text();
+				return reply.status(500).send({ error: `UserService error: ${text}` });
+			}
+				
+			const prof = await response.json();
+			reply.code(201).send({
+				auth_user: user,
+				profile: prof
+			});
+
+					
 		} catch (err: any) {
-		reply.status(400).send({ error: err.message });
+			reply.status(400).send({ error: err.message });
 		}
 	});
 
@@ -50,10 +84,10 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/auth/refresh", async (req, reply) => {
 		const { refreshToken } = req.body as any;
 		try {
-		const userId = await auth.consumeRefreshToken(refreshToken);
-		const accessToken = fastify.jwt.sign({ sub: userId }, { expiresIn: "15m" });
-		const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
-		reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
+			const userId = await auth.consumeRefreshToken(refreshToken);
+			const accessToken = fastify.jwt.sign({ sub: userId }, { expiresIn: "15m" });
+			const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
+			reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
 		} catch (err: any) {
 		reply.status(401).send({ error: err.message });
 		}

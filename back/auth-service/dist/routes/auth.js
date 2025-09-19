@@ -6,10 +6,37 @@ async function authRoutes(fastify) {
     const auth = new authService_1.AuthService();
     // Registration
     fastify.post("/auth/register", async (req, reply) => {
-        const { username, password } = req.body;
+        const { username, password, email } = req.body;
         try {
-            const user = await auth.createUser(username, password);
-            reply.code(201).send(user);
+            //create record in AuthService
+            //todo: update two_factor_auth = true
+            const user = await auth.createUser(username, password, false);
+            if (!user || !user.id)
+                throw new Error("User creation failed");
+            const systemToken = fastify.jwt.sign({ service: "auth", sub: user.id }, { expiresIn: "1m" });
+            //create record in UserSrvice
+            const response = await fetch("http://localhost:3002/users", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${systemToken}`
+                },
+                body: JSON.stringify({
+                    auth_user_id: user.id,
+                    username: username,
+                    email: email
+                }),
+            });
+            if (!response.ok) {
+                await auth.deleteUser(user.id);
+                const text = await response.text();
+                return reply.status(500).send({ error: `UserService error: ${text}` });
+            }
+            const prof = await response.json();
+            reply.code(201).send({
+                auth_user: user,
+                profile: prof
+            });
         }
         catch (err) {
             reply.status(400).send({ error: err.message });
