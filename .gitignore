@@ -29,3 +29,6 @@ Thumbs.db
 # Optional: docker / local configs
 docker-compose.override.yml
 
+.env
+**/*.env
+

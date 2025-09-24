@@ -1,35 +1,64 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authRoutes = authRoutes;
 const authService_1 = require("../services/authService");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 async function authRoutes(fastify) {
     const auth = new authService_1.AuthService();
     // Registration
     fastify.post("/auth/register", async (req, reply) => {
         const { username, password, email } = req.body;
+        let user = null;
+        //function to rollback a created user in auth-service
+        const rollbackAuthUser = async () => {
+            if (user?.id) {
+                try {
+                    await auth.deleteUser(user.id);
+                    console.log(`Rollback: deleted Auth user ${user.id}`);
+                }
+                catch (err) {
+                    console.error(`Rollback failed for Auth user ${user.id}:`, err);
+                }
+            }
+        };
         try {
             //create record in AuthService
             //todo: update two_factor_auth = true
-            const user = await auth.createUser(username, password, false);
+            user = await auth.createUser(username, password, false);
             if (!user || !user.id)
                 throw new Error("User creation failed");
             const systemToken = fastify.jwt.sign({ service: "auth", sub: user.id }, { expiresIn: "1m" });
+            const GATEWAY_URL = process.env.GATEWAY_URL;
+            if (!GATEWAY_URL)
+                throw new Error("USER_URL is not defined in .env");
             //create record in UserSrvice
-            const response = await fetch("http://localhost:3002/users", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${systemToken}`
-                },
-                body: JSON.stringify({
-                    auth_user_id: user.id,
-                    username: username,
-                    email: email
-                }),
-            });
+            let response;
+            try {
+                response = await fetch(`${GATEWAY_URL}/users`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${systemToken}`
+                    },
+                    body: JSON.stringify({
+                        auth_user_id: user.id,
+                        username: username,
+                        email: email
+                    }),
+                });
+            }
+            catch (userServErr) {
+                await rollbackAuthUser();
+                throw new Error(`Failed to contact UserService: ${userServErr.message}`);
+            }
             if (!response.ok) {
-                await auth.deleteUser(user.id);
+                //await auth.deleteUser(user.id);
                 const text = await response.text();
+                await rollbackAuthUser();
                 return reply.status(500).send({ error: `UserService error: ${text}` });
             }
             const prof = await response.json();
@@ -39,6 +68,7 @@ async function authRoutes(fastify) {
             });
         }
         catch (err) {
+            await rollbackAuthUser();
             reply.status(400).send({ error: err.message });
         }
     });
@@ -113,19 +143,25 @@ async function authRoutes(fastify) {
     });
     // Setting up 2FA and generating a QR code
     fastify.post("/auth/2fa/enable", async (req, reply) => {
-        try {
-            const authHeader = req.headers.authorization;
-            if (!authHeader)
-                return reply.status(401).send({ error: "missing auth" });
+        /*try {
+            const authHeader = req.headers.authorization as string;
+            if (!authHeader) return reply.status(401).send({ error: "missing auth" });
             const token = authHeader.split(" ")[1];
-            const payload = fastify.jwt.verify(token);
+            const payload: any = fastify.jwt.verify(token);
+    
             const result = await auth.enable2FA(payload.sub, payload.username);
             // return a QR-code for scanning in the Authenticator app
             return reply.send(result);
-        }
-        catch (err) {
+        } catch (err: any) {
             return reply.status(400).send({ error: err.message });
-        }
+        }*/
+        const gw = req.headers['x-gateway-secret'];
+        if (!gw || gw !== process.env.GATEWAY_SECRET)
+            return reply.status(401).send({ error: "missing auth" });
+        const userId = Number(req.headers['x-user-id']);
+        const username = String(req.headers['x-username'] || "");
+        const result = await auth.enable2FA(userId, username);
+        return reply.send(result);
     });
     // Verify 2FA token
     fastify.post("/auth/2fa/verify", async (req, reply) => {

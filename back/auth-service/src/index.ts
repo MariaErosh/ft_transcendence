@@ -5,7 +5,6 @@ import { initDB } from "./db/database";
 import { authRoutes } from "./routes/auth";
 import  authPlugin  from "./plugins/authPlugins";
 
-
 const server = Fastify({ logger: true });
 
 server.register(authPlugin);

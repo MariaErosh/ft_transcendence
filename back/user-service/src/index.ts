@@ -1,5 +1,4 @@
 import Fastify from "fastify";
-//import jwt from "@fastify/jwt";
 import { db, initDB } from "./db/database";
 import { UserService } from "./services/userService";
 import { userRoutes } from "./routes/user";
