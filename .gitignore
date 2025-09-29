@@ -1,7 +1,6 @@
 # Node modules
 
-back/node_modules/
-back/**/node_modules/
+node_modules/
 npm-debug.log*
 
 # Logs
@@ -9,9 +8,10 @@ npm-debug.log*
 *.log.*
 
 # Build output
-back/dist/
-back/**/dist/
+dist/
 
+# DB
+*.sqlite
 
 # TypeScript cache
 *.tsbuildinfo

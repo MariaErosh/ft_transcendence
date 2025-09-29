@@ -1,0 +1,136 @@
+import { login, verify2FA, register } from "./api.js";
+
+export function renderLogin(container: HTMLElement) {
+  container.innerHTML = "";
+
+  const form = document.createElement("form");
+  form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
+
+  const title = document.createElement("h1");
+  title.textContent = "Login";
+  title.className = "text-2xl font-bold text-center";
+  form.appendChild(title);
+
+  const username = document.createElement("input");
+  username.placeholder = "Username";
+  username.className = "border p-2 rounded";
+  form.appendChild(username);
+
+  const password = document.createElement("input");
+  password.placeholder = "Password";
+  password.type = "password";
+  password.className = "border p-2 rounded";
+  form.appendChild(password);
+
+  const btn = document.createElement("button");
+  btn.textContent = "Login";
+  btn.type = "submit";
+  btn.className = "bg-blue-500 text-white p-2 rounded hover:bg-blue-600";
+  form.appendChild(btn);
+
+  const msg = document.createElement("div");
+  msg.className = "text-red-500 text-sm";
+  form.appendChild(msg);
+
+  form.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	const response = await login(username.value, password.value);
+
+	if (response.twoFactorRequired) {
+	  render2FA(container, response.userId);
+	} else if (response.accessToken) {
+	  msg.textContent = "Login successful!";
+	  console.log(response);
+	} else {
+	  msg.textContent = response.error || "Login failed";
+	}
+  });
+
+  container.appendChild(form);
+}
+
+export function renderRegister(container: HTMLElement) {
+  container.innerHTML = "";
+
+  const form = document.createElement("form");
+  form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
+
+  const title = document.createElement("h1");
+  title.textContent = "Sign Up";
+  title.className = "text-2xl font-bold text-center";
+  form.appendChild(title);
+
+  const username = document.createElement("input");
+  username.placeholder = "Username";
+  username.className = "border p-2 rounded";
+  form.appendChild(username);
+
+  const password = document.createElement("input");
+  password.type = "password";
+  password.placeholder = "Password";
+  password.className = "border p-2 rounded";
+  form.appendChild(password);
+
+  const btn = document.createElement("button");
+  btn.type = "submit";
+  btn.textContent = "Register";
+  btn.className = "bg-green-500 text-white p-2 rounded hover:bg-green-600";
+  form.appendChild(btn);
+
+  const msg = document.createElement("div");
+  msg.className = "text-red-500 text-sm";
+  form.appendChild(msg);
+
+  form.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	const response = await register(username.value, password.value);
+
+	if (response.id) {
+	  msg.textContent = "Account created! You can now login.";
+	} else {
+	  msg.textContent = response.error || "Registration failed";
+	}
+  });
+
+  container.appendChild(form);
+}
+
+export function render2FA(container: HTMLElement, userId: number) {
+  container.innerHTML = "";
+
+  const form = document.createElement("form");
+  form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
+
+  const title = document.createElement("h1");
+  title.textContent = "Enter 2FA Code";
+  title.className = "text-2xl font-bold text-center";
+  form.appendChild(title);
+
+  const tokenInput = document.createElement("input");
+  tokenInput.placeholder = "123456";
+  tokenInput.className = "border p-2 rounded";
+  form.appendChild(tokenInput);
+
+  const btn = document.createElement("button");
+  btn.textContent = "Verify";
+  btn.type = "submit";
+  btn.className = "bg-green-500 text-white p-2 rounded hover:bg-green-600";
+  form.appendChild(btn);
+
+  const msg = document.createElement("div");
+  msg.className = "text-red-500 text-sm";
+  form.appendChild(msg);
+
+  form.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	const response = await verify2FA(userId, tokenInput.value);
+	if (response.accessToken) {
+	  msg.textContent = "2FA verified! Logged in.";
+	  console.log(response);
+	} else {
+	  msg.textContent = response.error || "Invalid 2FA code";
+	}
+  });
+
+  container.appendChild(form);
+}
