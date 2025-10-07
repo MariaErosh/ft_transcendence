@@ -86,13 +86,21 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+# Backend services
+      - name: Build Auth Service
+        run: docker build -t ft_auth ./back/auth-service
 
-      - name: Build backend image
-        run: docker build -t ft_backend ./back
+      - name: Build User Service
+        run: docker build -t ft_user ./back/user-service
 
+      - name: Build Gateway Service
+        run: docker build -t ft_gateway ./back/gateway
+
+# Frontend
       - name: Build frontend image
         run: docker build -t ft_frontend ./front
 
+# Infrastructure
       - name: Build infrastructure (optional)
         run: docker compose -f infrastructure/docker-compose.yml build
 

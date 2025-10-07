@@ -3,3 +3,24 @@ services:
     image: redis:7
     ports:
       - "6379:6379"
+  
+  auth:
+    build: ../back/auth-service
+    container_name: auth
+    ports:
+      - "3001:3001"
+
+  user:
+    build: ../back/user-service
+    container_name: user
+    ports:
+      - "3002:3002"
+
+  gateway:
+    build: ../back/gateway
+    container_name: gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth
+      - user
