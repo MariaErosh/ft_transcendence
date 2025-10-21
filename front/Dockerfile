@@ -1,11 +1,25 @@
-FROM node:18-alpine
+FROM node:20 AS build
 
 WORKDIR /app
 
-COPY package.json ./
+COPY package.json package-lock.json ./
+RUN npm install
 
-RUN npm install || echo "No dependencies yet"
+COPY tsconfig.json tailwind.config.js ./ 
+COPY src ./src
+COPY styles ./styles
+COPY index.html ./
+COPY favicon.ico /usr/share/nginx/html/favicon.ico
 
-COPY . .
+RUN npm run build
 
-CMD ["echo", "Frontend placeholder - no server yet"]
+# --- production stage ---
+FROM nginx:alpine
+
+
+COPY --from=build /app/index.html /usr/share/nginx/html/index.html
+COPY --from=build /app/dist /usr/share/nginx/html/dist
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

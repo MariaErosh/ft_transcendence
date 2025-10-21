@@ -1,6 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const GATEWAY_URL = process.env.GATEWAY_URL;
 
 export async function authRoutes(fastify: FastifyInstance) {
   const auth = new AuthService();
@@ -8,17 +13,35 @@ export async function authRoutes(fastify: FastifyInstance) {
   	// Registration
 	fastify.post("/auth/register", async (req, reply) => {
 		const { username, password, email } = req.body as { username: string; password: string; email: string };
+		let user: AuthUser | null = null;
+
+		//function to rollback a created user in auth-service
+		const rollbackAuthUser = async () => {
+			if (user?.id) {
+				try {
+					await auth.deleteUser(user.id);
+					console.log(`Rollback: deleted Auth user ${user.id}`);
+				} catch (err) {
+					console.error(`Rollback failed for Auth user ${user.id}:`, err);
+				}
+			}
+		};
+
 		try {
 			//create record in AuthService
 			//todo: update two_factor_auth = true
-			const user: AuthUser = await auth.createUser(username, password, false );
+			user = await auth.createUser(username, password, false );
 			if (!user || !user.id) throw new Error ("User creation failed");
 
 			const systemToken = fastify.jwt.sign(
 					{ service: "auth", sub: user.id },
       				{ expiresIn: "1m" } );
+
+
 			//create record in UserSrvice
-			const response = await fetch("http://localhost:3002/users", {
+			let response : Response;
+			try {
+				response = await fetch(`${GATEWAY_URL}/users`, {
 								method: "POST",
 								headers: {
 									"Content-Type": "application/json",
@@ -29,11 +52,17 @@ export async function authRoutes(fastify: FastifyInstance) {
 										username: username,
 										email: email
 								}),
-			});
+				});
+			} catch (userServErr){
+				await rollbackAuthUser();
+				throw new Error(`Failed to contact UserService: ${(userServErr as Error).message}`);
+
+			}
 
 			if (!response.ok) {
-				await auth.deleteUser(user.id);
+				//await auth.deleteUser(user.id);
 				const text = await response.text();
+				await rollbackAuthUser();
 				return reply.status(500).send({ error: `UserService error: ${text}` });
 			}
 				
@@ -44,7 +73,8 @@ export async function authRoutes(fastify: FastifyInstance) {
 			});
 
 					
-		} catch (err: any) {
+		} catch (err: any) {			
+			await rollbackAuthUser();
 			reply.status(400).send({ error: err.message });
 		}
 	});
@@ -123,7 +153,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 	// Setting up 2FA and generating a QR code
 	fastify.post("/auth/2fa/enable", async (req, reply) => {
-	try {
+	/*try {
 		const authHeader = req.headers.authorization as string;
 		if (!authHeader) return reply.status(401).send({ error: "missing auth" });
 		const token = authHeader.split(" ")[1];
@@ -134,7 +164,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 		return reply.send(result);
 	} catch (err: any) {
 		return reply.status(400).send({ error: err.message });
-	}
+	}*/
+	const gw = (req.headers as any)['x-gateway-secret'];
+	if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "missing auth" });
+
+	const userId = Number((req.headers as any)['x-user-id']);
+	const username = String((req.headers as any)['x-username'] || "");
+	const result = await auth.enable2FA(userId, username);
+	return reply.send(result);
 	});
 
 	// Verify 2FA token
