@@ -4,9 +4,9 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.jsonx",
     "start": "node ./dist/index",
-    "dev": "nodemon --exec ts-node ./src/index.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "author": "",
   "license": "ISC",
