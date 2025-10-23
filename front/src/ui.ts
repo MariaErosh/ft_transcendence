@@ -1,4 +1,5 @@
 import { renderLogin, renderRegister } from "./forms.js";
+// import { renderGame } from "./pongGame.js";
 
 export function renderMainMenu(container: HTMLElement) {
   console.log("Rendering main menu");
@@ -29,4 +30,9 @@ export function renderMainMenu(container: HTMLElement) {
   menu.appendChild(signupBtn);
 
   container.appendChild(menu);
+}
+
+
+export function renderGameBoard(container: HTMLElement): void {
+  container.innerHTML = "";
 }
