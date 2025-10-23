@@ -1,31 +1,32 @@
+import { startGame } from "./gamePlay.js";
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "./gameSpecs.js";
+
 export function renderGameBoard(container: HTMLElement) {
 	// create wrapper for canvas + menu overlay
 	const wrapper = document.createElement('div');
-	wrapper.className = 'relative w-[800px] h-[600px]';
+	wrapper.className = `relative w-[${CANVAS_WIDTH}px] [${CANVAS_HEIGHT}px]`;
+	// wrapper.className = 'relative';
+	// wrapper.style.width = `${CANVAS_WIDTH}px`;
+	// wrapper.style.height = `${CANVAS_HEIGHT}px`;
 	
 	//creating canvas
 	const canvas = document.createElement('canvas');
 	canvas.id = 'game-board';
-	canvas.width = 800;
-	canvas.height = 600;
-	canvas.className = 'border-4 border-gray-800 rounded';
+	canvas.width = CANVAS_WIDTH;
+	canvas.height =  CANVAS_HEIGHT;
+	canvas.className = 'rounded';
+	canvas.style.backgroundColor = 'black';
 	wrapper.appendChild(canvas);
 
 	const ctx = canvas.getContext('2d');
-	if (!ctx) {
-		console.log("ctx failed to load");
-		return;
-	}
-	else {
-		console.log("ctx loaded");
-		ctx.fillStyle = '#000000';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-	}
+	if (!ctx) return console.log("ctx failed to load inside renderGameBoard function");
+	// ctx.fillStyle = '#ffffff';
+	// ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 	// menu overlay
 	const playMenu = document.createElement('div');
 	playMenu.id = 'play-menu';
-	playMenu.className = 'absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center rounded';
+	playMenu.className = 'absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded';
 
 	// create initial menu
 	showPlayMenu(playMenu, canvas);
@@ -72,7 +73,7 @@ function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 			startGameBtn.disabled = false;
 			startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
 			startGameBtn.onclick = () => {
-			//startGame(overlay, canvas, 'default');
+				startGame(overlay, canvas);
 			};
 		};
 		menu.appendChild(selectOptionsBtn);

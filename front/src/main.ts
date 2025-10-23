@@ -1,5 +1,5 @@
 import { renderMainMenu } from "./ui.js";
-import { renderGameBoard } from "./game/gameMain.js";
+import { renderGameBoard } from "./game/gameMenu.js";
 
 const app = document.getElementById("app");
 // const game = document.getElementById("game");
