@@ -36,7 +36,7 @@ export function renderGameBoard(container: HTMLElement) {
 
 }
 
-function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
+export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	overlay.innerHTML = '';
 
 	const menu = document.createElement('div');
