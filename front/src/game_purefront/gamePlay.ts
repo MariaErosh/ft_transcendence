@@ -17,8 +17,15 @@ export function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	// overlay.innerHTML = '';
 	overlay.style.display = 'none';
 
-	serveBall();
-	draw(canvas);
+	showInstructions(canvas);
+	//draw(canvas);
+	setTimeout(() => {
+		startCountdown(canvas, () => {
+		serveBall();
+		draw(canvas);
+		frameID = requestAnimationFrame(frame);
+		});
+	}, 4000);
 
 	function frame(now: number) {
 		if (key['Escape'])
@@ -55,7 +62,6 @@ export function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 		draw(canvas);
 		frameID = requestAnimationFrame(frame);
 	}
-	frameID = requestAnimationFrame(frame);
 }
 
 function checkPaddelHit() {
@@ -131,8 +137,8 @@ function draw(canvas: HTMLCanvasElement) {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'top';
 
-	ctx.fillText(gameState.score.left.toString(), CANVAS_WIDTH / 4, 20);
-	ctx.fillText(gameState.score.right.toString(), 3 * canvas.width / 4, 20);
+	ctx.fillText(gameState.score.left.toString(), CANVAS_WIDTH / 2 - 100, 20);
+	ctx.fillText(gameState.score.right.toString(), CANVAS_WIDTH / 2 + 100, 20);
 
 }
 
@@ -173,4 +179,60 @@ function stopGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 
 	overlay.style.display = 'flex';
 	showPlayMenu(overlay, canvas);
+}
+
+
+function startCountdown(canvas: HTMLCanvasElement, callback: () => void) {
+	const ctx = canvas.getContext('2d');
+	if (!ctx) return console.log('ctx failed to load inside startCountdown function');
+	
+	let count = 3;
+	requestAnimationFrame(() => {
+		draw(canvas);
+		drawNumber(ctx, count);
+		count--;
+	
+		const intervalId = setInterval(() => {
+			ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+			draw(canvas);
+			//ctx.clearRect(CANVAS_WIDTH / 2 - 50, CANVAS_HEIGHT / 2 - 50, 100, 100);
+			
+			drawNumber(ctx, count);
+
+			count--;
+
+			if (count < 0) {
+				clearInterval(intervalId);
+				callback();
+			}
+	}, 1000);
+});
+}
+
+function drawNumber(ctx: CanvasRenderingContext2D, n: number) {
+	ctx.fillStyle = 'white';
+	ctx.font = 'bold 72px Courier';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(n.toString(), CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+}
+
+function showInstructions(canvas: HTMLCanvasElement) {
+	const ctx = canvas.getContext('2d');
+	if (!ctx) return console.log('ctx failed to load inside shoInstructions function');
+	
+	ctx.fillStyle = 'white';
+	ctx.font = 'bold 18px Courier';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+
+	const lines = [
+		"Use 'W' and 'S' keys for left paddle.", 
+		"Use UP and DOWN arrows for right paddle.",
+		"Press ESC to return to the menu"
+	];
+	lines.forEach((line, i) => {
+		ctx.fillText(line, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30 + i * 30);
+	})
+
 }

@@ -3,7 +3,7 @@ export const CANVAS_WIDTH = 1000;
 
 export const PADDLE_WIDTH = 15;
 export const PADDLE_HEIGHT = 100;
-export const BALL_RADIUS = 9;
+export const BALL_RADIUS = 10;
 export const BALL_SPEED_BASE = 6;
 export const MARGIN = 10;
 
@@ -32,7 +32,7 @@ export let gameState: GameState = {
 	speed : {
 		bX: 0,
 		bY: 0,
-		p: 5
+		p: 6
 	},
 	score: {
 		left: 0,
@@ -44,8 +44,3 @@ export let gameState: GameState = {
 function whichSide() : 'left' | 'right' {
 	return Math.random() < 0.5 ? 'left' : 'right'; //Math.random() returns a float number between 0 and 1
 }
-// export interface GameConfig {
-//   canvasWidth: number;
-//   canvasHeight: number;
-//   paddleSpeed: number;
-// }
