@@ -1,4 +1,4 @@
-import { db, initDB } from "./db/database"; 
+import { database, initDB } from "./db/database"; 
 import fastify from 'fastify'
 
 initDB();
