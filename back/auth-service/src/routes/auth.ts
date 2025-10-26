@@ -15,6 +15,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		const { username, password, email } = req.body as { username: string; password: string; email: string };
 		let user: AuthUser | null = null;
 
+		console.log("Auth-service: Login request:", username);
 		//function to rollback a created user in auth-service
 		const rollbackAuthUser = async () => {
 			if (user?.id) {
@@ -31,6 +32,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			//create record in AuthService
 			//todo: update two_factor_auth = true
 			user = await auth.createUser(username, password, false );
+			console.log("create user:", user);
 			if (!user || !user.id) throw new Error ("User creation failed");
 
 			const systemToken = fastify.jwt.sign(
