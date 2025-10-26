@@ -1,4 +1,6 @@
 import sqlite3 from "sqlite3";
+// @ts-ignore
+import logger from "../../../../observability/dist/log/logger";
 import path from "path";
 
 // Enables verbose debug output
@@ -11,34 +13,41 @@ const DBSOURCE = "./data/database.sqlite";
 
 // Create connection
 export const db = new sqlite3.Database(DBSOURCE, (err) => {
-	  if (err) {
-		console.error("Failed to open database:", err.message);	
-	} else {
-		console.log("Connected to SQLite database at", DBSOURCE);
-	}
-}
-);
+  if (err) {
+    console.error("Failed to open database:", err.message);
+    logger.error("Failed to open database:", { error: err.message });
+  } else {
+    console.log("Connected to SQLite database at", DBSOURCE);
+    logger.info("Connected to SQLite database", { path: DBSOURCE });
+  }
+});
 
 export function initDB() {
   db.serialize(() => {
-		db.run(`
-		CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			username TEXT UNIQUE NOT NULL,
-			password_hash TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			two_factor_secret TEXT,
-			two_factor_enabled BOOLEAN DEFAULT 0
-		)
-    `, (err) => {
-	  if (err) {
-		console.error('Failed to create "users" table:', err.message);	
-		} else {
-			console.log('"users" table created or already exists');
-		}
-	});
+    db.run(
+      `
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        two_factor_secret TEXT,
+        two_factor_enabled BOOLEAN DEFAULT 0
+      )
+      `,
+      (err) => {
+        if (err) {
+          console.error('Failed to create "users" table:', err.message);
+          logger.error('Failed to create "users" table:', { error: err.message });
+        } else {
+          console.log('"users" table created or already exists');
+          logger.info('"users" table created or already exists');
+        }
+      }
+    );
 
-    db.run(`
+    db.run(
+      `
       CREATE TABLE IF NOT EXISTS refresh_tokens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -47,16 +56,17 @@ export function initDB() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
-	  CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-    `
-	, (err) => {	
-		 if (err) {
-		console.error('Failed to create "refresh_tokens" table:', err.message);	
-		} else {
-			console.log('"refresh_tokens" table created or already exists');
-		} 
-	}
-	);
-	
- });
+      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+      `,
+      (err) => {
+        if (err) {
+          console.error('Failed to create "refresh_tokens" table:', err.message);
+          logger.error('Failed to create "refresh_tokens" table:', { error: err.message });
+        } else {
+          console.log('"refresh_tokens" table created or already exists');
+          logger.info('"refresh_tokens" table created or already exists');
+        }
+      }
+    );
+  });
 }

@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 import { authenticator } from "otplib";
 import QRCode from "qrcode";
+import logger from "../../../../observability/dist/log/logger"; // Import logger
+import { dbErrors, dbQueryDuration } from "../../../../observability/dist/metrics/metrics"; // Import metrics
 
 
 interface RefreshTokenRow {
@@ -31,31 +33,55 @@ export class AuthService {
 
 	async createUser(username: string, password: string, two_factor_enabled: boolean): Promise<AuthUser> {
 		const hash = await bcrypt.hash(password, 10);
+		const start = Date.now(); // Start timer for monitoring
 		return new Promise((resolve, reject) => {
 		db.run(
 			"INSERT INTO users (username, password_hash) VALUES (?, ?)",
 			[username, hash],
 			function (err) {
-			if (err) return reject(err);
-			resolve({ id: this.lastID, username, two_factor_enabled });
+				const duration = (Date.now() - start) / 1000; // Calculate duration
+				dbQueryDuration.labels("create_user").observe(duration); // Record query duration
+				if (err) {
+					logger.error("Failed to create user", { username, error: err.message }); // Log error
+					dbErrors.labels("create_user").inc(); // Increment error counter
+					return reject(err);
+				}
+				logger.info("User created successfully", { userId: this.lastID, username }); // Log success
+				resolve({ id: this.lastID, username, two_factor_enabled });
 			}
 		);
 		});
 	}
 
 	async findUserByUsername(username: string): Promise<any> {
+		const start = Date.now(); // Start timer for monitoring
 		return new Promise((resolve, reject) => {
 		db.get<UserRow>("SELECT * FROM users WHERE username = ?", [username], (err, row) => {
-			if (err) return reject(err);
+			const duration = (Date.now() - start) / 1000; // Calculate duration
+			dbQueryDuration.labels("find_user_by_username").observe(duration); // Record query duration
+			if (err) {
+				logger.error("Failed to find user by username", { username, error: err.message }); // Log error
+				dbErrors.labels("find_user_by_username").inc(); // Increment error counter
+				return reject(err);
+			}
+			logger.info("User found by username", { username }); // Log success
 			resolve(row ?? undefined);
 		});
 		});
 	}
 
 	async findUserById(userId: number): Promise<UserRow | undefined> {
+		const start = Date.now(); // Start timer for monitoring
 		return new Promise((resolve, reject) => {
 		db.get<UserRow>("SELECT * FROM users WHERE id = ?", [userId], (err, row) => {
-			if (err) return reject(err);
+			const duration = (Date.now() - start) / 1000; // Calculate duration
+			dbQueryDuration.labels("find_user_by_id").observe(duration); // Record query duration
+			if (err) {
+				logger.error("Failed to find user by ID", { userId, error: err.message }); // Log error
+				dbErrors.labels("find_user_by_id").inc(); // Increment error counter
+				return reject(err);
+			}
+			logger.info("User found by ID", { userId }); // Log success
 			resolve(row ?? undefined);
 		});
 		});
@@ -69,21 +95,33 @@ export class AuthService {
 		const raw = randomUUID();
 		const hash = await bcrypt.hash(raw, 10);
 		const days = Math.floor(ttlSeconds / (60 * 60 * 24));
-		
+		const start = Date.now(); // Start timer for monitoring
+
 		return new Promise<{ refreshToken: string; expiresAt: string }>((resolve, reject) => {
 			const days = Math.floor(ttlSeconds / (60 * 60 * 24));
 			db.run(
 				"INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES (?, ?, datetime('now', '+' || ? || ' days'))",
 				[userId, hash, days],
 				function (err) {
-					if (err) return reject(err);					
-					
+					const duration = (Date.now() - start) / 1000; // Calculate duration
+					dbQueryDuration.labels("create_refresh_token").observe(duration); // Record query duration
+					if (err) {
+						logger.error("Failed to create refresh token", { userId, error: err.message }); // Log error
+						dbErrors.labels("create_refresh_token").inc(); // Increment error counter
+						return reject(err);
+					}
+
 					// fetch expires_at back from the db (to avoid rounding difference)
 					db.get<{ expires_at: string }>(
 						"SELECT expires_at FROM refresh_tokens WHERE id = ?",
 						[this.lastID],
 						(err2, row) => {
-							if (err2) return reject(err2);
+							if (err2) {
+								logger.error("Failed to fetch refresh token expiration", { userId, error: err2.message }); // Log error
+								dbErrors.labels("fetch_refresh_token_expiration").inc(); // Increment error counter
+								return reject(err2);
+							}
+							logger.info("Refresh token created successfully", { userId }); // Log success
 							resolve({ refreshToken: raw, expiresAt: row!.expires_at });
 						}
 					);
@@ -99,7 +137,7 @@ export class AuthService {
 			if (err) return reject(err);
 			if (!rows || rows.length === 0) {
 				return reject(new Error("No refresh tokens found"));
-			}	
+			}
 
 			//casting to type RefreshTokenRow
 			/*const tokenRows: RefreshTokenRow[] = rows.map(row => ({
@@ -109,7 +147,7 @@ export class AuthService {
 				expires_at: row.expires_at,
 				created_at: row.created_at
 			}));*/
-		
+
 			for (const r of rows) {
 			const match = await bcrypt.compare(rawToken, r.token_hash);
 			if (match) {
@@ -151,7 +189,7 @@ export class AuthService {
 			}
 		);
 		});
-	}  
+	}
 	// verifying the TOTP code on login
 	async verify2FA(userId: number, token: string): Promise<boolean> {
 		return new Promise((resolve, reject) => {
@@ -168,14 +206,14 @@ export class AuthService {
 		});
 	}
 
-	
+
 async deleteUser(userId: number): Promise<boolean> {
 	return new Promise((resolve, reject) => {
 		db.run("DELETE FROM refresh_tokens WHERE user_id = ?", [userId], err => {
 			if (err) {
 				return reject(err);
 			}
-			
+
 			db.run("DELETE FROM users WHERE id = ?", [userId], function (err2) {
 			if (err2) {
 				return reject(err2);
@@ -187,4 +225,4 @@ async deleteUser(userId: number): Promise<boolean> {
 }
 
 
-}	
+}

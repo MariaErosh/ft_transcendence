@@ -2,6 +2,8 @@ import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
 import dotenv from "dotenv";
+import logger from "../../../../observability/dist/log/logger"; // Import logger
+import { dbErrors, dbQueryDuration } from "../../../../observability/dist/metrics/metrics"; // Import metrics
 
 dotenv.config();
 
@@ -20,14 +22,17 @@ export async function authRoutes(fastify: FastifyInstance) {
 			if (user?.id) {
 				try {
 					await auth.deleteUser(user.id);
+					logger.info(`Rollback: deleted Auth user ${user.id}`); // Log rollback
 					console.log(`Rollback: deleted Auth user ${user.id}`);
 				} catch (err) {
+					logger.error(`Rollback failed for Auth user ${user.id}:`, { error: err });
 					console.error(`Rollback failed for Auth user ${user.id}:`, err);
 				}
 			}
 		};
 
 		try {
+			const start = Date.now(); // Start timer for monitoring
 			//create record in AuthService
 			//todo: update two_factor_auth = true
 			user = await auth.createUser(username, password, false );
@@ -55,6 +60,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			} catch (userServErr){
 				await rollbackAuthUser();
+				dbErrors.labels("user_service").inc(); // Increment error counter for UserService
 				throw new Error(`Failed to contact UserService: ${(userServErr as Error).message}`);
 
 			}
@@ -63,18 +69,25 @@ export async function authRoutes(fastify: FastifyInstance) {
 				//await auth.deleteUser(user.id);
 				const text = await response.text();
 				await rollbackAuthUser();
+				dbErrors.labels("user_service").inc(); // Increment error counter for UserService
 				return reply.status(500).send({ error: `UserService error: ${text}` });
 			}
-				
+
+
 			const prof = await response.json();
+			const duration = (Date.now() - start) / 1000; // Calculate duration
+			dbQueryDuration.labels("auth_register").observe(duration); // Record query duration
+
+			logger.info("User registered successfully", { userId: user.id, username }); // Log success
 			reply.code(201).send({
 				auth_user: user,
 				profile: prof
 			});
 
-					
-		} catch (err: any) {			
+
+		} catch (err: any) {
 			await rollbackAuthUser();
+			logger.error("Registration failed", { error: err.message }); // Log error
 			reply.status(400).send({ error: err.message });
 		}
 	});
@@ -85,30 +98,42 @@ export async function authRoutes(fastify: FastifyInstance) {
 			username: string;
 			password: string;
 		};
-		if (!username || !password) return reply.status(400).send({ error: "username and password required" });
+		if (!username || !password) {
+			logger.warn("Login attempt with missing credentials"); // Log warning
+			return reply.status(400).send({ error: "username and password required" });
+		}
 		try {
 			const user = await auth.findUserByUsername(username);
-			if (!user) return reply.status(401).send({ error: "invalid credentials" });
+			if (!user) {
+				logger.warn("Invalid login attempt", { username }); // Log invalid attempt
+				return reply.status(401).send({ error: "invalid credentials" });
+			}
 
 			const valid = await auth.validatePassword(password, user.password_hash);
-			if (!valid) return reply.status(401).send({ error: "invalid credentials" });
+			if (!valid) {
+				logger.warn("Invalid password attempt", { username }); // Log invalid password
+				return reply.status(401).send({ error: "invalid credentials" });
+			}
 
 			if (user.two_factor_enabled) {
+				logger.info("Two-factor authentication required", { userId: user.id }); // Log 2FA requirement
 				return reply.send({ twoFactorRequired: true, userId: user.id });
 			}
 			const accessToken = fastify.jwt.sign({ sub: user.id, username: user.username }, { expiresIn: "15m" });
 			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
+			logger.info("User logged in successfully", { userId: user.id }); // Log success
 			return reply.send({
 				accessToken,
 				refreshToken,
 				refreshExpiresAt: expiresAt,
 			});
 		} catch (err: any) {
+			logger.error("Login failed", { error: err.message }); // Log error
 			return reply.status(500).send({ error: "Internal server error"})
 		}
 	});
-		
+
 
 	// Token refresh
 	fastify.post("/auth/refresh", async (req, reply) => {
@@ -135,7 +160,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	}
 	);
-		
+
 	// Logout (revoke all refresh tokens for user)
 	fastify.post("/auth/logout", async (req, reply) => {
 		// expects Authorization: Bearer <accessToken>
