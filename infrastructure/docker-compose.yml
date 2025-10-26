@@ -9,12 +9,16 @@ services:
     container_name: auth
     ports:
       - "3001:3001"
+    volumes:
+      - ../back/auth-service/data/:/app/data
 
   user:
     build: ../back/user-service
     container_name: user
     ports:
       - "3002:3002"
+    volumes:
+      - ../back/user-service/data/:/app/data
 
   gateway:
     build: ../back/gateway

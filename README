@@ -2,10 +2,10 @@ Running the Project
 
 
 1)  Backend Services
-To start each backend service, 
-navigate to the service’s folder and run:
-npm run build
-npm run start
+To start backend services, 
+navigate to the folder infrastructure/ and run
+docker compose u
+
 
 2)  Frontend
 The frontend runs via Docker.
