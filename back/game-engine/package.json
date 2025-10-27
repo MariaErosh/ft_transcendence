@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/connectionHandler.ts",
+    "build": "tsc",
+    "start": "node dist/connectionHandler.js"
+  }
+}

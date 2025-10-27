@@ -15,6 +15,12 @@ services:
     container_name: user
     ports:
       - "3002:3002"
+  
+  game-engine:
+    build: ../back/game-engine
+    container_name: game-engine
+    ports:
+      - "3003:3003"
 
   gateway:
     build: ../back/gateway
