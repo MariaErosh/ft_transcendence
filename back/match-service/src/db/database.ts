@@ -18,7 +18,7 @@ export const database = new sqlite3.Database(DBSOURCE, (err) => {
 export function initDB(db: sqlite3.Database = database): Promise<void> {
 	return new Promise((resolve, reject) => {
 		db.serialize(() => {
-			db.run(`
+			db.exec(`
 			CREATE TABLE IF NOT EXISTS matches (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				status TEXT NOT NULL
@@ -26,7 +26,7 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 			CREATE TABLE IF NOT EXISTS players (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					auth_user_id INTEGER UNIQUE,
-					alias TEXT NOT NULL,
+					alias TEXT NOT NULL UNIQUE,
 					match_id INTEGER NOT NULL,
 					status TEXT,
 					remote INTEGER,
