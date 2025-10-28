@@ -12,7 +12,7 @@
 	//"noImplicitAny": true,      // raise error on expressions and declarations with an implied 'any' type
 	"baseUrl" : "./src",
 	"paths": {},
-	"types" : ["node", "ws"]
+	"types" : ["node", "ws", "jest"]
   },
   "include": ["src/**/*"],        // which files to include
   "exclude": ["node_modules"]     // which files to exclude
