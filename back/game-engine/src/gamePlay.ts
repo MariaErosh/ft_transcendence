@@ -1,7 +1,11 @@
 import { board, gameState} from "./gameSpecs.js";
 import { playerKeys } from "./connectionHandler.js";
 
-export function updatePos() {
+let paused = false;
+
+export function updatePos(): void | number {
+	if (paused) return;
+
 	if (playerKeys.right.up)
 		gameState.rightPaddle.y = Math.max(gameState.rightPaddle.y - gameState.speed.p, 0);
 	if (playerKeys.right.down)
@@ -25,6 +29,11 @@ export function updatePos() {
 	if (gameState.ball.x - board.BALL_RADIUS / 2 <= 0 || gameState.ball.x + board.BALL_RADIUS / 2 >= board.CANVAS_WIDTH)
 	{
 		gameState.ball.x - board.BALL_RADIUS / 2 <= 0 ? gameState.score.right++ : gameState.score.left++;
+		if (gameState.score.right >= 5 || gameState.score.left >= 5) {
+			gameState.score.right >= 5 ? gameState.winner = { alias: gameState.rightPlayer.alias, id: gameState.rightPlayer.id} 
+				: gameState.winner = { alias: gameState.leftPlayer.alias, id: gameState.leftPlayer.id };
+			return 1;
+		}
 		serveBall();
 	}
 }
@@ -71,7 +80,7 @@ function checkPaddelHit() {
 	}
 }
 
-export function serveBall() {
+export async function serveBall() {
 	gameState.ball.x = board.CANVAS_WIDTH / 2;
 	gameState.ball.y = board.CANVAS_HEIGHT / 2;
 
@@ -83,8 +92,17 @@ export function serveBall() {
 	gameState.speed.bY = upDown * board.BALL_SPEED_BASE  * Math.sin(angle);
 
 	gameState.servingPlayer = gameState.servingPlayer === 'left' ? 'right' : 'left';
+
+	gameState.leftPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	gameState.rightPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	paused = true;
+	await sleep(200);
+	paused = false;
 }
 
+function sleep(ms: number) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function resetSpecs() {
 	
@@ -99,4 +117,9 @@ export function resetSpecs() {
 	gameState.score.left = 0;
 	gameState.score.right = 0;
 	gameState.servingPlayer = 'left';
+	gameState.leftPlayer = { alias: 'left', id: -1 };
+	gameState.rightPlayer = { alias: 'right', id: -2 };
+	gameState.matchID = -1;
+	gameState.winner.id = -1;
+	gameState.winner.alias = 'none';
 }

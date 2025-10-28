@@ -11,8 +11,3 @@ if (app) {
 	console.log("Rendering game area");
 	renderGameBoard(app);
 }
-
-// if (game) {
-// 	console.log("Rendering game area");
-// 	renderGameBoard(game);
-// }

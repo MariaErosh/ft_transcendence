@@ -19,6 +19,7 @@ export let board: BoardConstants = {
 	MARGIN: 10,
 }
 
+export interface Player { alias: string, id: number }
 
 export interface GameState {
 	ball: { x: number; y: number };
@@ -27,6 +28,10 @@ export interface GameState {
 	speed: { bX: number; bY: number; p: number };
 	score: {left: number; right: number };
 	servingPlayer: 'left' | 'right';
+	leftPlayer: Player;
+	rightPlayer: Player;
+	matchID: number;
+	winner: Player;
 }
 
 export let gameState: GameState = {
@@ -51,7 +56,11 @@ export let gameState: GameState = {
 		left: 0,
 		right: 0
 	},
-	servingPlayer: whichSide()
+	servingPlayer: whichSide(),
+	leftPlayer: { alias: 'left', id: -1 },
+	rightPlayer: { alias: 'right', id: -2 },
+	matchID: -1,
+	winner: { alias: 'none', id: -1 },
 };
 
 function whichSide() : 'left' | 'right' {

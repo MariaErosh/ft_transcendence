@@ -28,7 +28,11 @@ wss.on('connection', (ws) => {
 			serveBall();
 			ws.send(JSON.stringify({ type: "go"}));
 			interval = setInterval(() => {
-				updatePos();
+				if (updatePos() === 1) {
+					if (interval) clearInterval(interval);
+					ws.send(JSON.stringify({ type: "win", data: gameState }))
+					resetSpecs();
+				}
 				ws.send(JSON.stringify({ type: "state", data: gameState }));
 			}, 1000/ 60);
 		}
@@ -42,6 +46,10 @@ wss.on('connection', (ws) => {
 	});
 });
 
+export function sendWinner() {
+
+	
+}
 
 function handleInput(code: string, pressed: boolean) {
 	if (code === 'ArrowUp')
