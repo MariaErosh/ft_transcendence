@@ -15,9 +15,9 @@ export function closeTestDb(db: sqlite3.Database): Promise <void> {
 				reject(err);
 			}
 			else{
-				console.log("Test db colsed");
+				console.log("Test db closed");
 				resolve();
-			} 
+			}
 		})
 	})
 }

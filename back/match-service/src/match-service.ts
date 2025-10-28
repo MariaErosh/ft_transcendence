@@ -33,4 +33,7 @@ export class MatchService {
 		})
 	}
 
+	// async createNewMatch(players:[InputPlayer]){
+	// 	this.addMatchRow
+	// }
 }
