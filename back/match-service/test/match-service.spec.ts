@@ -2,10 +2,11 @@ import { describe, it, expect, test, beforeAll, afterAll, beforeEach } from '@je
 import { createTestDb, closeTestDb, clearDB } from './test-database';
 import { initDB } from '../src/db/database'
 import sqlite3 from 'sqlite3';
-import { InputPlayer, MatchService } from '../src/match-service'
+import { MatchService } from '../src/match-service'
 import { Match, Player } from '../src/models';
 import { dbAll, dbGet } from '../src/helpers';
 import { exec } from 'child_process';
+import { InputPlayer } from '../src/models';
 
 
 describe
