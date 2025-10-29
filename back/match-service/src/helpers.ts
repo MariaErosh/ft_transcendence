@@ -28,3 +28,16 @@ export function dbAll<T = any>(
 	});
 });
 }
+
+export function dbRunQuery(
+	db: sqlite3.Database,
+	query: string,
+	params: any [] = []
+): Promise<void> {
+	return new Promise((resolve, reject) => {
+			db.run(query, params, (err) => {
+				if (err) return reject(err);
+				resolve();
+			});
+		});
+}
