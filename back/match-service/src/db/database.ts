@@ -19,6 +19,9 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 	return new Promise((resolve, reject) => {
 		db.serialize(() => {
 			db.exec(`
+			DROP TABLE IF EXISTS games;
+			DROP TABLE IF EXISTS players;
+			DROP TABLE IF EXISTS matches;
 			CREATE TABLE IF NOT EXISTS matches (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				status TEXT NOT NULL

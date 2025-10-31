@@ -15,12 +15,12 @@ async function runMatchService() {
 		matchRoutes(instance, matchService);
 	});
 
-	fastify.listen({ port: 3004 }, (err, address) => {
+	fastify.listen({ port: 3004, host: "0.0.0.0" }, (err, address) => {
 		if (err) {
 			console.error(err);
 			process.exit(1);
 		}
-		console.log("Match service running on http://localhost:3004");
+		console.log(`This is new image. Match service running on ${address}`);
 	});
 }
 

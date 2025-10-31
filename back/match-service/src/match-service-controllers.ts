@@ -25,7 +25,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService:MatchSe
 	fastify.post<{
 		Body: CreateMatchPayload
 	}>('/match', {schema: createMatchSchema}, async (request, reply) => {
-		if (!ensureFromGateway(request, reply)) return;
+		// if (!ensureFromGateway(request, reply)) return;
 		const { players } = request.body;
 		const matchId = await matchService.createNewMatch(players);
 		return matchId;

@@ -135,7 +135,7 @@ export function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 			createTournamentBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-4 rounded-lg w-full cursor-pointer hover:bg-green-600 transition mt-4';
 			createTournamentBtn.onclick = () => {
 				//Create tornament and start game
-				createMatch(selectedPlayers);
+				// createMatch(selectedPlayers);
 				//TODO: Pass players data to the game here
 				startGame(overlay, canvas);
 			};
