@@ -3,8 +3,9 @@ Running the Project
 
 1)  Backend Services
 To start backend services, 
-navigate to the folder infrastructure/ and run
-docker compose u
+navigate to the folder infrastructure/ and run:
+docker compose down
+docker compose up --build
 
 
 2)  Frontend
