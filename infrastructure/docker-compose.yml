@@ -22,11 +22,24 @@ services:
     ports:
       - "3003:3003"
 
+  match-service:
+    build: ../back/match-service
+    container_name: match-service
+    ports:
+      - "3004:3004"
+
   gateway:
     build: ../back/gateway
     container_name: gateway
+    environment:
+      JWT_SECRET: supersecret_jwt_key
+      GATEWAY_SECRET: gateway_internal_secret
+      AUTH_URL: http://auth:3001
+      USER_URL: http://user:3002
+      MATCH_SERVICE_URL: http://match-service:3004
     ports:
       - "3000:3000"
     depends_on:
       - auth
       - user
+      - match-service

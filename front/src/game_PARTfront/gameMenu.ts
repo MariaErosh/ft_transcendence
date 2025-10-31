@@ -1,10 +1,11 @@
-import { startGame } from "./gamePlay.js";
+import {showGameMenu} from "../match_front.js" 
 import { board, BoardConstants } from "./gameSpecs.js";
 
 export const socket = new WebSocket("ws://localhost:3003");
 socket.onopen = () => {
 	console.log('Game-engine socket open');
 };
+socket.onmessage = (event) => console.log("WS:", event.data);
 
 export async function renderGameBoard(container: HTMLElement) {
 
@@ -14,7 +15,7 @@ export async function renderGameBoard(container: HTMLElement) {
 	
 	// create wrapper for canvas + menu overlay
 	const wrapper = document.createElement('div');
-	wrapper.className = `relative w-[${board.CANVAS_WIDTH}px] [${board.CANVAS_HEIGHT}px]`;
+	wrapper.className = `relative w-[${board.CANVAS_WIDTH}px] h-[${board.CANVAS_HEIGHT}px]`;
 	
 	//creating canvas
 	const canvas = document.createElement('canvas');
@@ -72,37 +73,37 @@ export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	overlay.appendChild(menu);
 }
 
-function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	overlay.innerHTML = '';
+// function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
+// 	overlay.innerHTML = '';
 
-	const menu = document.createElement('div');
-	menu.className = 'flex flex-col gap-4 items-center';
+// 	const menu = document.createElement('div');
+// 	menu.className = 'flex flex-col gap-4 items-center';
 	
-	const title = document.createElement('h2');
-	title.textContent = 'SELECT MODE';
-	title.className = 'text-white text-4xl font-bold mb-6';
-	menu.appendChild(title);
+// 	const title = document.createElement('h2');
+// 	title.textContent = 'SELECT MODE';
+// 	title.className = 'text-white text-4xl font-bold mb-6';
+// 	menu.appendChild(title);
 
-	// Select Options Button: WILL BE REPLACED LATER WITH GAME MANAGEMENT LOGIC
-	const selectOptionsBtn = document.createElement('button');
-	selectOptionsBtn.textContent = 'SELECT OPTIONS';
-	selectOptionsBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-	selectOptionsBtn.onclick = () => {
-		// Enable start button
-		startGameBtn.disabled = false;
-		startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
-		startGameBtn.onclick = () => {
-			startGame(overlay, canvas);
-		};
-	};
-	menu.appendChild(selectOptionsBtn);
+// 	// Select Options Button: WILL BE REPLACED LATER WITH GAME MANAGEMENT LOGIC
+// 	const selectOptionsBtn = document.createElement('button');
+// 	selectOptionsBtn.textContent = 'SELECT OPTIONS';
+// 	selectOptionsBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
+// 	selectOptionsBtn.onclick = () => {
+// 		// Enable start button
+// 		startGameBtn.disabled = false;
+// 		startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
+// 		startGameBtn.onclick = () => {
+// 			startGame(overlay, canvas);
+// 		};
+// 	};
+// 	menu.appendChild(selectOptionsBtn);
 
-	// Start Game Button (initially disabled, will enable when options are selected) 
-	const startGameBtn = document.createElement('button');
-	startGameBtn.textContent = 'START GAME';
-	startGameBtn.className = 'bg-gray-400 text-gray-600 text-2xl font-bold px-10 py-3 rounded w-64 cursor-not-allowed';
-	startGameBtn.disabled = true;
-	menu.appendChild(startGameBtn);
+// 	// Start Game Button (initially disabled, will enable when options are selected) 
+// 	const startGameBtn = document.createElement('button');
+// 	startGameBtn.textContent = 'START GAME';
+// 	startGameBtn.className = 'bg-gray-400 text-gray-600 text-2xl font-bold px-10 py-3 rounded w-64 cursor-not-allowed';
+// 	startGameBtn.disabled = true;
+// 	menu.appendChild(startGameBtn);
 
-	overlay.appendChild(menu);
-}
+// 	overlay.appendChild(menu);
+// }

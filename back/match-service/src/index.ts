@@ -1,18 +1,27 @@
 import { database, initDB } from "./db/database"; 
-import fastify from 'fastify'
+import Fastify from 'fastify'
+import { MatchService } from "./match-service";
+import { matchRoutes } from "./match-service-controllers";
 
-initDB();
 
-const server = fastify()
+async function runMatchService() {
+	const fastify = Fastify({ logger: true });
 
-server.get('/ping', async (request, reply) => {
-  return 'pong\n'
-})
+	initDB();
+	const matchService = new MatchService(database);
 
-server.listen({ port: 8080 }, (err, address) => {
-  if (err) {
-    console.error(err)
-    process.exit(1)
-  }
-  console.log(`Server listening at ${address}`)
-})
+
+	await fastify.register(async(instance) =>{
+		matchRoutes(instance, matchService);
+	});
+
+	fastify.listen({ port: 3004 }, (err, address) => {
+		if (err) {
+			console.error(err);
+			process.exit(1);
+		}
+		console.log("Match service running on http://localhost:3004");
+	});
+}
+
+runMatchService();

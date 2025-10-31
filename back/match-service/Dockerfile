@@ -8,9 +8,7 @@ RUN npm install || echo "No dependencies yet"
 
 COPY . .
 
-RUN npm run build || echo "Build skipped" 
-
-EXPOSE 3000
+EXPOSE 3004
 
 
 CMD ["npm", "run", "start"]

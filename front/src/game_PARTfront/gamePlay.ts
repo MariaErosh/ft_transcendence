@@ -47,7 +47,7 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 		if (message.type === "win") {
 			draw(canvas);
 			cancelAnimationFrame(frameID);
-			overlay.style = 'flex';
+			overlay.style.display = 'flex';
 			const winner = ["THE WINNER IS ", gameState.winner.alias];
 			drawText(canvas, winner);
 
