@@ -11,6 +11,8 @@ services:
       - "3001:3001"
     volumes:
       - ../back/auth-service/data/:/app/data
+    env_file:
+    - ../back/auth-service/.env
 
   user:
     build: ../back/user-service
@@ -19,6 +21,8 @@ services:
       - "3002:3002"
     volumes:
       - ../back/user-service/data/:/app/data
+    env_file:
+    - ../back/user-service/.env
 
   gateway:
     build: ../back/gateway
@@ -28,3 +32,5 @@ services:
     depends_on:
       - auth
       - user
+    env_file:
+    - ../back/gateway/.env

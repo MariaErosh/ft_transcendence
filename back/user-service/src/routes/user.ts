@@ -10,8 +10,10 @@ function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 	const gw = (req.headers as any)['x-gateway-secret'];
 	if (!gw || gw !== GATEWAY_SECRET) {
 		reply.status(401).send({ error: "Unauthorized (gateway only)" });
+		console.log("User-service: ensureFromGateway", false);
 		return false;
 	}
+	console.log("User-service: ensureFromGateway", true);
 	return true;
 }
 
@@ -66,8 +68,9 @@ export async function userRoutes(fastify: FastifyInstance, service: UserService)
 	//create user (only authorized)
 	fastify.post("/users",  
 	async (req: FastifyRequest, reply: FastifyReply) => {
-		
+		console.log("User-service: ");
 		if (!ensureFromGateway(req, reply)) return;
+		console.log("User-service: request from Gateway");
 		const authUserIdHeader = (req.headers as any)['x-user-id'];
 		const authUserService = (req.headers as any)['x-user-service'];
 
@@ -77,14 +80,17 @@ export async function userRoutes(fastify: FastifyInstance, service: UserService)
 		
 		//if the call originates from auth-service, x-user-service is 'auth'
 		if (authUserService !== 'auth' && !auth_user_id) {
+			 console.log("User-service: forbidden request. authUserService=", authUserService, "auth_user_id=", auth_user_id);
 			return reply.status(403).send({ error: "Forbidden" });
 		}
 
 		const { username, email } = req.body as { username: string; email: string; };
 		try {
 			const created = await service.createUser(auth_user_id!, username, email);
+			console.log("User-service: user created successfully:", created);
 			return reply.code(201).send(created);
 		} catch (err: any) {
+			console.error("User-service: error creating user:", err.message, err.stack);
 			return reply.status(500).send({ error: err.message });
 		}		
  	});

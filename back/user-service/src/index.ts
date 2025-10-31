@@ -27,12 +27,12 @@ async function start() {
 		userRoutes(instance, userService);
 	});
 
-	await fastify.listen({ port: 3002 }, (err, address) => {
+	await fastify.listen({ port: 3002, host: "0.0.0.0"  }, (err, address) => {
 		if (err) {
 			console.error(err);
 			process.exit(1);
 		}
-		console.log("User service running on http://localhost:3002");
+		console.log("User service running on ", process.env.USER_URL);
 	});
 }
 

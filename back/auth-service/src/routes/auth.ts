@@ -41,6 +41,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 
 			//create record in UserSrvice
+			//console.log("sending to UserService:", { auth_user_id: user.id, username, email, token: systemToken });
 			let response : Response;
 			try {
 				response = await fetch(`${GATEWAY_URL}/users`, {
