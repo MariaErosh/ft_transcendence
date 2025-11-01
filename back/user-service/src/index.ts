@@ -12,7 +12,7 @@ async function start() {
 	//(fastify as any).register(jwt, { secret: "!TheLastProjectIn42!" });
 	// register plugin
   	await fastify.register(authPlugin);
-	
+
 	initDB();
 
 	//create UserService instance (injecting db)
@@ -27,12 +27,12 @@ async function start() {
 		userRoutes(instance, userService);
 	});
 
-	await fastify.listen({ port: 3002 }, (err, address) => {
+	await fastify.listen({ port: 3002, host: 0.0.0.0 }, (err, address) => {
 		if (err) {
 			console.error(err);
 			process.exit(1);
 		}
-		console.log("User service running on http://localhost:3002");
+		console.log("User service running on" ,  address);
 	});
 }
 

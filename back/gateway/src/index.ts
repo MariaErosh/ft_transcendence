@@ -11,6 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
 const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
+const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
 
 async function buildServer() {
 	const server = Fastify({ logger: true });
@@ -21,12 +22,12 @@ async function buildServer() {
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
 							"/users",
-							"/auth/2fa/enable" 
+							"/auth/2fa/enable"
 							];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
 		const url = (request.raw.url || "").split("?")[0];
-		
+
 		if (PROTECTED_PREFIXES.some(p => url === p || url.startsWith(p + "/"))) {
 			try {
 				await request.jwtVerify();
@@ -42,7 +43,7 @@ async function buildServer() {
 			//for unprotected routes add header x-gateway-secret
 			(request.headers as any)['x-gateway-secret'] = GATEWAY_SECRET;
 		}
-		
+
 	});
 
 	// Proxy registrations
@@ -65,8 +66,16 @@ async function buildServer() {
 		ts: new Date().toISOString(),
 	}));
 
+	await server.register(proxy, {
+		upstream: MATCH_SERVICE_URL,
+		prefix: "/match",
+		rewritePrefix: "/match",
+		http2: false,
+	});
+
 	return server;
 }
+
 
 async function start() {
 	try {

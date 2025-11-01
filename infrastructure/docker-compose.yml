@@ -3,10 +3,10 @@ services:
   #   image: redis:7
   #   ports:
   #     - "6379:6379"
-  
+
 
   auth:
-    build: 
+    build:
       context: ../back/auth-service
       dockerfile: Dockerfile
       target: prod
@@ -15,7 +15,7 @@ services:
       - "3001:3001"
 
   user:
-    build: 
+    build:
       context: ../back/user-service
       dockerfile: Dockerfile
       target: prod
@@ -23,9 +23,9 @@ services:
     ports:
       - "3002:3002"
 
-  
+
   game-engine:
-    build: 
+    build:
       context: ../back/game-engine
       dockerfile: Dockerfile
       target: prod
@@ -33,9 +33,18 @@ services:
     ports:
       - "3003:3003"
 
+  match:
+    build:
+      context: ../back/match-service
+      dockerfile: Dockerfile
+      target: prod
+    container_name: match
+    ports:
+      - "3004:3004"
+
 
   gateway:
-    build: 
+    build:
       context: ../back/gateway
       dockerfile: Dockerfile
       target: prod
