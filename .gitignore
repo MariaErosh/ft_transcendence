@@ -1,0 +1,34 @@
+# Node modules
+
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+*.log.*
+
+# Build output
+dist/
+
+# DB
+*.sqlite
+
+# TypeScript cache
+*.tsbuildinfo
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Mac / Linux / Windows system files
+.DS_Store
+Thumbs.db
+
+# Optional: docker / local configs
+docker-compose.override.yml
+
+.env
+**/*.env
+

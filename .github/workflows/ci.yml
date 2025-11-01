@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js (backend)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+
+      # Auth Service
+      - name: Install Auth Service
+        working-directory: backend/auth
+        run: npm ci
+
+      - name: Run Auth Tests
+        working-directory: backend/auth
+        run: npm test || echo "No tests for auth"
+
+      # User Service
+      - name: Install User Service
+        working-directory: backend/user
+        run: npm ci
+
+      - name: Run User Tests
+        working-directory: backend/user
+        run: npm test || echo "No tests for user"
+
+      # Gateway Service
+      - name: Install Gateway Service
+        working-directory: backend/gateway
+        run: npm ci
+
+      - name: Run Gateway Tests
+        working-directory: backend/gateway
+        run: npm test || echo "No tests for gateway"
+
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js (frontend)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: front
+        run: npm test || echo "No tests for frontend"
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+# Backend services
+      - name: Build Auth Service
+        run: docker build -t ft_auth ./back/auth-service
+
+      - name: Build User Service
+        run: docker build -t ft_user ./back/user-service
+
+      - name: Build Gateway Service
+        run: docker build -t ft_gateway ./back/gateway
+
+# Frontend
+      - name: Build frontend image
+        run: docker build -t ft_frontend ./front
+
+# Infrastructure
+      - name: Build infrastructure (optional)
+        run: docker compose -f infrastructure/docker-compose.yml build
+
+

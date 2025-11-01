@@ -1,0 +1,18 @@
+Running the Project
+
+
+1)  Backend Services
+To start each backend service, 
+navigate to the service’s folder and run:
+npm run build
+npm run start
+
+2)  Frontend
+The frontend runs via Docker.
+From the root of the frontend directory, execute:
+docker build -t ft_transcendence_frontend .
+docker run -p 8080:80 ft_transcendence_frontend
+
+3) Then open your browser and go to:
+http://localhost:8080
+
