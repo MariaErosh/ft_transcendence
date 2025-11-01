@@ -8,6 +8,8 @@ RUN npm install || echo "No dependencies yet"
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 3000
 
 
