@@ -4,8 +4,12 @@ services:
   #   ports:
   #     - "6379:6379"
   
+
   auth:
-    build: ../back/auth-service
+    build: 
+      context: ../back/auth-service
+      dockerfile: Dockerfile
+      target: prod
     container_name: auth
     ports:
       - "3001:3001"
@@ -15,7 +19,10 @@ services:
     - ../back/auth-service/.env
 
   user:
-    build: ../back/user-service
+    build: 
+      context: ../back/user-service
+      dockerfile: Dockerfile
+      target: prod
     container_name: user
     ports:
       - "3002:3002"
@@ -24,8 +31,22 @@ services:
     env_file:
     - ../back/user-service/.env
 
+  
+  game-engine:
+    build: 
+      context: ../back/game-engine
+      dockerfile: Dockerfile
+      target: prod
+    container_name: game-engine
+    ports:
+      - "3003:3003"
+
+
   gateway:
-    build: ../back/gateway
+    build: 
+      context: ../back/gateway
+      dockerfile: Dockerfile
+      target: prod
     container_name: gateway
     ports:
       - "3000:3000"

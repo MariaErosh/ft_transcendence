@@ -1,0 +1,13 @@
+# Shared dependencies base image
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+# Install common tools and global deps
+RUN npm install -g typescript
+
+# Optionally preinstall shared libraries (if many services use them)
+RUN npm install express cors dotenv
+
+# Clean up cache to keep it small
+RUN npm cache clean --force
