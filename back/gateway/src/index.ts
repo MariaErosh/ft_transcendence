@@ -12,6 +12,7 @@ const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
 const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
+const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 
 async function buildServer() {
 	const server = Fastify({ logger: true });
@@ -59,6 +60,13 @@ async function buildServer() {
 		prefix: "/users",
 		rewritePrefix: "/users",
 		http2: false,
+	});
+
+	await server.register(proxy, {
+		upstream: GENGINE_URL,
+		prefix: "/game",
+		rewritePrefix: "/game",
+		http2:false,
 	});
 
 	server.get("/health", async () => ({

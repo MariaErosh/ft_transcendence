@@ -1,4 +1,4 @@
-import { gameState, GameState, board} from "./gameSpecs.js";
+import { gameState, GameState, board } from "./gameSpecs.js";
 import { socket, showPlayMenu, waitForInput} from "./gameMenu.js"
 import { draw, drawNumber, drawText } from "./draw.js";
 
@@ -114,11 +114,31 @@ function showInstructions(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	readyBtn.textContent = 'READY';
 	readyBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
 	readyBtn.style.marginTop = '200px';
-	readyBtn.onclick = () => {
-		socket.send(JSON.stringify({ type: "ready" }));
+	readyBtn.onclick = async () => {
+		//socket.send(JSON.stringify({ type: "ready" }));
 		readyBtn.disabled = true;
 		readyBtn.textContent = 'WAITING...';
 		readyBtn.className = 'bg-gray-200 text-gray-400 text-2xl font-bold px-10 py-3 rounded w-64';
+		try {
+			const response = await fetch("http://localhost:3003/game/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					leftPlayer: { alias: "Alice", id: 11 },
+					rightPlayer: {alias: "Bob", id: 22 },
+					matchID: 33
+				}),
+			});
+			if (!response.ok) { //returns true if response code is between 200 and 299
+				const error = await response.text();
+				console.error("Game could not be started: ", error);
+			} else {
+				const result = await response.json();
+				console.log("Game started: ", result);
+			}
+		} catch (err) {
+			console.log("Error sendin POST request: ", err);
+		}
 	};
 	overlay.appendChild(readyBtn);
 

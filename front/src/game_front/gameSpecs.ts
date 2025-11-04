@@ -18,7 +18,7 @@ export let board: BoardConstants = {
 	MARGIN: 0
 }
 
-export interface Player { alias: string, id: number }
+export interface Player { id: number, alias: string }
 
 export interface GameState {
 	ball: { x: number; y: number };
