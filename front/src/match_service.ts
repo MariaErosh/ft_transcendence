@@ -1,4 +1,4 @@
-import { createConsoleMatch } from "./api.js";
+import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Renderling match making menu");
@@ -119,15 +119,20 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 	startButton.addEventListener('click', async () => {
 		try {
         const newGame = await createConsoleMatch(players);
+		sendGameToGameEngine(newGame);
         container.innerHTML = "";
-        const resultWindow = document.createElement("div");
-        resultWindow.className = `
-            bg-white text-black font-sans
-            w-3/5 h-1/3 overflow-y-auto
-            p-4 mb-8
-            flex flex-col gap-2`;
-        resultWindow.textContent = JSON.stringify(newGame, null, 2);
-        container.appendChild(resultWindow);
+        // const resultWindow = document.createElement("div");
+        // resultWindow.className = `
+        //     bg-white text-black font-sans
+        //     w-3/5 h-1/3 overflow-y-auto
+        //     p-4 mb-8
+        //     flex flex-col gap-2`;
+        // resultWindow.textContent = JSON.stringify(newGame, null, 2);
+        // container.appendChild(resultWindow);
+		const parent = container.parentElement;
+		if (!parent) throw new Error("Black box has no parent");
+		parent.innerHTML = "";
+
     } catch (error) {
         console.error("Failed to create match:", error);
         container.innerHTML = "";

@@ -55,6 +55,7 @@ server.get("/ws", {websocket: true }, (ws: WebSocket, req: FastifyRequest) => {
 let interval: NodeJS.Timeout | null = null;
 
 server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) => {
+	console.log("received post request with body: ", request.body);
 	const { leftPlayer, rightPlayer, matchID } = request.body as {
 		leftPlayer: { alias: string, id: number };
 		rightPlayer: { alias: string, id: number };
