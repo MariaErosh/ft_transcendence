@@ -24,15 +24,15 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 			DROP TABLE IF EXISTS matches;
 			CREATE TABLE IF NOT EXISTS matches (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				status TEXT NOT NULL
+				status TEXT NOT NULL,
+				type TEXT NOT NULL
 			);
 			CREATE TABLE IF NOT EXISTS players (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					auth_user_id INTEGER UNIQUE,
-					alias TEXT NOT NULL UNIQUE,
+					auth_user_id INTEGER,
+					alias TEXT NOT NULL,
 					match_id INTEGER NOT NULL,
 					status TEXT,
-					remote INTEGER,
 					FOREIGN KEY(match_id) REFERENCES matches(id)
 			);
 			CREATE TABLE IF NOT EXISTS games (

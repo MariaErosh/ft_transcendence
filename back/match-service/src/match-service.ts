@@ -1,5 +1,5 @@
 import { Database } from "sqlite3";
-import { Player, InputPlayer } from "./models";
+import { Player, PlayerPayload } from "./models";
 import { dbAll, dbRunQuery } from "./helpers";
 
 
@@ -7,9 +7,9 @@ import { dbAll, dbRunQuery } from "./helpers";
 export class MatchService {
 	constructor(private db: Database) { }
 
-	async addMatchRow() {
+	async addMatchRow(matchType: string) {
 		return new Promise<number>((resolve, reject) => {
-			this.db.run("INSERT INTO matches (status) VALUES ('IN PROGRESS')",
+			this.db.run("INSERT INTO matches (status, type) VALUES (?, ?)", ['IN PROGRESS', matchType],
 				function (err) {
 					if (err) { return reject(err) };
 					resolve(this.lastID);
@@ -17,12 +17,12 @@ export class MatchService {
 		})
 	}
 
-	async addPlayer(player: InputPlayer, match_id: number): Promise<number> {
+	async addPlayer(player: PlayerPayload, match_id: number): Promise<number> {
 		return new Promise<number>((resolve, reject) => {
 			this.db.run(
-				"INSERT INTO players(auth_user_id, alias, match_id, status, remote)" +
-				" VALUES(?, ?, ?, ?, ?)",
-				[player.auth_user_id, player.alias, match_id, 'NOT PLAYED', player.remote],
+				"INSERT INTO players(auth_user_id, alias, match_id, status)" +
+				" VALUES(?, ?, ?, ?)",
+				[player.auth_user_id, player.alias, match_id, 'NOT PLAYED'],
 				function (err) {
 					if (err) return reject(err);
 					resolve(this.lastID);
@@ -30,10 +30,10 @@ export class MatchService {
 		})
 	}
 
-	async createNewMatch(players: InputPlayer[]): Promise<number> {
+	async createNewMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
 		try {
 			await dbRunQuery(this.db, "BEGIN TRANSACTION");
-			const matchId = await this.addMatchRow();
+			const matchId = await this.addMatchRow(matchType);
 
 			for (let player of players) {
 				await this.addPlayer(player, matchId);

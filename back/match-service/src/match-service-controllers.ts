@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createMatchSchema } from "./schemas";
-import { InputPlayer } from "./models";
+import { CreateMatchPayload, GamePayload } from "./models";
 import { MatchService } from "./match-service";
 import dotenv from "dotenv";
 
@@ -17,17 +17,22 @@ function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 	return true;
 }
 
-interface CreateMatchPayload{
-	players: InputPlayer[];
-}
+
 
 export async function matchRoutes(fastify: FastifyInstance, matchService:MatchService){
 	fastify.post<{
 		Body: CreateMatchPayload
 	}>('/match', {schema: createMatchSchema}, async (request, reply) => {
 		// if (!ensureFromGateway(request, reply)) return;
-		const { players } = request.body;
-		const matchId = await matchService.createNewMatch(players);
-		return matchId;
+		const match = request.body;
+		const matchId = await matchService.createNewMatch(match.type, match.players);
+		const nextPlayers = await matchService.getNextPlayers(matchId);
+		//ADD ERROR CHECKING
+		let result: GamePayload = {
+			type: match.type,
+			leftPlayer: nextPlayers[0],
+			rightPlayer: nextPlayers[1],
+		}
+		return result;
 	})
 }

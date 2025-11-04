@@ -1,7 +1,7 @@
 import { renderLogin, renderRegister } from "./forms.js";
 
-export function renderMainMenu(container: HTMLElement) {
-  console.log("Rendering main menu");
+export function renderUserMenu(container: HTMLElement) {
+  console.log("Rendering user menu");
 //   container.innerHTML = "";
 
 // Create a fixed top-left menu wrapper so forms/menu don't clear the whole app
