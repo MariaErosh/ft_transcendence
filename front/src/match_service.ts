@@ -1,4 +1,4 @@
-import { createConsoleMatch } from "./api.js";
+import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Renderling match making menu");
@@ -119,6 +119,7 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 	startButton.addEventListener('click', async () => {
 		try {
         const newGame = await createConsoleMatch(players);
+		sendGameToGameEngine(newGame);
         container.innerHTML = "";
         // const resultWindow = document.createElement("div");
         // resultWindow.className = `
