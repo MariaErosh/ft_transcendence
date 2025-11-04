@@ -1,7 +1,7 @@
 import { startGame } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 
-export const socket = new WebSocket("ws://localhost:3003");
+export const socket = new WebSocket("ws://localhost:3003/ws");
 socket.onopen = () => {
 	console.log('Game-engine socket open');
 };

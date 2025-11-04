@@ -1,6 +1,6 @@
 import { renderMainMenu } from "./ui.js";
 // import { renderGameBoard } from "./game_purefront/gameMenu.js";
-import { renderGameBoard } from "./game_PARTfront/gameMenu.js";
+import { renderGameBoard } from "./game_front/gameMenu.js";
 
 const app = document.getElementById("app");
 // const game = document.getElementById("game");
