@@ -31,8 +31,8 @@ export async function matchRoutes(fastify: FastifyInstance, matchService:MatchSe
 		let result: GamePayload = {
 			type: match.type,
 			matchId: matchId,
-			leftPlayer: {auth_user_id: nextPlayers[0]!.auth_user_id, alias: nextPlayers[0]!.alias },
-			rightPlayer: {auth_user_id: nextPlayers[1]!.auth_user_id, alias: nextPlayers[1]!.alias },
+			leftPlayer: {id: nextPlayers[0]!.auth_user_id, alias: nextPlayers[0]!.alias },
+			rightPlayer: {id: nextPlayers[1]!.auth_user_id, alias: nextPlayers[1]!.alias },
 		}
 		return result;
 	})

@@ -62,3 +62,23 @@ export async function createConsoleMatch(aliases:string[]) {
 	return data;
 }
 
+export interface Player {
+    id: number | null,
+    alias: string,
+}
+export interface GameInstance {
+    type: string;
+    matchId: number;
+    leftPlayer: Player;
+    rightPlayer: Player;
+}
+
+export async function sendGameToGameEngine(game:GameInstance){
+	const res = await fetch (`http://localhost:3003/game/start`, {
+		method: "POST",
+		headers: {"Content-Type": "application/json" },
+		body: JSON.stringify(game)
+	});
+	// const data = await res.json();
+	console.log("Data sent to game engine");
+}

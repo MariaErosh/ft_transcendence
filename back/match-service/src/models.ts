@@ -20,7 +20,7 @@ export interface Game {
 }
 
 export interface PlayerPayload {
-	auth_user_id: number | null,
+	id: number | null,
 	alias: string,
 }
 

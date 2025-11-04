@@ -120,14 +120,18 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 		try {
         const newGame = await createConsoleMatch(players);
         container.innerHTML = "";
-        const resultWindow = document.createElement("div");
-        resultWindow.className = `
-            bg-white text-black font-sans
-            w-3/5 h-1/3 overflow-y-auto
-            p-4 mb-8
-            flex flex-col gap-2`;
-        resultWindow.textContent = JSON.stringify(newGame, null, 2);
-        container.appendChild(resultWindow);
+        // const resultWindow = document.createElement("div");
+        // resultWindow.className = `
+        //     bg-white text-black font-sans
+        //     w-3/5 h-1/3 overflow-y-auto
+        //     p-4 mb-8
+        //     flex flex-col gap-2`;
+        // resultWindow.textContent = JSON.stringify(newGame, null, 2);
+        // container.appendChild(resultWindow);
+		const parent = container.parentElement;
+		if (!parent) throw new Error("Black box has no parent");
+		parent.innerHTML = "";
+
     } catch (error) {
         console.error("Failed to create match:", error);
         container.innerHTML = "";

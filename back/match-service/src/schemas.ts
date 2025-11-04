@@ -13,7 +13,7 @@ export const createMatchSchema = {
 					type: 'object',
 					required: ['alias'],
 					properties: {
-						auth_user_id: { type:['number', 'null']},
+						id: { type:['number', 'null']},
 						alias: { type: 'string' },
 					}
 				}
