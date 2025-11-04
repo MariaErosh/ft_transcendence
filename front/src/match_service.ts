@@ -1,4 +1,5 @@
 import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
+import { renderGameBoard } from "./game_front/gameMenu.js";
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Renderling match making menu");
@@ -121,6 +122,7 @@ export function renderNewConsoleTournament(container: HTMLElement) {
         const newGame = await createConsoleMatch(players);
 		sendGameToGameEngine(newGame);
         container.innerHTML = "";
+	renderGameBoard(container);
         // const resultWindow = document.createElement("div");
         // resultWindow.className = `
         //     bg-white text-black font-sans

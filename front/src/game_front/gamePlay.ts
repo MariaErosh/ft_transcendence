@@ -24,17 +24,9 @@ function sendKey(code: string, pressed: boolean) {
 }
 
 export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	// console.log('starting game');
-	// overlay.innerHTML = '';
-	
-	// const instructions = [
-	// 	"Use 'W' and 'S' keys for left paddle.", 
-	// 	"Use UP and DOWN arrows for right paddle.",
-	// 	"Press ESC to return to the menu"
-	// ];
-	// drawText(canvas, instructions);
 
-	showInstructions(overlay, canvas);
+	//showInstructions(overlay, canvas);
+	overlay.innerHTML = '';
 
 	socket.addEventListener("message", (event) => {
 	const message = JSON.parse(event.data);

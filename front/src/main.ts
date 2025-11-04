@@ -9,7 +9,5 @@ const app = document.getElementById("app");
 if (app) {
 	console.log("Rendering user menu");
 	renderUserMenu(app);
-	// console.log("Rendering game area");
-	// renderGameBoard(app);
 	renderCreateTournamentForm(app);
 }

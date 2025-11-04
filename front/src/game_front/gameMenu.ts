@@ -28,16 +28,17 @@ export async function renderGameBoard(container: HTMLElement) {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return console.log("ctx failed to load inside renderGameBoard function");
 
+
 	// menu overlay
-	const playMenu = document.createElement('div');
-	playMenu.id = 'play-menu';
-	playMenu.className = 'absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded';
+	// const playMenu = document.createElement('div');
+	// playMenu.id = 'play-menu';
+	// playMenu.className = 'absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded';
 
-	// create initial menu
-	showPlayMenu(playMenu, canvas);
+	// // create initial menu
+	// showPlayMenu(playMenu, canvas);
 
-	wrapper.appendChild(playMenu);
 	container.appendChild(wrapper);
+	startGame(wrapper, canvas);
 
 }
 

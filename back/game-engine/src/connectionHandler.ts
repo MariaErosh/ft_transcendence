@@ -32,6 +32,7 @@ server.get("/ws", {websocket: true }, (ws: WebSocket, req: FastifyRequest) => {
 	
 	if (ws.readyState === WebSocket.OPEN) {
 		ws.send(JSON.stringify({ type: "consts", data: board}));
+		ws.send(JSON.stringify({type: "set", data: gameState}));
 	}
 	ws.on('message', (data: RawData) => {
 		try {
@@ -56,23 +57,20 @@ let interval: NodeJS.Timeout | null = null;
 
 server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) => {
 	console.log("received post request with body: ", request.body);
-	const { leftPlayer, rightPlayer, matchID } = request.body as {
+	const { leftPlayer, rightPlayer, matchId, type } = request.body as {
 		leftPlayer: { alias: string, id: number };
 		rightPlayer: { alias: string, id: number };
-		matchID: number;
+		matchId: number;
+		type: string;
 	};
 
-	if(!leftPlayer || !rightPlayer || !matchID) {
+	if(!leftPlayer || !rightPlayer || !matchId || !type) {
 		return reply.status(400).send({error: "Missing player info or match id" });
 	}
 	gameState.leftPlayer = leftPlayer;
 	gameState.rightPlayer = rightPlayer;
-	gameState.matchID = matchID;
+	gameState.matchID = matchId;
 	console.log("Received /game/start, notifying client via WS");
-
-	for (const client of clients) {
-		client.send(JSON.stringify({type: "set", data: gameState}));
-	}
 	return reply.send({ok: true, message: "game started, client notified"});	
 });
 
