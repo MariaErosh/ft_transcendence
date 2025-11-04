@@ -25,5 +25,8 @@ export async function register(username: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
-  return res.json();
+  //return res.json();
+  const data = await res.json();
+  console.log("Register response:", data);
+  return data;
 }
