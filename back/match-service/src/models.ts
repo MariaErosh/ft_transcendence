@@ -6,7 +6,7 @@ export interface Match {
 
 export interface Player{
 	id: number,
-	auth_user_id: number,
+	auth_user_id: number | null,
 	alias: string,
 	match_id: number,
 	status: string,
@@ -31,6 +31,7 @@ export interface CreateMatchPayload{
 
 export interface GamePayload{
 	type: string;
+	matchId: number;
 	leftPlayer: PlayerPayload;
 	rightPlayer: PlayerPayload;
 }
