@@ -121,10 +121,11 @@ function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	if (!ctx) return console.log('ctx failed to load inside loop function');
 
 	draw(canvas);
-	if (keys['Escape']) {
+	if (stopGame) {
 		keys['Escape'] = false;
+		stopGame = false;
 		cancelAnimationFrame(frameID);
-		ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
+		//ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
 		const rootContainer = document.getElementById('app') as HTMLElement;
 		cleanup();
 		renderCreateTournamentForm(rootContainer);
@@ -140,7 +141,7 @@ export function cleanup() {
 	window.removeEventListener('keyup', handleKeyUp);
 	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
 	if (gameBoard) gameBoard.remove();
-	disconnectEngine();
+	//disconnectEngine();
 }
 
 

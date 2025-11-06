@@ -9,22 +9,23 @@ import { board, BoardConstants } from "./gameSpecs.js";
 export let socket: WebSocket;
 let boardPromise: Promise<BoardConstants> | null = null;
 
-export function connectEngine(): Promise<BoardConstants> {
-	if (boardPromise) return boardPromise; // reuse the same promise if already connecting
+export function setupSocket(): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if (socket && socket.readyState === WebSocket.OPEN)
+			return resolve();
 
-	boardPromise = new Promise((resolve, reject) => {
-		socket = new WebSocket("ws://localhost:3003/ws");
-
-		socket.addEventListener("open", () => {
+	socket = new WebSocket("ws://localhost:3003/ws");
+	socket.addEventListener("open", () => {
 			console.log("Game engine socket open");
+			resolve();
 		});
 
 		socket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
-			if (message.type === "consts") {
-				console.log("received consts from backend");
-				resolve(message.data);
-			}
+			// if (message.type === "consts") {
+			// 	console.log("received consts from backend: ", message.data);
+			// 	consts = message.data;
+			// }
 		});
 
 		socket.addEventListener("error", (err) => {
@@ -36,16 +37,54 @@ export function connectEngine(): Promise<BoardConstants> {
 		// 	console.warn("Socket closed");
 		// });
 	});
-
-	return boardPromise;
 }
+
+
+// export function connectEngine(): Promise<BoardConstants> {
+// 	if (boardPromise) return boardPromise; // reuse the same promise if already connecting
+
+// 	boardPromise = new Promise((resolve, reject) => {
+// 		socket = new WebSocket("ws://localhost:3003/ws");
+
+// 		socket.addEventListener("open", () => {
+// 			console.log("Game engine socket open");
+// 		});
+
+// 		socket.addEventListener("message", (event) => {
+// 			const message = JSON.parse(event.data);
+// 			if (message.type === "consts") {
+// 				console.log("received consts from backend");
+// 				resolve(message.data);
+// 			}
+// 		});
+
+// 		socket.addEventListener("error", (err) => {
+// 			console.error("Socket connection error:", err);
+// 			reject(err);
+// 		});
+
+// 		// socket.addEventListener("close", () => {
+// 		// 	console.warn("Socket closed");
+// 		// });
+// 	});
+
+// 	return boardPromise;
+// }
+
+// function getConsts(): BoardConstants {
+// 	if (consts != null) return consts;
+// 	else 
+		
+
+// }
 
 export async function renderGameBoard(container: HTMLElement) {
 	//container.innerHTML = '';
 
+	await setupSocket();
 	console.log("waiting for board constants");
-	//const getConsts = await waitForInput<BoardConstants>("consts");
-	const getConsts = await connectEngine();
+	const getConsts = await waitForInput<BoardConstants>("consts");
+	//const getConsts = await getConsts();
 	Object.assign(board, getConsts);
 	
 	console.log("Received board constants:", board);
@@ -81,6 +120,9 @@ export async function renderGameBoard(container: HTMLElement) {
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
+		if (expectedType == "consts") {
+			socket.send(JSON.stringify({ type: "getconsts" }));
+		}
 		socket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
 			if (message.type === expectedType) {

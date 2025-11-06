@@ -27,7 +27,7 @@ server.get("/ws", {websocket: true }, (ws: WebSocket, req: FastifyRequest) => {
 	clients.add(ws);
 	console.log('Client connected via websocket');
 
-	console.log("sending const and set message to front end");
+	console.log("sending set message to front end");
 	ws.send(JSON.stringify({ type: "consts", data: board}));
 	ws.send(JSON.stringify({type: "set", data: gameState}));
 	ws.on('message', (data: RawData) => {
@@ -66,9 +66,17 @@ server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) =
 	return reply.send({ok: true, message: "game started, client notified"});	
 });
 
+server.get("/game/stop", async(request: FastifyRequest, reply: FastifyReply) => {
+	console.log("received stop request");
+	const ws = [...clients][0];
+	ws.send(JSON.stringify({ type: "stop" }));
+	console.log("Stop message sent to client");
+
+	return reply.send({ ok: true, message: "stop message sent" });
+});
+
 await server.listen({ port: PORT, host: "0.0.0.0" });
 console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
-
 
 
 function handleMessage(ws: WebSocket, message: any) {
@@ -77,6 +85,8 @@ function handleMessage(ws: WebSocket, message: any) {
 			console.log('Client is ready, starting game');
 			ws.send(JSON.stringify({type: "set", data: gameState}));
 		}
+		if (message.type === "getconsts")
+			ws.send(JSON.stringify({ type: "consts", data: board}));
 		if (message.type === "please serve") {
 			console.log("serving ball");
 			serveBall();
