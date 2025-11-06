@@ -1,32 +1,75 @@
 import { startGame } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 
-export const socket = new WebSocket("ws://localhost:3003/ws");
-socket.onopen = () => {
-	console.log('Game-engine socket open');
-};
+// export const socket = new WebSocket("ws://localhost:3003/ws");
+// socket.onopen = () => {
+// 	console.log('Game-engine socket open');
+// };
+
+export let socket: WebSocket;
+let boardPromise: Promise<BoardConstants> | null = null;
+
+export function connectEngine(): Promise<BoardConstants> {
+	if (boardPromise) return boardPromise; // reuse the same promise if already connecting
+
+	boardPromise = new Promise((resolve, reject) => {
+		socket = new WebSocket("ws://localhost:3003/ws");
+
+		socket.addEventListener("open", () => {
+			console.log("Game engine socket open");
+		});
+
+		socket.addEventListener("message", (event) => {
+			const message = JSON.parse(event.data);
+			if (message.type === "consts") {
+				console.log("received consts from backend");
+				resolve(message.data);
+			}
+		});
+
+		socket.addEventListener("error", (err) => {
+			console.error("Socket connection error:", err);
+			reject(err);
+		});
+
+		socket.addEventListener("close", () => {
+			console.warn("Socket closed");
+		});
+	});
+
+	return boardPromise;
+}
 
 export async function renderGameBoard(container: HTMLElement) {
+	container.innerHTML = '';
 
 	console.log("waiting for board constants");
-	const getConsts = await waitForInput<BoardConstants>("consts");
+	//const getConsts = await waitForInput<BoardConstants>("consts");
+	const getConsts = await connectEngine();
 	Object.assign(board, getConsts);
 	
+	console.log("Received board constants:", board);
 	// create wrapper for canvas + menu overlay
-	const wrapper = document.createElement('div');
-	wrapper.className = `relative w-[${board.CANVAS_WIDTH}px] [${board.CANVAS_HEIGHT}px]`;
+	// const wrapper = document.createElement('div');
+	// wrapper.style.width = board.CANVAS_WIDTH + "px";
+	// wrapper.style.height = board.CANVAS_HEIGHT + "px";
+	// wrapper.className = "relative";
 	
+
 	//creating canvas
 	const canvas = document.createElement('canvas');
 	canvas.id = 'game-board';
 	canvas.width = board.CANVAS_WIDTH;
 	canvas.height =  board.CANVAS_HEIGHT;
 	canvas.className = 'rounded';
+	//canvas.style.display = "block"; // prevents inline canvas from collapsing
 	canvas.style.backgroundColor = 'black';
-	wrapper.appendChild(canvas);
+	//wrapper.appendChild(canvas);
 
-	const ctx = canvas.getContext('2d');
-	if (!ctx) return console.log("ctx failed to load inside renderGameBoard function");
+	container.appendChild(canvas);
+
+	// const ctx = canvas.getContext('2d');
+	// if (!ctx) return console.log("ctx failed to load inside renderGameBoard function");
 
 
 	// menu overlay
@@ -36,9 +79,11 @@ export async function renderGameBoard(container: HTMLElement) {
 
 	// // create initial menu
 	// showPlayMenu(playMenu, canvas);
+	//container.appendChild(wrapper);
 
-	container.appendChild(wrapper);
-	startGame(wrapper, canvas);
+	
+	// NEED TO MAKE A SEPERATE OVERLAY HERE SO IT CAN LATER DO THE LAYER OVER THE GAME ETC.
+	startGame(container, canvas);
 
 }
 

@@ -18,6 +18,11 @@ window.addEventListener('keyup', (e: KeyboardEvent) => {
 		sendKey(e.code, false); }});
 
 function sendKey(code: string, pressed: boolean) {
+	if (!socket) {
+		//console.warn("Socket not initialized yet");
+		return;
+	}
+
 	if (socket.readyState === WebSocket.OPEN) {
 		socket.send(JSON.stringify({ type: "input", data: { code, pressed }}));
 	}
@@ -26,7 +31,7 @@ function sendKey(code: string, pressed: boolean) {
 export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 
 	//showInstructions(overlay, canvas);
-	overlay.innerHTML = '';
+	//overlay.innerHTML = '';
 
 	socket.addEventListener("message", (event) => {
 	const message = JSON.parse(event.data);
@@ -71,7 +76,7 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 
 	const getState = await waitForInput<GameState>("set");
 	Object.assign(gameState, getState);
-	overlay.style.display = 'none';
+	//overlay.style.display = 'none';
 	draw(canvas);
 	startCountdown(3, canvas, () => {
 		socket.send(JSON.stringify({ type: "please serve" }));

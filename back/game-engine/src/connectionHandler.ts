@@ -29,11 +29,9 @@ server.get("/ws", {websocket: true }, (ws: WebSocket, req: FastifyRequest) => {
 	clients.add(ws);
 	console.log('Client connected via websocket');
 
-	
-	if (ws.readyState === WebSocket.OPEN) {
-		ws.send(JSON.stringify({ type: "consts", data: board}));
-		ws.send(JSON.stringify({type: "set", data: gameState}));
-	}
+	console.log("sending const and set message to front end");
+	ws.send(JSON.stringify({ type: "consts", data: board}));
+	ws.send(JSON.stringify({type: "set", data: gameState}));
 	ws.on('message', (data: RawData) => {
 		try {
 			const message = JSON.parse(data.toString());

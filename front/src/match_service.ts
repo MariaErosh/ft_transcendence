@@ -50,7 +50,7 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			consoleButton.addEventListener("click", () => {
-				renderNewConsoleTournament(box);
+				renderNewConsoleTournament(container, box);
 			})
 
 			box.classList.add("flex-col", "gap-6");
@@ -67,13 +67,13 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 
 
 
-export function renderNewConsoleTournament(container: HTMLElement) {
-	container.innerHTML = "";
+export function renderNewConsoleTournament(container: HTMLElement, box: HTMLElement) {
+	box.innerHTML = "";
 
 	const title = document.createElement('div');
 	title.textContent = "Enter at least two players for the tournament";
 	title.className = "text-white text-4xl font-sans font-semibold mb-8";
-	container.appendChild(title);
+	box.appendChild(title);
 
 	const playersBox = document.createElement('div');
 	playersBox.className = `
@@ -82,7 +82,7 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 		p-4 mb-8
 		flex flex-col gap-2
 	`;
-	container.appendChild(playersBox);
+	box.appendChild(playersBox);
 
 	const inputRow = document.createElement('div');
 	inputRow.className = "flex items-center gap-4 mb-8";
@@ -104,7 +104,7 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 	`;
 	inputRow.appendChild(addButton);
 
-	container.appendChild(inputRow);
+	box.appendChild(inputRow);
 	const startButton = document.createElement("button");
 	startButton.textContent = "START TOURNAMENT";
 	startButton.disabled = true;
@@ -113,16 +113,15 @@ export function renderNewConsoleTournament(container: HTMLElement) {
 		w-2/5 h-1/5 text-3xl
 		transition
 	`;
-	container.appendChild(startButton);
+	box.appendChild(startButton);
 
 	//--LOGIC--
 	const players: string[] = [];
 	startButton.addEventListener('click', async () => {
 		try {
         const newGame = await createConsoleMatch(players);
-		sendGameToGameEngine(newGame);
-        container.innerHTML = "";
-	renderGameBoard(container);
+		await sendGameToGameEngine(newGame);
+        box.innerHTML = "";		
         // const resultWindow = document.createElement("div");
         // resultWindow.className = `
         //     bg-white text-black font-sans
@@ -131,17 +130,17 @@ export function renderNewConsoleTournament(container: HTMLElement) {
         //     flex flex-col gap-2`;
         // resultWindow.textContent = JSON.stringify(newGame, null, 2);
         // container.appendChild(resultWindow);
-		const parent = container.parentElement;
+		const parent = box.parentElement;
 		if (!parent) throw new Error("Black box has no parent");
-		parent.innerHTML = "";
+		renderGameBoard(container);
 
     } catch (error) {
         console.error("Failed to create match:", error);
-        container.innerHTML = "";
+        box.innerHTML = "";
         const errorWindow = document.createElement("div");
         errorWindow.className = "text-red-500 text-2xl p-4";
         errorWindow.textContent = `Error: ${error instanceof Error ? error.message : 'Failed to create match'}`;
-        container.appendChild(errorWindow);
+        box.appendChild(errorWindow);
     }
 	});
 	function refreshPlayersList() {
