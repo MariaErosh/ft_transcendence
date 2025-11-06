@@ -32,16 +32,16 @@ export function connectEngine(): Promise<BoardConstants> {
 			reject(err);
 		});
 
-		socket.addEventListener("close", () => {
-			console.warn("Socket closed");
-		});
+		// socket.addEventListener("close", () => {
+		// 	console.warn("Socket closed");
+		// });
 	});
 
 	return boardPromise;
 }
 
 export async function renderGameBoard(container: HTMLElement) {
-	container.innerHTML = '';
+	//container.innerHTML = '';
 
 	console.log("waiting for board constants");
 	//const getConsts = await waitForInput<BoardConstants>("consts");
@@ -50,10 +50,12 @@ export async function renderGameBoard(container: HTMLElement) {
 	
 	console.log("Received board constants:", board);
 	// create wrapper for canvas + menu overlay
-	// const wrapper = document.createElement('div');
-	// wrapper.style.width = board.CANVAS_WIDTH + "px";
-	// wrapper.style.height = board.CANVAS_HEIGHT + "px";
-	// wrapper.className = "relative";
+	const wrapper = document.createElement('div');
+	wrapper.style.width = board.CANVAS_WIDTH + "px";
+	wrapper.style.height = board.CANVAS_HEIGHT + "px";
+	wrapper.className = "relative";
+	wrapper.id = 'game-board-wrapper';
+	container.appendChild(wrapper);
 	
 
 	//creating canvas
@@ -64,26 +66,16 @@ export async function renderGameBoard(container: HTMLElement) {
 	canvas.className = 'rounded';
 	//canvas.style.display = "block"; // prevents inline canvas from collapsing
 	canvas.style.backgroundColor = 'black';
-	//wrapper.appendChild(canvas);
+	wrapper.appendChild(canvas);
 
-	container.appendChild(canvas);
+	const overlay = document.createElement('div');
+	overlay.style.position = 'absolute';
+	overlay.style.inset = '0';
+	overlay.className = 'absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded';
+	overlay.style.display = "none";
+	wrapper.appendChild(overlay);
 
-	// const ctx = canvas.getContext('2d');
-	// if (!ctx) return console.log("ctx failed to load inside renderGameBoard function");
-
-
-	// menu overlay
-	// const playMenu = document.createElement('div');
-	// playMenu.id = 'play-menu';
-	// playMenu.className = 'absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center rounded';
-
-	// // create initial menu
-	// showPlayMenu(playMenu, canvas);
-	//container.appendChild(wrapper);
-
-	
-	// NEED TO MAKE A SEPERATE OVERLAY HERE SO IT CAN LATER DO THE LAYER OVER THE GAME ETC.
-	startGame(container, canvas);
+	startGame(overlay, canvas);
 
 }
 
@@ -99,56 +91,65 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 	});
 }
 
-
-export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	overlay.innerHTML = '';
-	overlay.style.display = 'flex';
-
-	
-	const menu = document.createElement('div');
-	menu.className = 'flex flex-col gap-4 items-center';
-
-	const playBtn = document.createElement('button');
-	playBtn.textContent = 'PLAY PONG';
-	playBtn.className = 'bg-red-500 text-white text-3xl font-bold px-12 py-4 rounded hover:bg-red-600 transition';
-	playBtn.onclick = () => {
-		showGameMenu(overlay, canvas);
-	};
-	menu.appendChild(playBtn);
-	overlay.appendChild(menu);
+export function disconnectEngine() {
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		socket.close();
+	}
+	socket = null as any;
+	boardPromise = null;
 }
 
-function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	overlay.innerHTML = '';
 
-	const menu = document.createElement('div');
-	menu.className = 'flex flex-col gap-4 items-center';
+
+// export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
+// 	overlay.innerHTML = '';
+// 	overlay.style.display = 'flex';
+
 	
-	const title = document.createElement('h2');
-	title.textContent = 'SELECT MODE';
-	title.className = 'text-white text-4xl font-bold mb-6';
-	menu.appendChild(title);
+// 	const menu = document.createElement('div');
+// 	menu.className = 'flex flex-col gap-4 items-center';
 
-	// Select Options Button: WILL BE REPLACED LATER WITH GAME MANAGEMENT LOGIC
-	const selectOptionsBtn = document.createElement('button');
-	selectOptionsBtn.textContent = 'SELECT OPTIONS';
-	selectOptionsBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-	selectOptionsBtn.onclick = () => {
-		// Enable start button
-		startGameBtn.disabled = false;
-		startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
-		startGameBtn.onclick = () => {
-			startGame(overlay, canvas);
-		};
-	};
-	menu.appendChild(selectOptionsBtn);
+// 	const playBtn = document.createElement('button');
+// 	playBtn.textContent = 'PLAY PONG';
+// 	playBtn.className = 'bg-red-500 text-white text-3xl font-bold px-12 py-4 rounded hover:bg-red-600 transition';
+// 	playBtn.onclick = () => {
+// 		showGameMenu(overlay, canvas);
+// 	};
+// 	menu.appendChild(playBtn);
+// 	overlay.appendChild(menu);
+// }
 
-	// Start Game Button (initially disabled, will enable when options are selected) 
-	const startGameBtn = document.createElement('button');
-	startGameBtn.textContent = 'START GAME';
-	startGameBtn.className = 'bg-gray-400 text-gray-600 text-2xl font-bold px-10 py-3 rounded w-64 cursor-not-allowed';
-	startGameBtn.disabled = true;
-	menu.appendChild(startGameBtn);
+// function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
+// 	overlay.innerHTML = '';
 
-	overlay.appendChild(menu);
-}
+// 	const menu = document.createElement('div');
+// 	menu.className = 'flex flex-col gap-4 items-center';
+	
+// 	const title = document.createElement('h2');
+// 	title.textContent = 'SELECT MODE';
+// 	title.className = 'text-white text-4xl font-bold mb-6';
+// 	menu.appendChild(title);
+
+// 	// Select Options Button: WILL BE REPLACED LATER WITH GAME MANAGEMENT LOGIC
+// 	const selectOptionsBtn = document.createElement('button');
+// 	selectOptionsBtn.textContent = 'SELECT OPTIONS';
+// 	selectOptionsBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
+// 	selectOptionsBtn.onclick = () => {
+// 		// Enable start button
+// 		startGameBtn.disabled = false;
+// 		startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
+// 		startGameBtn.onclick = () => {
+// 			startGame(overlay, canvas);
+// 		};
+// 	};
+// 	menu.appendChild(selectOptionsBtn);
+
+// 	// Start Game Button (initially disabled, will enable when options are selected) 
+// 	const startGameBtn = document.createElement('button');
+// 	startGameBtn.textContent = 'START GAME';
+// 	startGameBtn.className = 'bg-gray-400 text-gray-600 text-2xl font-bold px-10 py-3 rounded w-64 cursor-not-allowed';
+// 	startGameBtn.disabled = true;
+// 	menu.appendChild(startGameBtn);
+
+// 	overlay.appendChild(menu);
+// }

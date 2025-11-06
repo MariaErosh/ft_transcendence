@@ -50,8 +50,13 @@ function drawScore(ctx: CanvasRenderingContext2D) {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'top';
 
-	ctx.fillText(gameState.score.left.toString(), board.CANVAS_WIDTH / 2 - 100, 20);
-	ctx.fillText(gameState.score.right.toString(), board.CANVAS_WIDTH / 2 + 100, 20);
+	const leftStat = gameState.current.leftPlayer.alias.concat(" ", gameState.score.left.toString());
+	const rightStat = gameState.current.rightPlayer.alias.concat(" ", gameState.score.right.toString());
+	
+	ctx.textAlign = 'right'
+	ctx.fillText(leftStat, board.CANVAS_WIDTH / 2 - 50, 20);
+	ctx.textAlign = 'left'
+	ctx.fillText(rightStat, board.CANVAS_WIDTH / 2 + 50, 20);
 }
 
 export function drawText(canvas: HTMLCanvasElement, lines: string[]) {

@@ -5,6 +5,10 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Renderling match making menu");
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null;
+	if (wrapper) {
+		wrapper.remove(); // remove any old one
+	}
+	wrapper = document.getElementById("match-menu") as HTMLElement | null;
 	if (!wrapper) {
 		wrapper = document.createElement('div');
 		wrapper.id = 'match-menu';

@@ -1,4 +1,4 @@
-import { board, gameState} from "./gameSpecs.js";
+import { board, gameState, GameObject, whichSide} from "./gameSpecs.js";
 import { playerKeys } from "./connectionHandler.js";
 
 let paused = false;
@@ -30,8 +30,8 @@ export function updatePos(): void | number {
 	{
 		gameState.ball.x - board.BALL_RADIUS / 2 <= 0 ? gameState.score.right++ : gameState.score.left++;
 		if (gameState.score.right >= 5 || gameState.score.left >= 5) {
-			gameState.score.right >= 5 ? gameState.winner = { alias: gameState.rightPlayer.alias, id: gameState.rightPlayer.id} 
-				: gameState.winner = { alias: gameState.leftPlayer.alias, id: gameState.leftPlayer.id };
+			gameState.score.right >= 5 ? gameState.winner = { alias: gameState.current.rightPlayer.alias, id: gameState.current.rightPlayer.id} 
+				: gameState.winner = { alias: gameState.current.leftPlayer.alias, id: gameState.current.leftPlayer.id };
 			return 1;
 		}
 		serveBall();
@@ -104,8 +104,15 @@ function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function resetSpecs() {
+export function resetSpecs(next: GameObject | -1) {
 	
+	if (next === -1 || next.matchId === -1) {
+		gameState.current.leftPlayer = { alias: 'left', id: -1 };
+		gameState.current.rightPlayer = { alias: 'right', id: -2 };
+		gameState.current.matchId = -1;
+		gameState.current.type = 'none';
+	} else
+		gameState.current = next;
 	// Reset gameState to initial values
 	gameState.ball.x = board.CANVAS_WIDTH / 2;
 	gameState.ball.y = board.CANVAS_HEIGHT / 2;
@@ -116,10 +123,7 @@ export function resetSpecs() {
 	gameState.speed.p = 5;
 	gameState.score.left = 0;
 	gameState.score.right = 0;
-	gameState.servingPlayer = 'left';
-	gameState.leftPlayer = { alias: 'left', id: -1 };
-	gameState.rightPlayer = { alias: 'right', id: -2 };
-	gameState.matchID = -1;
+	gameState.servingPlayer = whichSide();
 	gameState.winner.id = -1;
 	gameState.winner.alias = 'none';
 }
