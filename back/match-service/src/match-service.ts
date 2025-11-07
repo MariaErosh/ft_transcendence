@@ -1,6 +1,6 @@
 import { Database } from "sqlite3";
 import { Player, PlayerPayload } from "./models";
-import { dbAll, dbRunQuery } from "./helpers";
+import { dbAll, dbGet, dbRunQuery } from "./helpers";
 
 
 
@@ -22,7 +22,7 @@ export class MatchService {
 			this.db.run(
 				"INSERT INTO players(auth_user_id, alias, match_id, status)" +
 				" VALUES(?, ?, ?, ?)",
-				[player.auth_user_id, player.alias, match_id, 'NOT PLAYED'],
+				[player.id, player.alias, match_id, 'NOT PLAYED'],
 				function (err) {
 					if (err) return reject(err);
 					resolve(this.lastID);
@@ -49,7 +49,6 @@ export class MatchService {
 	}
 
 	pickTwoRandomPlayers(players: Player[]): [Player, Player] {
-		console.log("Getting random players");
 		let player1 = Math.floor(Math.random() * players.length);
 		let player2 = player1;
 		do {
@@ -75,6 +74,7 @@ export class MatchService {
 
 	async setPlayerStatus(playerId: number, status: string) {
 		await dbRunQuery(this.db, "UPDATE players SET status = ? WHERE id = ?", [status, playerId]);
+		let result = await dbGet(this.db, "SELECT * FROM players WHERE id = ?", [playerId]);
 	}
 
 	async getNextPlayers(matchId: number): Promise<Player[]> {
@@ -90,15 +90,23 @@ export class MatchService {
 		return players;
 	}
 
-	async recordGameResults(loserId: number, winnerId: number) {
+	async recordGameResults(matchId: number, loserAlias: string, winnerAlias: string) {
+		const loser = await dbGet(this.db, "SELECT id FROM players WHERE match_id = ? AND alias = ?", [matchId, loserAlias]);
+		const winner = await dbGet(this.db, "SELECT id FROM players WHERE match_id = ? AND alias = ?", [matchId, winnerAlias]);
+		if (!loser.id || !winner.id) throw new Error("Did not find the player id to record win/loss");
 		try {
-			await this.setPlayerStatus(loserId, "LOST");
-			await this.setPlayerStatus(winnerId, "WON");
+			await this.setPlayerStatus(loser.id, "LOST");
+			await this.setPlayerStatus(winner.id, "WON");
 		}
 		catch (err) {
 			throw new Error("Database error recording game results: " + err);
 		}
 		//LOGIC TO SEND RESULTS TO USER SERVICE
+	}
+
+	async getMatchById(matchId:number){
+		const match = await dbGet(this.db, "SELECT * from matches WHERE id = ?", [matchId]);
+		return match;
 	}
 }
 

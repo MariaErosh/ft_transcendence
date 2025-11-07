@@ -2,7 +2,7 @@ import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
 import { renderGameBoard } from "./game_front/gameMenu.js";
 
 export function renderCreateTournamentForm(container: HTMLElement) {
-	console.log("Renderling match making menu");
+	console.log("Rendering match making menu");
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null;
 	if (wrapper) {
@@ -125,15 +125,7 @@ export function renderNewConsoleTournament(container: HTMLElement, box: HTMLElem
 		try {
         const newGame = await createConsoleMatch(players);
 		await sendGameToGameEngine(newGame);
-        box.innerHTML = "";		
-        // const resultWindow = document.createElement("div");
-        // resultWindow.className = `
-        //     bg-white text-black font-sans
-        //     w-3/5 h-1/3 overflow-y-auto
-        //     p-4 mb-8
-        //     flex flex-col gap-2`;
-        // resultWindow.textContent = JSON.stringify(newGame, null, 2);
-        // container.appendChild(resultWindow);
+        box.innerHTML = "";
 		const parent = box.parentElement;
 		if (!parent) throw new Error("Black box has no parent");
 		renderGameBoard(container);

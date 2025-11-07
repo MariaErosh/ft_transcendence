@@ -63,7 +63,7 @@ server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) =
 	gameState.current.matchId = matchId;
 	gameState.current.type = type;
 	console.log("Received /game/start, notifying client via WS");
-	return reply.send({ok: true, message: "game started, client notified"});	
+	return reply.send({ok: true, message: "game started, client notified"});
 });
 
 await server.listen({ port: PORT, host: "0.0.0.0" });
@@ -85,7 +85,7 @@ function handleMessage(ws: WebSocket, message: any) {
 				if (updatePos() === 1) {
 					if (interval) clearInterval(interval);
 					ws.send(JSON.stringify({ type: "win", data: gameState }));
-					
+
 					(async () => {
 					try {
 						const nextGame = await getNextGame();
@@ -104,10 +104,10 @@ function handleMessage(ws: WebSocket, message: any) {
 }
 
 async function getNextGame(): Promise<GameObject> {
-	const response = await fetch("http://localhost:3004/match/result", {
+	const response = await fetch("http://gateway:3000/match/result", {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
-		body: JSON.stringify({ matchId: gameState.current.matchId, winner: gameState.winner }),
+		body: JSON.stringify({ matchId: gameState.current.matchId, winner: gameState.winner, loser: gameState.loser}),
 	});
 	if (!response.ok) throw new Error("failed to fetch new game");
 	const obj: GameObject = await response.json();
