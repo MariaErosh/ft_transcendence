@@ -1,13 +1,7 @@
-import { startGame } from "./gamePlay.js";
+import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 
-// export const socket = new WebSocket("ws://localhost:3003/ws");
-// socket.onopen = () => {
-// 	console.log('Game-engine socket open');
-// };
-
 export let socket: WebSocket;
-let boardPromise: Promise<BoardConstants> | null = null;
 
 export function setupSocket(): Promise<void> {
 	return new Promise((resolve, reject) => {
@@ -26,72 +20,36 @@ export function setupSocket(): Promise<void> {
 				console.log("received start message from backend: ", message.data);
 				const matchMenu = document.getElementById("match-menu");
 				if (matchMenu) matchMenu.innerHTML = '';
+				const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+				if (gameBoard) {
+					gameBoard.remove();
+				}
 				const container = document.getElementById('app') as HTMLElement;
 				renderGameBoard(container);
+				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+				// if (gameBoard) {
+				// 	const overlay = document.getElementById('overlay') as HTMLElement;
+				// 	const canvas = document.getElementById('game-board') as HTMLCanvasElement;
+				// 	startGame(overlay, canvas);
+				// } else {
+				// const container = document.getElementById('app') as HTMLElement;
+				// renderGameBoard(container);
+				// }
 			}
-			// if (message.type === "consts") {
-			// 	console.log("received consts from backend: ", message.data);
-			// 	consts = message.data;
-			// }
 		});
 
 		socket.addEventListener("error", (err) => {
 			console.error("Socket connection error:", err);
 			reject(err);
 		});
-
-		// socket.addEventListener("close", () => {
-		// 	console.warn("Socket closed");
-		// });
 	});
 }
 
-
-// export function connectEngine(): Promise<BoardConstants> {
-// 	if (boardPromise) return boardPromise; // reuse the same promise if already connecting
-
-// 	boardPromise = new Promise((resolve, reject) => {
-// 		socket = new WebSocket("ws://localhost:3003/ws");
-
-// 		socket.addEventListener("open", () => {
-// 			console.log("Game engine socket open");
-// 		});
-
-// 		socket.addEventListener("message", (event) => {
-// 			const message = JSON.parse(event.data);
-// 			if (message.type === "consts") {
-// 				console.log("received consts from backend");
-// 				resolve(message.data);
-// 			}
-// 		});
-
-// 		socket.addEventListener("error", (err) => {
-// 			console.error("Socket connection error:", err);
-// 			reject(err);
-// 		});
-
-// 		// socket.addEventListener("close", () => {
-// 		// 	console.warn("Socket closed");
-// 		// });
-// 	});
-
-// 	return boardPromise;
-// }
-
-// function getConsts(): BoardConstants {
-// 	if (consts != null) return consts;
-// 	else 
-		
-
-// }
-
 export async function renderGameBoard(container: HTMLElement) {
-	//container.innerHTML = '';
 
 	await setupSocket();
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
-	//const getConsts = await getConsts();
 	Object.assign(board, getConsts);
 	
 	console.log("Received board constants:", board);
@@ -119,6 +77,7 @@ export async function renderGameBoard(container: HTMLElement) {
 	overlay.style.inset = '0';
 	overlay.className = 'absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded';
 	overlay.style.display = "none";
+	overlay.id = 'overlay';
 	wrapper.appendChild(overlay);
 
 	startGame(overlay, canvas);
@@ -150,7 +109,7 @@ export async function disconnectEngine() {
     return new Promise<void>((resolve) => {
         if (socket && socket.readyState !== WebSocket.CLOSED) {
             socket.addEventListener("close", () => {
-                console.log("Old socket closed");
+               // console.log("old socket closed");
                 setupSocket().then(resolve);
             }, { once: true });
             socket.close();
@@ -160,56 +119,3 @@ export async function disconnectEngine() {
         }
     });
 }
-
-// export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-// 	overlay.innerHTML = '';
-// 	overlay.style.display = 'flex';
-
-	
-// 	const menu = document.createElement('div');
-// 	menu.className = 'flex flex-col gap-4 items-center';
-
-// 	const playBtn = document.createElement('button');
-// 	playBtn.textContent = 'PLAY PONG';
-// 	playBtn.className = 'bg-red-500 text-white text-3xl font-bold px-12 py-4 rounded hover:bg-red-600 transition';
-// 	playBtn.onclick = () => {
-// 		showGameMenu(overlay, canvas);
-// 	};
-// 	menu.appendChild(playBtn);
-// 	overlay.appendChild(menu);
-// }
-
-// function showGameMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-// 	overlay.innerHTML = '';
-
-// 	const menu = document.createElement('div');
-// 	menu.className = 'flex flex-col gap-4 items-center';
-	
-// 	const title = document.createElement('h2');
-// 	title.textContent = 'SELECT MODE';
-// 	title.className = 'text-white text-4xl font-bold mb-6';
-// 	menu.appendChild(title);
-
-// 	// Select Options Button: WILL BE REPLACED LATER WITH GAME MANAGEMENT LOGIC
-// 	const selectOptionsBtn = document.createElement('button');
-// 	selectOptionsBtn.textContent = 'SELECT OPTIONS';
-// 	selectOptionsBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-// 	selectOptionsBtn.onclick = () => {
-// 		// Enable start button
-// 		startGameBtn.disabled = false;
-// 		startGameBtn.className = 'bg-green-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-green-600 transition w-64 cursor-pointer';
-// 		startGameBtn.onclick = () => {
-// 			startGame(overlay, canvas);
-// 		};
-// 	};
-// 	menu.appendChild(selectOptionsBtn);
-
-// 	// Start Game Button (initially disabled, will enable when options are selected) 
-// 	const startGameBtn = document.createElement('button');
-// 	startGameBtn.textContent = 'START GAME';
-// 	startGameBtn.className = 'bg-gray-400 text-gray-600 text-2xl font-bold px-10 py-3 rounded w-64 cursor-not-allowed';
-// 	startGameBtn.disabled = true;
-// 	menu.appendChild(startGameBtn);
-
-// 	overlay.appendChild(menu);
-// }

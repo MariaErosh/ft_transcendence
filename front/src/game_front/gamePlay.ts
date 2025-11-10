@@ -68,12 +68,28 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 			gameActive = false;
 
 			overlay.innerHTML = '';
-			if (gameState.current.matchId === -1)
+			if (message.next === -1)
 			{
 				const statBtn = document.createElement('button');
 				statBtn.textContent = "THE END - SEE RESULTS";
 				statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-				statBtn.style.marginTop = '200px';
+				statBtn.style.marginTop = '100px';
+				statBtn.onclick = () => {
+					overlay.innerHTML = '';
+					let lines = [
+						"THIS IS A PLACEHOLDER FOR THE DISPLAY",
+						"OF THE TOURNAMENT'S RESULTS",
+					];
+					const menuBtn = document.createElement('button');
+					menuBtn.textContent = "BACK TO MENU";
+					menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+					menuBtn.style.marginTop = '200px';
+					drawText(canvas, lines);
+					menuBtn.onclick = () => {
+						toMatchMenu();
+					}
+					overlay.appendChild(menuBtn);
+				}
 				overlay.appendChild(statBtn);
 
 			} else { 
@@ -82,7 +98,8 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 			nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
 			nextBtn.style.marginTop = '200px';
 			nextBtn.onclick = () => {
-				socket.send(JSON.stringify({ type: "ready" }));
+				//socket.send(JSON.stringify({ type: "ready" }));
+				//disconnectEngine()
 				startGame(overlay, canvas);
 			};
 			overlay.appendChild(nextBtn);
@@ -126,12 +143,20 @@ function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 		stopGame = false;
 		cancelAnimationFrame(frameID);
 		//ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-		const rootContainer = document.getElementById('app') as HTMLElement;
-		cleanup();
-		renderCreateTournamentForm(rootContainer);
+		// const rootContainer = document.getElementById('app') as HTMLElement;
+		// cleanup();
+		// renderCreateTournamentForm(rootContainer);
+		toMatchMenu();
 		return;
 	}
 	frameID = requestAnimationFrame(() => loop(overlay, canvas));
+}
+
+export function toMatchMenu() {
+	const rootContainer = document.getElementById('app') as HTMLElement;
+	for (const key in keys) keys[key] = false;
+	cleanup();
+	renderCreateTournamentForm(rootContainer);
 }
 
 export function cleanup() {
@@ -167,66 +192,3 @@ function startCountdown(count: number, canvas: HTMLCanvasElement, callback: () =
 	}, 1000);
 	});
 }
-
-
-// window.addEventListener('keydown', (e: KeyboardEvent) => { 
-// 	//prevent page scrolling with arrow keys
-// 	if (e.code === "ArrowUp" || e.code === "ArrowDown" ||
-// 		e.code === "KeyW" || e.code === "KeyS" || e.code === 'Escape') e.preventDefault();
-// 	if (!keys[e.code]) {
-// 		keys[e.code] = true;
-// 		sendKey(e.code, true); }});
-// window.addEventListener('keyup', (e: KeyboardEvent) => {
-// 	if (keys[e.code]) {
-// 		keys[e.code] = false;
-// 		sendKey(e.code, false); }});
-
-
-
-// function showInstructions(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-// 	console.log('starting game');
-// 	overlay.innerHTML = '';
-	
-// 	const ctx = canvas.getContext('2d');
-// 	if (!ctx) return console.log('ctx failed to load inside showInstructions function');
-// 	ctx.clearRect(0, 0, board.CANVAS_HEIGHT, board.CANVAS_WIDTH);
-// 	const instructions = [
-// 		"Use 'W' and 'S' keys for left paddle.", 
-// 		"Use UP and DOWN arrows for right paddle.",
-// 		"Press ESC to return to the menu"
-// 	];
-// 	drawText(canvas, instructions);
-
-// 	const readyBtn = document.createElement('button');
-// 	readyBtn.textContent = 'READY';
-// 	readyBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-// 	readyBtn.style.marginTop = '200px';
-// 	readyBtn.onclick = async () => {
-// 		//socket.send(JSON.stringify({ type: "ready" }));
-// 		readyBtn.disabled = true;
-// 		readyBtn.textContent = 'WAITING...';
-// 		readyBtn.className = 'bg-gray-200 text-gray-400 text-2xl font-bold px-10 py-3 rounded w-64';
-// 		try {
-// 			const response = await fetch("http://localhost:3003/game/start", {
-// 				method: "POST",
-// 				headers: { "Content-Type": "application/json" },
-// 				body: JSON.stringify({
-// 					leftPlayer: { alias: "Alice", id: 11 },
-// 					rightPlayer: {alias: "Bob", id: 22 },
-// 					matchID: 33
-// 				}),
-// 			});
-// 			if (!response.ok) { //returns true if response code is between 200 and 299
-// 				const error = await response.text();
-// 				console.error("Game could not be started: ", error);
-// 			} else {
-// 				const result = await response.json();
-// 				console.log("Game started: ", result);
-// 			}
-// 		} catch (err) {
-// 			console.log("Error sendin POST request: ", err);
-// 		}
-// 	};
-// 	overlay.appendChild(readyBtn);
-
-// }

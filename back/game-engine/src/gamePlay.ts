@@ -112,6 +112,7 @@ function sleep(ms: number) {
 export function resetSpecs(next: GameObject | -1) {
 
 	if (next === -1 || next.matchId === -1) {
+		console.log("no next game");
 		gameState.current.leftPlayer = { alias: 'left', id: -1 };
 		gameState.current.rightPlayer = { alias: 'right', id: -2 };
 		gameState.current.matchId = -1;
@@ -131,4 +132,8 @@ export function resetSpecs(next: GameObject | -1) {
 	gameState.servingPlayer = whichSide();
 	gameState.winner.id = -1;
 	gameState.winner.alias = 'none';
+	playerKeys.right.up = false;
+	playerKeys.right.down = false;
+	playerKeys.left.up = false;
+	playerKeys.left.down = false;
 }
