@@ -12,7 +12,7 @@ async function start() {
 	//(fastify as any).register(jwt, { secret: "!TheLastProjectIn42!" });
 	// register plugin
   	await fastify.register(authPlugin);
-	
+
 	initDB();
 
 	//create UserService instance (injecting db)

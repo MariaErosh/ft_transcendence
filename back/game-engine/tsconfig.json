@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",           // JS version to which TS will be compiled
-    "module": "CommonJS",         // Node.js module system
+    //"target": "ES2020",           // JS version to which TS will be compiled
+    //"module": "CommonJS",         // Node.js module system
+    "module": "esnext",
+    "target": "es2017",
     "rootDir": "./src",             // TS source files are in src/
     "outDir": "dist",             // JS files after compilation will be in dist/
     "strict": true,               // strinct type-checking options

@@ -134,3 +134,4 @@ export function render2FA(container: HTMLElement, userId: number) {
 
 	container.appendChild(form);
 }
+
