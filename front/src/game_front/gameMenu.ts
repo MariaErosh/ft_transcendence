@@ -1,53 +1,49 @@
 import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 
-export let socket: WebSocket;
+export let engineSocket: WebSocket;
+export let defMatchId: number = 111;
+export let defToken: string = 'token';
 
-export function setupSocket(): Promise<void> {
+export function setupEngineSocket(matchId: number, token: string): Promise<void> {
 	return new Promise((resolve, reject) => {
-		if (socket && socket.readyState === WebSocket.OPEN)
-			return resolve();
+		if (engineSocket && engineSocket.readyState === WebSocket.OPEN)
+			engineSocket.close();
 
-	socket = new WebSocket("ws://localhost:3003/ws");
-	socket.addEventListener("open", () => {
-			console.log("Game engine socket open");
+	engineSocket = new WebSocket(`ws://localhost:3003/ws?matchId=${matchId}&token=${token}`);
+	engineSocket.addEventListener("open", () => {
+			console.log("Game engine socket open for match with id: ", matchId);
 			resolve();
 		});
 
-		socket.addEventListener("message", (event) => {
+		engineSocket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
-			if (message.type === "start") {
-				console.log("received start message from backend: ", message.data);
-				const matchMenu = document.getElementById("match-menu");
-				if (matchMenu) matchMenu.innerHTML = '';
-				const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-				if (gameBoard) {
-					gameBoard.remove();
-				}
-				const container = document.getElementById('app') as HTMLElement;
-				renderGameBoard(container);
-				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-				// if (gameBoard) {
-				// 	const overlay = document.getElementById('overlay') as HTMLElement;
-				// 	const canvas = document.getElementById('game-board') as HTMLCanvasElement;
-				// 	startGame(overlay, canvas);
-				// } else {
-				// const container = document.getElementById('app') as HTMLElement;
-				// renderGameBoard(container);
-				// }
-			}
+			console.log("message received through engine websocket: ", message.data);
+			
 		});
 
-		socket.addEventListener("error", (err) => {
+		engineSocket.addEventListener("error", (err) => {
 			console.error("Socket connection error:", err);
 			reject(err);
 		});
 	});
 }
 
+export function readyToRender() {
+	const matchMenu = document.getElementById("match-menu");
+	if (matchMenu) matchMenu.innerHTML = '';
+	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+	if (gameBoard) {
+		gameBoard.remove();
+	}
+	const container = document.getElementById('app') as HTMLElement;
+	renderGameBoard(container);
+}
+				
+
 export async function renderGameBoard(container: HTMLElement) {
 
-	await setupSocket();
+	await setupEngineSocket(defMatchId, defToken);
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
 	Object.assign(board, getConsts);
@@ -86,8 +82,8 @@ export async function renderGameBoard(container: HTMLElement) {
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
-		socket.send(JSON.stringify({ type: expectedType }));
-		socket.addEventListener("message", (event) => {
+		engineSocket.send(JSON.stringify({ type: expectedType }));
+		engineSocket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
 			if (message.type === expectedType) {
 				console.log('receiving input with type ', expectedType);
@@ -107,15 +103,15 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 
 export async function disconnectEngine() {
     return new Promise<void>((resolve) => {
-        if (socket && socket.readyState !== WebSocket.CLOSED) {
-            socket.addEventListener("close", () => {
+        if (engineSocket && engineSocket.readyState !== WebSocket.CLOSED) {
+            engineSocket.addEventListener("close", () => {
                // console.log("old socket closed");
-                setupSocket().then(resolve);
+                setupEngineSocket(defMatchId, defToken).then(resolve);
             }, { once: true });
-            socket.close();
+            engineSocket.close();
         } else {
             // If already closed, just setup a new one
-            setupSocket().then(resolve);
+            setupEngineSocket(defMatchId, defToken).then(resolve);
         }
     });
 }

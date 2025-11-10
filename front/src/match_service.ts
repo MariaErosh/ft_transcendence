@@ -1,8 +1,7 @@
 import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
-import { setupSocket } from "./game_front/gameMenu.js";
+import { setupGatewaySocket } from "./gatewaySocket.js"
 
-
-setupSocket().catch(err => console.error("Failed to setup socket:", err));
+setupGatewaySocket().catch(err => console.error("Failed to setup socket:", err));
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Rendering match making menu");

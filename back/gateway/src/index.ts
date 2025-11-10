@@ -3,6 +3,7 @@ import proxy from "@fastify/http-proxy";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
+import fastifyWebsocket from '@fastify/websocket';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ async function buildServer() {
 
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
+	await server.register(fastifyWebsocket);
 
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
