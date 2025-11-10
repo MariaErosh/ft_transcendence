@@ -70,6 +70,7 @@ export let gameState: GameState = {
 		type: 'none'
 	},
 	winner: { alias: 'none', id: -1 },
+	loser: { alias: 'none', id: -1 },
 };
 
 export function whichSide() : 'left' | 'right' {

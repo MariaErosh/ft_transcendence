@@ -27,7 +27,7 @@ server.get("/ws", {websocket: true }, (ws: WebSocket, req: FastifyRequest) => {
 	clients.add(ws);
 	console.log('Client connected via websocket');
 
-	console.log("sending const and set message to front end");
+	console.log("sending set message to front end");
 	ws.send(JSON.stringify({ type: "consts", data: board}));
 	ws.send(JSON.stringify({type: "set", data: gameState}));
 	ws.on('message', (data: RawData) => {
@@ -53,44 +53,92 @@ let interval: NodeJS.Timeout | null = null;
 
 server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) => {
 	console.log("received post request with body: ", request.body);
-	const { leftPlayer, rightPlayer, matchId, type } = request.body as GameObject;
+	const newGame = request.body as GameObject;
 
-	if(!leftPlayer || !rightPlayer || !matchId || !type) {
+	if(!newGame.leftPlayer || !newGame.rightPlayer || !newGame.matchId || !newGame.type) {
 		return reply.status(400).send({error: "Missing player info or match id" });
 	}
-	gameState.current.leftPlayer = leftPlayer;
-	gameState.current.rightPlayer = rightPlayer;
-	gameState.current.matchId = matchId;
-	gameState.current.type = type;
+	resetSpecs(newGame);
+	// gameState.current.leftPlayer = leftPlayer;
+	// gameState.current.rightPlayer = rightPlayer;
+	// gameState.current.matchId = matchId;
+	// gameState.current.type = type;
+	const ws = [...clients][0];
+	if (!ws || ws.readyState !== ws.OPEN) {
+		console.warn("No connected WebSocket clients to send start message");
+		return reply.status(503).send({ error: "No active WebSocket client connected" });
+	}
+	ws.send(JSON.stringify({ type: "start" }));
+	console.log("start message sent to client");
 	console.log("Received /game/start, notifying client via WS");
 	return reply.send({ok: true, message: "game started, client notified"});
 });
 
+server.post("/game/move", async(request: FastifyRequest, reply: FastifyReply) => {
+	console.log("received post request with body: ", request.body);
+	const { whichPlayer, dir }: {whichPlayer: 'left' | 'right'; dir: 'up' | 'down' | 'stop'} = request.body as any;
+
+	if (whichPlayer != 'left' && whichPlayer != 'right')
+		return reply.status(400).send({error: "Missing or invalid player - has to be 'left' or 'right'" });
+	if (dir != 'up' && dir != 'down' && dir != 'stop')
+		return reply.status(400).send({error: "Missing or invalid move - has to be 'up' or 'down'" });
+	if (whichPlayer === 'left') {
+		dir === 'up' ? 
+		(playerKeys.left.up = true,  playerKeys.left.down = false) : 
+		dir === 'down' ? 
+			(playerKeys.left.down = true, playerKeys.left.up = false) 
+		: (playerKeys.left.down = false, playerKeys.left.up = false);
+	} else {
+		dir === 'up' ? 
+		(playerKeys.right.up = true,  playerKeys.right.down = false) : 
+		dir === 'down' ? 
+			(playerKeys.right.down = true, playerKeys.right.up = false) 
+		: (playerKeys.right.down = false, playerKeys.right.up = false);
+	}
+});
+
+
+server.get("/game/stop", async(request: FastifyRequest, reply: FastifyReply) => {
+	console.log("received stop request");
+	const ws = [...clients][0];
+	ws.send(JSON.stringify({ type: "stop" }));
+	console.log("Stop message sent to client");
+
+	return reply.send({ ok: true, message: "stop message sent" });
+});
+
+
 await server.listen({ port: PORT, host: "0.0.0.0" });
 console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
 
-
-
 function handleMessage(ws: WebSocket, message: any) {
 	console.log('Parsed message: ', message);
-		if (message.type === "ready") {
+		if (message.type === "set") {
 			console.log('Client is ready, starting game');
 			ws.send(JSON.stringify({type: "set", data: gameState}));
 		}
+		if (message.type === "consts")
+			ws.send(JSON.stringify({ type: "consts", data: board}));
 		if (message.type === "please serve") {
+			if (interval) {
+				clearInterval(interval);
+				interval = null;
+			}
 			console.log("serving ball");
 			serveBall();
 			ws.send(JSON.stringify({ type: "go"}));
 			interval = setInterval(() => {
 				if (updatePos() === 1) {
 					if (interval) clearInterval(interval);
-					ws.send(JSON.stringify({ type: "win", data: gameState }));
+					// ws.send(JSON.stringify({ type: "win", data: gameState }));
 
 					(async () => {
 					try {
 						const nextGame = await getNextGame();
+						ws.send(JSON.stringify({ type: "win", data: gameState,  next: nextGame.matchId}));
 						resetSpecs(nextGame);
 					} catch (err) {
+						ws.send(JSON.stringify({ type: "win", data: gameState,  next: -1}));
 						resetSpecs(-1);
 					}
 					})();
@@ -114,41 +162,6 @@ async function getNextGame(): Promise<GameObject> {
 	return obj;
 }
 
-// wss.on('connection', (ws) => {
-// 	console.log('Client connected');
-// 	connectedClient = ws;
-
-// 	ws.send(JSON.stringify({ type: "consts", data: board}));
-// 	ws.on('message', (data) => {
-// 		const message = JSON.parse(data.toString());
-// 		console.log('Parsed message: ', message);
-// 		// if (message.type === "ready") {
-// 		// 	console.log('Client is ready, starting game');
-// 		// 	ws.send(JSON.stringify({type: "set", data: gameState}));
-// 		// }
-// 		if (message.type === "please serve") {
-// 			console.log("serving ball");
-// 			serveBall();
-// 			ws.send(JSON.stringify({ type: "go"}));
-// 			interval = setInterval(() => {
-// 				if (updatePos() === 1) {
-// 					if (interval) clearInterval(interval);
-// 					ws.send(JSON.stringify({ type: "win", data: gameState }))
-// 					resetSpecs();
-// 				}
-// 				ws.send(JSON.stringify({ type: "state", data: gameState }));
-// 			}, 1000/ 60);
-// 		}
-// 		if (message.type === "input") {
-// 			handleInput(message.data.code, message.data.pressed);
-// 		}
-// 	});
-// 	ws.on("close", () => {
-// 		console.log("Client disconnected");
-// 		if (interval) clearInterval(interval);
-// 	});
-// });
-
 function handleInput(code: string, pressed: boolean) {
 	if (code === 'ArrowUp')
 		playerKeys.right.up = pressed;
@@ -163,4 +176,3 @@ function handleInput(code: string, pressed: boolean) {
 		resetSpecs(-1);
 	}
 }
-

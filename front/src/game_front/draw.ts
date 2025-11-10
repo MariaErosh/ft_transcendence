@@ -69,11 +69,6 @@ export function drawText(canvas: HTMLCanvasElement, lines: string[]) {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
-	// const lines = [
-	// 	"Use 'W' and 'S' keys for left paddle.", 
-	// 	"Use UP and DOWN arrows for right paddle.",
-	// 	"Press ESC to return to the menu"
-	// ];
 	lines.forEach((line, i) => {
 		ctx.fillText(line, board.CANVAS_WIDTH / 2, board.CANVAS_HEIGHT / 2 - 30 + i * 30);
 	})

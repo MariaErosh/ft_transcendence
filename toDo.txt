@@ -1,0 +1,10 @@
+TO DO LIST per Module
+
+- general Website:
+	- The user should be able to use the Back and Forward buttons of the browser. 
+		--> make history of the sections - do we have to show the endpoints in the url bar? 
+	
+
+- Server Side PONG:
+	- API endpoint to show game state updates
+	- should it be possible to have several games through CLI or just 1?

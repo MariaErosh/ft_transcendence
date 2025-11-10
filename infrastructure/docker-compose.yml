@@ -37,7 +37,7 @@ services:
       context: ../back/game-engine
       dockerfile: Dockerfile
       target: prod
-    container_name: game-engine
+    container_name: game
     ports:
       - "3003:3003"
 
