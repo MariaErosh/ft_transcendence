@@ -19,7 +19,7 @@ export let board: BoardConstants = {
 	MARGIN: 10,
 }
 
-export interface Player { alias: string, id: number }
+export interface Player { alias: string, id: number | null }
 
 export interface GameObject {
 	leftPlayer: Player;
@@ -37,6 +37,7 @@ export interface GameState {
 	servingPlayer: 'left' | 'right';
 	current: GameObject;
 	winner: Player;
+	loser: Player;
 }
 
 export let gameState: GameState = {

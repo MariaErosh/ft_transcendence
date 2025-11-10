@@ -35,7 +35,6 @@ export function clearDB(db: sqlite3.Database) {
 				reject(err);
 			}
 			else {
-				console.log("Database cleaned");
 				resolve();
 			}
 		})

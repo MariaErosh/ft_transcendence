@@ -35,3 +35,9 @@ export interface GamePayload{
 	leftPlayer: PlayerPayload;
 	rightPlayer: PlayerPayload;
 }
+
+export interface resultPayload{
+	matchId: number;
+	winner: PlayerPayload;
+	loser: PlayerPayload
+}

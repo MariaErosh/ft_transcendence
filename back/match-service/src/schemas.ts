@@ -21,3 +21,32 @@ export const createMatchSchema = {
 		}
 	}
 }
+
+
+export const resultSchema = {
+	body: {
+		type: 'object',
+		required: ['matchId', 'winner', 'loser'],
+		properties: {
+			matchId:{
+				type: 'number'
+			},
+			winner: {
+				type: 'object',
+				required: ['alias', 'id'],
+				properties: {
+					alias: {type: 'string'},
+					id: {type: ['number', 'null']},
+				}
+			},
+			loser: {
+				type: 'object',
+				required: ['alias', 'id'],
+				properties: {
+					alias: {type: 'string'},
+					id: {type: ['number', 'null']},
+				}
+			}
+		}
+	}
+}
