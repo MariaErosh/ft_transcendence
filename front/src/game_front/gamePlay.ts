@@ -141,7 +141,7 @@ export function cleanup() {
 	window.removeEventListener('keyup', handleKeyUp);
 	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
 	if (gameBoard) gameBoard.remove();
-	//disconnectEngine();
+	disconnectEngine();
 }
 
 
