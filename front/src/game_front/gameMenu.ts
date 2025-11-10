@@ -22,6 +22,13 @@ export function setupSocket(): Promise<void> {
 
 		socket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
+			if (message.type === "start") {
+				console.log("received start message from backend: ", message.data);
+				const matchMenu = document.getElementById("match-menu");
+				if (matchMenu) matchMenu.innerHTML = '';
+				const container = document.getElementById('app') as HTMLElement;
+				renderGameBoard(container);
+			}
 			// if (message.type === "consts") {
 			// 	console.log("received consts from backend: ", message.data);
 			// 	consts = message.data;
@@ -120,9 +127,7 @@ export async function renderGameBoard(container: HTMLElement) {
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
-		if (expectedType == "consts") {
-			socket.send(JSON.stringify({ type: "getconsts" }));
-		}
+		socket.send(JSON.stringify({ type: expectedType }));
 		socket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
 			if (message.type === expectedType) {
@@ -133,15 +138,28 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 	});
 }
 
-export function disconnectEngine() {
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		socket.close();
-	}
-	socket = null as any;
-	boardPromise = null;
+// export function disconnectEngine() {
+// 	if (socket && socket.readyState === WebSocket.OPEN) {
+// 		socket.close();
+// 	}
+// 	socket = null as any;
+// 	boardPromise = null;
+// }
+
+export async function disconnectEngine() {
+    return new Promise<void>((resolve) => {
+        if (socket && socket.readyState !== WebSocket.CLOSED) {
+            socket.addEventListener("close", () => {
+                console.log("Old socket closed");
+                setupSocket().then(resolve);
+            }, { once: true });
+            socket.close();
+        } else {
+            // If already closed, just setup a new one
+            setupSocket().then(resolve);
+        }
+    });
 }
-
-
 
 // export function showPlayMenu(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 // 	overlay.innerHTML = '';

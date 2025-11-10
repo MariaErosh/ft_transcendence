@@ -17,3 +17,20 @@ docker run -p 8080:80 ft_transcendence_frontend
 3) Then open your browser and go to:
 http://localhost:8080
 
+
+
+CLI USAGE
+- to start the game:
+curl -X POST http://localhost:3000/game/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "leftPlayer": { "alias": "Alice" },
+    "rightPlayer": { "alias": "Bob" },
+    "matchId": 1,
+    "type": "CONSOLE"
+  }'
+
+- to stop the game:
+curl http://localhost:3000/game/stop   
+
+- to move paddles: coming soon

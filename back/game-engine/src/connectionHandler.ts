@@ -62,6 +62,13 @@ server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) =
 	gameState.current.rightPlayer = rightPlayer;
 	gameState.current.matchId = matchId;
 	gameState.current.type = type;
+	const ws = [...clients][0];
+	if (!ws || ws.readyState !== ws.OPEN) {
+		console.warn("No connected WebSocket clients to send start message");
+		return reply.status(503).send({ error: "No active WebSocket client connected" });
+	}
+	ws.send(JSON.stringify({ type: "start" }));
+	console.log("start message sent to client");
 	console.log("Received /game/start, notifying client via WS");
 	return reply.send({ok: true, message: "game started, client notified"});	
 });
@@ -81,11 +88,11 @@ console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
 
 function handleMessage(ws: WebSocket, message: any) {
 	console.log('Parsed message: ', message);
-		if (message.type === "ready") {
+		if (message.type === "set") {
 			console.log('Client is ready, starting game');
 			ws.send(JSON.stringify({type: "set", data: gameState}));
 		}
-		if (message.type === "getconsts")
+		if (message.type === "consts")
 			ws.send(JSON.stringify({ type: "consts", data: board}));
 		if (message.type === "please serve") {
 			console.log("serving ball");
@@ -114,7 +121,7 @@ function handleMessage(ws: WebSocket, message: any) {
 }
 
 async function getNextGame(): Promise<GameObject> {
-	const response = await fetch("http://localhost:3004/match/result", {
+	const response = await fetch("http://localhost:3000/match/result", {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify({ matchId: gameState.current.matchId, winner: gameState.winner }),
