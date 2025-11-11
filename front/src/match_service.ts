@@ -1,4 +1,4 @@
-import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
+import { createConsoleMatch, sendGameToGameEngine, joinRemoteMatch } from "./api.js";
 import { setupSocket } from "./game_front/gameMenu.js";
 
 
@@ -39,6 +39,9 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 			if (!box) throw new Error("Parentless Play Pong button");
 			box.innerHTML = '';
 
+			const msg = document.createElement("div");
+			msg.className = "text-red-500 text-sm";
+			blackBox.appendChild(msg);
 			const remoteButton = document.createElement("button");
 			remoteButton.textContent = "REMOTE";
 			remoteButton.className = `
@@ -48,7 +51,10 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			remoteButton.addEventListener("click", () => {
-				renderNewRemoteTournament(container, box);
+				if (localStorage.getItem("refreshToken"))
+					renderNewRemoteTournament(container, box);
+				else
+					msg.textContent = "You need to be logged in to play remote";
 			})
 
 			const consoleButton = document.createElement("button");
@@ -192,106 +198,107 @@ export function renderNewRemoteTournament(container: HTMLElement, box: HTMLEleme
 	box.innerHTML = "";
 
 	const title = document.createElement('div');
-	title.textContent = "Select at least two players for the tournament";
+	title.textContent = "WAIT WHILE OTHERS JOIN THE TOURNAMENT. ";
 	title.className = "text-white text-4xl font-sans font-semibold mb-8";
 	box.appendChild(title);
-
-	const subtitle = document.createElement('div');
-	subtitle.textContent = "Players online:";
-	subtitle.className = "text-white text-2xl font-sans font-semibold mb-2";
-	box.appendChild(subtitle);
-
-	const playersOnlineBox = document.createElement('div');
-	playersOnlineBox.className = `
-		bg-white text-black font-sans
-		w-3/5 h-1/3 overflow-y-auto
-		p-4 mb-8
-		flex flex-col gap-2
-	`;
-	box.appendChild(playersOnlineBox);
-
-	const playersBox = document.createElement('div');
-	playersBox.className = `
-		bg-white text-black font-sans
-		w-3/5 h-1/3 overflow-y-auto
-		p-4 mb-8
-		flex flex-col gap-2
-	`;
-	box.appendChild(playersBox);
-
-	const startButton = document.createElement("button");
-	startButton.textContent = "START TOURNAMENT";
-	startButton.disabled = true;
-	startButton.className = `
-		bg-gray-500 text-black font-sans font-semibold
-		w-2/5 h-1/5 text-3xl
-		transition
-	`;
-	startButton.addEventListener("click", ()=>{
-		//TODO: send players to API to start the tournament
-	})
-	box.appendChild(startButton);
-
-	//--LOGIC--
-	const onlinePlayers: OnlineUserInfo[] = getOnlineUsers();
-	const selectedPlayers: OnlineUserInfo[] = [];
-
-	function refreshSelectedPlayers() {
-		playersBox.innerHTML = '';
-
-		selectedPlayers.forEach(p => {
-			const row = document.createElement('div');
-			row.className = 'text-2xl cursor-pointer hover:bg-gray-300 p-2 rounded';
-			row.textContent = p.alias;
-			row.addEventListener("click", () => {
-				const index = selectedPlayers.indexOf(p);
-				if (index !== -1) selectedPlayers.splice(index, 1);
-				refreshSelectedPlayers();
-				refreshStartButton();
-			})
-			playersBox.appendChild(row);
-		})
-	}
-	function renderOnlinePlayers() {
-		playersBox.innerHTML = '';
-
-		onlinePlayers.forEach(p => {
-			const row = document.createElement('div');
-			row.className = 'text-2xl cursor-pointer hover:bg-gray-300 p-2 rounded';
-			row.textContent = p.alias;
-			row.addEventListener("click", () => {
-				if (!(selectedPlayers.find(sp => sp.user_id === p.user_id))) {
-					selectedPlayers.push(p);
-					refreshSelectedPlayers();
-					refreshStartButton();
-				}
-			})
-			playersOnlineBox.appendChild(row);
-		})
-	}
-	function refreshStartButton() {
-		if (selectedPlayers.length > 1) {
-			startButton.disabled = false;
-			startButton.classList.remove('bg-gray-500');
-			startButton.classList.add("bg-white", "hover:bg-gray-200");
-
-		}
-		else {
-			startButton.disabled = true;
-			startButton.classList.add('bg-gray-500');
-			startButton.classList.remove("bg-white", "hover:bg-gray-200");
-		}
-	}
-	renderOnlinePlayers();
-	refreshSelectedPlayers();
-	refreshStartButton();
-
+	joinRemoteMatch();
 }
+// 	const subtitle = document.createElement('div');
+// 	subtitle.textContent = "Players online:";
+// 	subtitle.className = "text-white text-2xl font-sans font-semibold mb-2";
+// 	box.appendChild(subtitle);
+
+// 	const playersOnlineBox = document.createElement('div');
+// 	playersOnlineBox.className = `
+// 		bg-white text-black font-sans
+// 		w-3/5 h-1/3 overflow-y-auto
+// 		p-4 mb-8
+// 		flex flex-col gap-2
+// 	`;
+// 	box.appendChild(playersOnlineBox);
+
+// 	const playersBox = document.createElement('div');
+// 	playersBox.className = `
+// 		bg-white text-black font-sans
+// 		w-3/5 h-1/3 overflow-y-auto
+// 		p-4 mb-8
+// 		flex flex-col gap-2
+// 	`;
+// 	box.appendChild(playersBox);
+
+// 	const startButton = document.createElement("button");
+// 	startButton.textContent = "START TOURNAMENT";
+// 	startButton.disabled = true;
+// 	startButton.className = `
+// 		bg-gray-500 text-black font-sans font-semibold
+// 		w-2/5 h-1/5 text-3xl
+// 		transition
+// 	`;
+// 	startButton.addEventListener("click", () => {
+// 		//TODO: send players to API to start the tournament
+// 	})
+// 	box.appendChild(startButton);
+
+// 	//--LOGIC--
+// 	const onlinePlayers: OnlineUserInfo[] = getOnlineUsers();
+// 	const selectedPlayers: OnlineUserInfo[] = [];
+
+// 	function refreshSelectedPlayers() {
+// 		playersBox.innerHTML = '';
+
+// 		selectedPlayers.forEach(p => {
+// 			const row = document.createElement('div');
+// 			row.className = 'text-2xl cursor-pointer hover:bg-gray-300 p-2 rounded';
+// 			row.textContent = p.alias;
+// 			row.addEventListener("click", () => {
+// 				const index = selectedPlayers.indexOf(p);
+// 				if (index !== -1) selectedPlayers.splice(index, 1);
+// 				refreshSelectedPlayers();
+// 				refreshStartButton();
+// 			})
+// 			playersBox.appendChild(row);
+// 		})
+// 	}
+// 	function renderOnlinePlayers() {
+// 		playersBox.innerHTML = '';
+
+// 		onlinePlayers.forEach(p => {
+// 			const row = document.createElement('div');
+// 			row.className = 'text-2xl cursor-pointer hover:bg-gray-300 p-2 rounded';
+// 			row.textContent = p.alias;
+// 			row.addEventListener("click", () => {
+// 				if (!(selectedPlayers.find(sp => sp.user_id === p.user_id))) {
+// 					selectedPlayers.push(p);
+// 					refreshSelectedPlayers();
+// 					refreshStartButton();
+// 				}
+// 			})
+// 			playersOnlineBox.appendChild(row);
+// 		})
+// 	}
+// 	function refreshStartButton() {
+// 		if (selectedPlayers.length > 1) {
+// 			startButton.disabled = false;
+// 			startButton.classList.remove('bg-gray-500');
+// 			startButton.classList.add("bg-white", "hover:bg-gray-200");
+
+// 		}
+// 		else {
+// 			startButton.disabled = true;
+// 			startButton.classList.add('bg-gray-500');
+// 			startButton.classList.remove("bg-white", "hover:bg-gray-200");
+// 		}
+// 	}
+// 	renderOnlinePlayers();
+// 	refreshSelectedPlayers();
+// 	refreshStartButton();
+
+// }
 
 
-function getOnlineUsers() {
-	return [{ user_id: 1, alias: "anna" },
-	{ user_id: 2, alias: "ben" },
-	{ user_id: 3, alias: "sylvia" },
-	{ user_id: 4, alias: "makoto" },]
-}
+// function getOnlineUsers() {
+// 	return [{ user_id: 1, alias: "anna" },
+// 	{ user_id: 2, alias: "ben" },
+// 	{ user_id: 3, alias: "sylvia" },
+// 	{ user_id: 4, alias: "makoto" },]
+// }
