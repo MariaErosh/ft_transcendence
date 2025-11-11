@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createMatchSchema, resultSchema } from "./schemas";
-import { CreateMatchPayload, GamePayload, resultPayload } from "./models";
+import { CreateMatchPayload, GamePayload, PlayerPayload, resultPayload } from "./models";
 import { MatchService } from "./match-service";
 import dotenv from "dotenv";
 
@@ -31,8 +31,8 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		let result: GamePayload = {
 			type: match.type,
 			matchId: matchId,
-			leftPlayer: { id: nextPlayers[0]!.auth_user_id, alias: nextPlayers[0]!.alias },
-			rightPlayer: { id: nextPlayers[1]!.auth_user_id, alias: nextPlayers[1]!.alias },
+			leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
+			rightPlayer: { id: nextPlayers[1]!.user_id, alias: nextPlayers[1]!.alias },
 		}
 		return result;
 	})
@@ -50,7 +50,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 			newGame = {
 				type: match.type,
 				matchId: -1,
-				leftPlayer: { id: nextPlayers[0]!.auth_user_id, alias: nextPlayers[0]!.alias },
+				leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
 				rightPlayer: { id: -1, alias: "" },
 			}
 		}
@@ -58,11 +58,21 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 			newGame = {
 				type: match.type,
 				matchId: gameResult.matchId,
-				leftPlayer: { id: nextPlayers[0]!.auth_user_id, alias: nextPlayers[0]!.alias },
-				rightPlayer: { id: nextPlayers[1]!.auth_user_id, alias: nextPlayers[1]!.alias },
+				leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
+				rightPlayer: { id: nextPlayers[1]!.user_id, alias: nextPlayers[1]!.alias },
 			}
 		}
 		console.log("Returning from match/result endpoint: ", newGame);
 		return newGame;
+	})
+
+	fastify.post('/match/join', async (request, reply)=>{
+		const player: PlayerPayload = {
+			alias: request.headers['x-username'],
+			id: request.headers['x-user-id']
+		}
+		console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
+		const match = matchService.joinRemoteMatch(player);
+		return match;
 	})
 }

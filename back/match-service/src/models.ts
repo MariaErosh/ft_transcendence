@@ -6,7 +6,7 @@ export interface Match {
 
 export interface Player{
 	id: number,
-	auth_user_id: number | null,
+	user_id: number | null,
 	alias: string,
 	match_id: number,
 	status: string,
