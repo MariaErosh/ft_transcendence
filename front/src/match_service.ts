@@ -1,5 +1,8 @@
 import { createConsoleMatch, sendGameToGameEngine } from "./api.js";
-import { renderGameBoard } from "./game_front/gameMenu.js";
+import { setupSocket } from "./game_front/gameMenu.js";
+
+
+setupSocket().catch(err => console.error("Failed to setup socket:", err));
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Rendering match making menu");
@@ -57,7 +60,7 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			consoleButton.addEventListener("click", () => {
-				renderNewConsoleTournament(container, box);
+				renderNewConsoleTournament(box);
 			})
 
 			box.classList.add("flex-col", "gap-6");
@@ -74,7 +77,7 @@ export function renderCreateTournamentForm(container: HTMLElement) {
 
 
 
-export function renderNewConsoleTournament(container: HTMLElement, box: HTMLElement) {
+export function renderNewConsoleTournament(box: HTMLElement) {
 	box.innerHTML = "";
 
 	const title = document.createElement('div');
@@ -129,10 +132,9 @@ export function renderNewConsoleTournament(container: HTMLElement, box: HTMLElem
 			const newGame = await createConsoleMatch(players);
 			await sendGameToGameEngine(newGame);
 			box.innerHTML = "";
-			const parent = box.parentElement;
-			if (!parent) throw new Error("Black box has no parent");
-			renderGameBoard(container);
-
+			// const parent = box.parentElement;
+			// if (!parent) throw new Error("Black box has no parent");
+			// renderGameBoard(container);
 		} catch (error) {
 			console.error("Failed to create match:", error);
 			box.innerHTML = "";
