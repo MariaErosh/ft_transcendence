@@ -24,6 +24,7 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 			DROP TABLE IF EXISTS matches;
 			CREATE TABLE IF NOT EXISTS matches (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT,
 				status TEXT NOT NULL,
 				type TEXT NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

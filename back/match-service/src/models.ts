@@ -41,3 +41,9 @@ export interface resultPayload{
 	winner: PlayerPayload;
 	loser: PlayerPayload
 }
+
+export interface newRemoteMatch{
+	id: number,
+	name: string,
+	player: PlayerPayload
+}

@@ -22,6 +22,16 @@ export const createMatchSchema = {
 	}
 }
 
+export const newMatchSchema = {
+	body: {
+		type: "object",
+		required: ["name"],
+		properties: {
+		  name: { type: "string" },
+		}
+	}
+}
+
 
 export const resultSchema = {
 	body: {

@@ -152,7 +152,7 @@ function handleMessage(ws: WebSocket, message: any) {
 }
 
 async function getNextGame(): Promise<GameObject> {
-	const response = await fetch("http://gateway:3000/match/result", {
+	const response = await fetch("http://gateway:3000/match/console/result", {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify({ matchId: gameState.current.matchId, winner: gameState.winner, loser: gameState.loser}),

@@ -7,9 +7,9 @@ import { dbAll, dbGet, dbRunQuery, shuffle } from "./helpers";
 export class MatchService {
 	constructor(private db: Database) { }
 
-	async addMatchRow(matchType: string) {
+	async addMatchRow(matchType: string, name: string | null) {
 		return new Promise<number>((resolve, reject) => {
-			this.db.run("INSERT INTO matches (status, type, round) VALUES (?, ?, ?)", ['OPEN', matchType, 0],
+			this.db.run("INSERT INTO matches (status, type, round, name) VALUES (?, ?, ?)", ['OPEN', matchType, 0, name],
 				function (err) {
 					if (err) { return reject(err) };
 					resolve(this.lastID);
@@ -30,7 +30,7 @@ export class MatchService {
 		})
 	}
 
-	async createNewMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
+	async createNewConsoleMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
 		try {
 			await dbRunQuery(this.db, "BEGIN TRANSACTION");
 			const matchId = await this.addMatchRow(matchType);
@@ -136,21 +136,11 @@ export class MatchService {
 		return games;
 	}
 
-	async joinRemoteMatch(player: PlayerPayload){
-		let openMatch = await dbGet(this.db, "SELECT * FROM matches WHERE status = ? AND type = ?", ["OPEN", "REMOTE"]);
-		let matchId: number;
-		if (!openMatch) {
-			matchId = await this.addMatchRow("REMOTE");
-			setTimeout(async()=>{
-				try{
-					await dbRunQuery(this.db, "UPDATE matches SET status = ? WHERE id = ?", ['CLOSED', matchId]);
-					console.log(`Remote match ${matchId} is now CLOSED for registration.`);
-					//TODO: SEND NOTIFICATION TO FRONTEND VIA GATEWAY SOCKET
-					//CALL TO FORM PAIRS HERE?
-				} catch (err){console.log ("Failed to close remote tournament registration: ", err);}
-			}, 1 * 60 * 1000);
-			openMatch = await this.getMatchById(matchId);
-		}
+	async getOpenMatches(){
+		const res = await dbAll(this.db, 'SELECT id, name FROM matches WHERE type = ? and status = ?', ['REMOTE', 'OPEN']);
+		return res;
+	}
+	async joinRemoteMatch(player: PlayerPayload, matchId: number){
 		await this.addPlayer(player, openMatch.id as number);
 		return openMatch;
 	}

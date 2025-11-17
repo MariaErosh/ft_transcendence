@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { createMatchSchema, resultSchema } from "./schemas";
-import { CreateMatchPayload, GamePayload, PlayerPayload, resultPayload } from "./models";
+import { createMatchSchema, newMatchSchema, resultSchema } from "./schemas";
+import { CreateMatchPayload, GamePayload, PlayerPayload, newRemoteMatch, resultPayload } from "./models";
 import { MatchService } from "./match-service";
 import dotenv from "dotenv";
 
@@ -22,10 +22,10 @@ function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 export async function matchRoutes(fastify: FastifyInstance, matchService: MatchService) {
 	fastify.post<{
 		Body: CreateMatchPayload
-	}>('/match/new', { schema: createMatchSchema }, async (request, reply) => {
+	}>('/match/console/new', { schema: createMatchSchema }, async (request, reply) => {
 		// if (!ensureFromGateway(request, reply)) return;
 		const match = request.body;
-		const matchId = await matchService.createNewMatch(match.type, match.players);
+		const matchId = await matchService.createNewConsoleMatch(match.type, match.players);
 		const nextPlayers = await matchService.getNextPlayers(matchId);
 		//ADD ERROR CHECKING
 		let result: GamePayload = {
@@ -38,7 +38,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 	})
 	fastify.post<{
 		Body: resultPayload
-	}>('/match/result', { schema: resultSchema }, async (request, reply) => {
+	}>('/match/console/result', { schema: resultSchema }, async (request, reply) => {
 		// if (!ensureFromGateway(request, reply)) return;
 		console.log("Match service received a post request at /match/result");
 		const gameResult = request.body;
@@ -66,13 +66,32 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		return newGame;
 	})
 
-	fastify.post('/match/join', async (request, reply)=>{
-		const player: PlayerPayload = {
-			alias: request.headers['x-username'],
-			id: request.headers['x-user-id']
-		}
-		console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
-		const match = matchService.joinRemoteMatch(player);
-		return match;
+	fastify.get('/match/remote/open', async (request, reply) => {
+		console.log("Match service received a get request at /match/open");
+		const res = await matchService.getOpenMatches();
+		return res;
 	})
+
+	fastify.post('/match/remote/new', {schema: newMatchSchema}, async (request, reply) => {
+		console.log("Match service received a get request at /match/remote/new");
+		const newPlayer: PlayerPayload = {
+					alias: request.headers['x-username'],
+					id: request.headers['x-user-id']
+				}
+		const payload = request.body as {name: string};
+		const newMatchId = await matchService.addMatchRow("REMOTE", payload.name);
+		await matchService.addPlayer(newPlayer, newMatchId);
+		const res: newRemoteMatch = {name: payload.name, id: newMatchId, player:newPlayer};
+		return res;
+	})
+
+	// fastify.post('/match/join', async (request, reply)=>{
+	// 	const player: PlayerPayload = {
+	// 		alias: request.headers['x-username'],
+	// 		id: request.headers['x-user-id']
+	// 	}
+	// 	console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
+	// 	const match = matchService.joinRemoteMatch(player);
+	// 	return match;
+	// })
 }

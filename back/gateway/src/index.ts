@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+import { registerGatewayWebSocket } from "./sockets"; //import after dotenv load so the variables are available inside th module	
+
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
@@ -37,7 +39,7 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
-		"/match/join"
+		"/match/remote"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -100,6 +102,9 @@ async function buildServer() {
 	server.get("/online", async () => {
 		return { online: getOnlineUsers() };
 	});
+
+	//websocket registration
+	await registerGatewayWebSocket(server);
 
 	return server;
 }
