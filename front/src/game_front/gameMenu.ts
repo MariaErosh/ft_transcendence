@@ -25,7 +25,7 @@ export function setupSocket(): Promise<void> {
 					gameBoard.remove();
 				}
 				const container = document.getElementById('app') as HTMLElement;
-				renderGameBoard(container);
+				renderGameBoard(container);//PASS GAMEID AND TOCKEN HERE
 				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
 				// if (gameBoard) {
 				// 	const overlay = document.getElementById('overlay') as HTMLElement;

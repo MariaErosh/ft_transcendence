@@ -34,6 +34,9 @@ async function buildServer() {
 
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
+	
+	//websocket registration
+	await registerGatewayWebSocket(server);
 
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
@@ -102,9 +105,6 @@ async function buildServer() {
 	server.get("/online", async () => {
 		return { online: getOnlineUsers() };
 	});
-
-	//websocket registration
-	await registerGatewayWebSocket(server);
 
 	return server;
 }

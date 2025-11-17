@@ -98,7 +98,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 					return;
 				}
 		
-				// Create new match
+				// Create new matchREPLACE WITH GETTING NEW MATCH ID API CALL
 				const newMatch: { id:number, name:string, player: PlayerPayload } = await createRemoteMatch(name);
 				console.log("Received a new remote match: ", newMatch);
 				await joinRoom(newMatch.id, newMatch.name);

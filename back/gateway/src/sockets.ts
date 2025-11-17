@@ -1,10 +1,6 @@
 import { FastifyInstance } from "fastify";
 import websocketPlugin from "@fastify/websocket";
-import jwt from "jsonwebtoken";
 import { WebSocket } from "ws";
-
-
-const JWT_SECRET = process.env.JWT_SECRET as string;
 
 interface PlayerPayload {
 	sub: number;
@@ -18,6 +14,7 @@ interface JoinMatchPayload {
 
 export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
+	console.log("websocket registered on gateway");
 
 	// Map userId → Set of WebSocket connections
 	const userSockets = new Map<number, Set<WebSocket>>();
@@ -28,29 +25,23 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 	server.get("/ws", { websocket: true }, (socket, req) => {
 
 		// JWT from query parameter
-		const { token } = req.query as { token?: string };
+		const { token } = (req.query as any).token;
 		if (!token) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
 			socket.close();
 			return;
 		}
-		let decoded;
+		let player: PlayerPayload | null = null;
+
 		try {
-			decoded = jwt.verify(token.toString(), JWT_SECRET);
-		} catch {
+			player = server.jwt.verify<PlayerPayload>(token);
+		} catch (err) {
+			socket.send(JSON.stringify({ error: "Unauthorized" }));
 			socket.close();
 			return;
 		}
 
-		if (!isPlayerPayload(decoded)) {
-			socket.close();
-			return;
-		}
-
-		const user = decoded; // fully typed 👍
-
-
-		const userId = user.sub;
+		const userId = player.sub;
 		if (!userSockets.has(userId)) userSockets.set(userId, new Set());
 		userSockets.get(userId)!.add(socket);
 
@@ -78,7 +69,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 									matchId: payload.id,
 									name: payload.name,
 									userId,
-									alias: user.username
+									alias: player.username
 								}));
 							}
 						});

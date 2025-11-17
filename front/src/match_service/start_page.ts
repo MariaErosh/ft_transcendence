@@ -3,7 +3,7 @@ import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
 
 
-setupSocket().catch(err => console.error("Failed to setup socket:", err));
+// setupSocket().catch(err => console.error("Failed to setup socket:", err));
 
 export function renderCreateTournamentForm(container: HTMLElement) {
 	console.log("Rendering match making menu");

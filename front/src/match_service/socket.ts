@@ -10,7 +10,7 @@ export async function connectWS() {
   if (!token && !(await refreshAccessToken())) return;
 
   token = localStorage.getItem("accessToken");
-  ws = new WebSocket(`ws://localhost:3000?token=${token}`);
+  ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
   ws.onopen = () => {
     console.log("WS connected");
