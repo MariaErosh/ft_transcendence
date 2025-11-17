@@ -1,3 +1,5 @@
+import { WebSocket as WS } from "ws";
+
 export interface BoardConstants {
 	CANVAS_HEIGHT: number;
 	CANVAS_WIDTH: number;
@@ -21,10 +23,17 @@ export let board: BoardConstants = {
 
 export interface Player { alias: string, id: number | null }
 
+export interface PlayerSocket {
+	ws: WS;
+	token: string;
+	id: number;
+	alias: string;
+}
+
 export interface GameObject {
 	leftPlayer: Player;
 	rightPlayer: Player;
-	matchId: number;
+	gameId: number;
 	type: string;
 }
 
@@ -40,37 +49,40 @@ export interface GameState {
 	loser: Player;
 }
 
-export let gameState: GameState = {
-	ball: {
+export function initGameState (): GameState {
+	let init: GameState = {} as GameState;
+	init.ball = {
 		x: board.CANVAS_WIDTH / 2,
 		y: board.CANVAS_HEIGHT / 2,
 	},
-	leftPaddle: {
+	init.leftPaddle = {
 		x: board.MARGIN,
 		y: board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2
 	},
-	rightPaddle: {
+	init.rightPaddle = {
 		x: board.CANVAS_WIDTH - board.PADDLE_WIDTH - board.MARGIN,
 		y: board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2
 	},
-	speed : {
+	init.speed = {
 		bX: 0,
 		bY: 0,
 		p: 6
 	},
-	score: {
+	init.score = {
 		left: 0,
 		right: 0
 	},
-	servingPlayer: whichSide(),
-	current: {
+	init.servingPlayer = whichSide(),
+	init.current = {
 		leftPlayer: { alias: 'left', id: -1 },
 		rightPlayer: { alias: 'right', id: -2 },
-		matchId: -1,
+		gameId: -1,
 		type: 'none'
 	},
-	winner: { alias: 'none', id: -1 },
-	loser: { alias: 'none', id: -1 },
+	init.winner = { alias: 'none', id: -1 },
+	init.loser = { alias: 'none', id: -1 };
+
+	return init;
 };
 
 export function whichSide() : 'left' | 'right' {

@@ -4,7 +4,6 @@
 		// File Layout
 		"rootDir": "./src",
 		"outDir": "./dist",
-
 		// Environment Settings
 		// See also https://aka.ms/tsconfig/module
 		"module": "CommonJS",
@@ -12,7 +11,11 @@
 		//"types": [],
 		// For nodejs:
 		// "lib": ["esnext"],
-		// "types": ["node"],
+		 "skipLibCheck": true,		  // skip type checking of declaration files
+			//"noImplicitAny": true,      // raise error on expressions and declarations with an implied 'any' type
+			"baseUrl" : "./src",
+			"paths": {},
+			"types" : ["node", "ws", "jest"],
 		// and npm install -D @types/node
 
 		// Other Outputs
@@ -27,10 +30,9 @@
 		//"isolatedModules": true,
 		//"noUncheckedSideEffectImports": true,
 		//"moduleDetection": "force",
-		"skipLibCheck": true,
 
 		"esModuleInterop": true,
-    	"resolveJsonModule": true,
+    		"resolveJsonModule": true,
 		"moduleResolution": "node"
 
 	},

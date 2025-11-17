@@ -2,17 +2,17 @@ import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 
 export let engineSocket: WebSocket;
-export let defMatchId: number = 111;
+export let defGameId: number = 111;
 export let defToken: string = 'token';
 
-export function setupEngineSocket(matchId: number, token: string): Promise<void> {
+export function setupEngineSocket(gameId: number, token: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		if (engineSocket && engineSocket.readyState === WebSocket.OPEN)
 			engineSocket.close();
 
-	engineSocket = new WebSocket(`ws://localhost:3003/ws?matchId=${matchId}&token=${token}`);
+	engineSocket = new WebSocket(`ws://localhost:3000/game/ws?matchId=${gameId}&token=${token}`);
 	engineSocket.addEventListener("open", () => {
-			console.log("Game engine socket open for match with id: ", matchId);
+			console.log("Game engine socket open for match with id: ", gameId);
 			resolve();
 		});
 
@@ -43,7 +43,7 @@ export function readyToRender() {
 
 export async function renderGameBoard(container: HTMLElement) {
 
-	await setupEngineSocket(defMatchId, defToken);
+	await setupEngineSocket(defGameId, defToken);
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
 	Object.assign(board, getConsts);
@@ -106,12 +106,12 @@ export async function disconnectEngine() {
         if (engineSocket && engineSocket.readyState !== WebSocket.CLOSED) {
             engineSocket.addEventListener("close", () => {
                // console.log("old socket closed");
-                setupEngineSocket(defMatchId, defToken).then(resolve);
+                setupEngineSocket(defGameId, defToken).then(resolve);
             }, { once: true });
             engineSocket.close();
         } else {
             // If already closed, just setup a new one
-            setupEngineSocket(defMatchId, defToken).then(resolve);
+            setupEngineSocket(defGameId, defToken).then(resolve);
         }
     });
 }
