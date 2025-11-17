@@ -12,7 +12,7 @@ interface RefreshResponse {
 }
 
 
-export async function authorisedRequest(url: string, options: ApiRequestOptions = {}): Promise<Response> {
+export async function authorisedRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
   const accessToken = localStorage.getItem("accessToken");
 
   options.headers = {
@@ -31,7 +31,7 @@ export async function authorisedRequest(url: string, options: ApiRequestOptions 
   return data;
 }
 
-async function refreshAccessToken(): Promise<boolean> {
+export async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refreshToken");
   if (!refreshToken) return false;
 
@@ -89,18 +89,15 @@ export async function register(username: string, password: string) {
   return data;
 }
 
-export interface PlayerPayload {
-	auth_user_id: number | null,
-	alias: string,
-}
+
 interface CreateMatchPayload{
 	type: string;
-	players: PlayerPayload[];
+	players: Player[];
 }
 
 export async function createConsoleMatch(aliases:string[]) {
-	const players: PlayerPayload[] = aliases.map(alias => ({
-		auth_user_id: null,
+	const players: Player[] = aliases.map(alias => ({
+		id: null,
 		alias
 	}));
 
@@ -109,12 +106,11 @@ export async function createConsoleMatch(aliases:string[]) {
 		players
 	};
 
-	const res = await fetch(`${BASE_URL}/match/new`, {
+	const res = await fetch(`${BASE_URL}/match/console/new`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  //return res.json();
 	const data = await res.json();
 	console.log("Register response:", data);
 	return data;
@@ -131,15 +127,34 @@ export interface GameInstance {
     rightPlayer: Player;
 }
 
-export async function joinRemoteMatch(){
-	console.log("attempt to join tournamnet");
-	const res = await authorisedRequest(`/match/join`,{
-		method: "POST",
-		headers: {"Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("accessToken")}`},
-		body: JSON.stringify({})
-	})
-	console.log("Join tournament response:", res);
-	return res;
+// export async function joinRemoteMatch(){
+// 	console.log("attempt to join tournamnet");
+// 	const res = await authorisedRequest(`/match/join`,{
+// 		method: "POST",
+// 		headers: {"Content-Type": "application/json"},
+// 		body: JSON.stringify({})
+// 	})
+// 	console.log("Join tournament response:", res);
+// 	return res;
+// }
+
+
+export async function getOpenMatches(){
+  const res = await authorisedRequest(`/match/remote/open`,{
+    method: "GET",
+    headers: {"Content-Type": "application/json"},
+  });
+  const data = await res.json();
+  return data;
+}
+
+export async function createRemoteMatch(matchName: string){
+  return authorisedRequest<{ id: number; name: string; player: Player }>
+  (`/match/remote/new`,{
+    		method: "POST",
+    		headers: {"Content-Type": "application/json"},
+    		body: JSON.stringify({ name: matchName })
+    	})
 }
 
 export async function sendGameToGameEngine(game:GameInstance){
