@@ -65,7 +65,7 @@ export async function login(username: string, password: string) {
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
   }
-  return res.json();
+  return data;
 }
 
 export async function verify2FA(userId: number, token: string) {
@@ -127,35 +127,45 @@ export interface GameInstance {
     rightPlayer: Player;
 }
 
-// export async function joinRemoteMatch(){
-// 	console.log("attempt to join tournamnet");
-// 	const res = await authorisedRequest(`/match/join`,{
-// 		method: "POST",
-// 		headers: {"Content-Type": "application/json"},
-// 		body: JSON.stringify({})
-// 	})
-// 	console.log("Join tournament response:", res);
-// 	return res;
-// }
-
-
-export async function getOpenMatches(){
-  const res = await authorisedRequest(`/match/remote/open`,{
-    method: "GET",
-    headers: {"Content-Type": "application/json"},
-  });
-  const data = await res.json();
-  return data;
+export async function getOpenMatches(): Promise<string[]> {
+	try {
+		const response = await fetch(`${BASE_URL}/open`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+		if (!response.ok) {
+			throw new Error(`Failed to fetch matches: ${response.status}`);
+		}
+		const data = await response.json();
+		return data.matches || [];
+	} catch (err) {
+		console.error("Error fetching open matches:", err);
+		return [];
+	}
 }
 
-export async function createRemoteMatch(matchName: string){
-  return authorisedRequest<{ id: number; name: string; player: Player }>
-  (`/match/remote/new`,{
-    		method: "POST",
-    		headers: {"Content-Type": "application/json"},
-    		body: JSON.stringify({ name: matchName })
-    	})
+export async function getMatchPlayers(matchName: string): Promise <string[]>{
+	try{
+		const response = await fetch(`${BASE_URL}/players`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({matchName})
+		})
+		if (!response.ok) {
+			throw new Error(`Failed to fetch match players: ${response.status}`);
+		}
+		const data = await response.json();
+		return data.players || [];
+	} catch (err){
+		console.error("Error fetching match players: ", err);
+		return[];
+	}
 }
+
 
 export async function sendGameToGameEngine(game:GameInstance){
 	const res = await fetch (`http://localhost:3003/game/start`, {

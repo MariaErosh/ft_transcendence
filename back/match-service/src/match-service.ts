@@ -33,7 +33,7 @@ export class MatchService {
 	async createNewConsoleMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
 		try {
 			await dbRunQuery(this.db, "BEGIN TRANSACTION");
-			const matchId = await this.addMatchRow(matchType);
+			const matchId = await this.addMatchRow(matchType, "");
 
 			for (let player of players) {
 				await this.addPlayer(player, matchId);
@@ -140,10 +140,7 @@ export class MatchService {
 		const res = await dbAll(this.db, 'SELECT id, name FROM matches WHERE type = ? and status = ?', ['REMOTE', 'OPEN']);
 		return res;
 	}
-	async joinRemoteMatch(player: PlayerPayload, matchId: number){
-		await this.addPlayer(player, openMatch.id as number);
-		return openMatch;
-	}
+
 }
 
 

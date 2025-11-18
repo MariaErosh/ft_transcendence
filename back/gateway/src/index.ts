@@ -3,10 +3,9 @@ import proxy from "@fastify/http-proxy";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
+import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./sockets";
 
 dotenv.config();
-
-import { registerGatewayWebSocket } from "./sockets"; //import after dotenv load so the variables are available inside th module	
 
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -34,7 +33,7 @@ async function buildServer() {
 
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
-	
+
 	//websocket registration
 	await registerGatewayWebSocket(server);
 
@@ -105,6 +104,15 @@ async function buildServer() {
 	server.get("/online", async () => {
 		return { online: getOnlineUsers() };
 	});
+
+	server.get("/open", async () => {
+		return { matches: getOpenMatches() };
+	})
+
+	server.post("/players", async (req, response) => {
+		let matchName = (req.body as {matchName:string}).matchName;
+		return { players: getMatchPlayers(matchName) };
+	})
 
 	return server;
 }

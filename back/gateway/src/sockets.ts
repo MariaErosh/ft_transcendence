@@ -7,9 +7,13 @@ interface PlayerPayload {
 	username: string;
 }
 
-interface JoinMatchPayload {
-	id: number;
-	name: string;
+const matchPlayers = new Map<string, Set<number>>();
+const userInfo = new Map<number, string>();
+export function getOpenMatches(){ return Array.from(matchPlayers.keys())}
+export function getMatchPlayers(matchName:string){
+	const ids = matchPlayers.get(matchName);
+    if (!ids) return [];
+    return [...ids].map(id => (userInfo.get(id) ?? `User${id}`));
 }
 
 export async function registerGatewayWebSocket(server: FastifyInstance) {
@@ -20,14 +24,14 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 	const userSockets = new Map<number, Set<WebSocket>>();
 
 	// Map matchId → Set of player userIds
-	const matchPlayers = new Map<number, Set<number>>();
 
 	server.get("/ws", { websocket: true }, (socket, req) => {
 
 		// JWT from query parameter
-		const { token } = (req.query as any).token;
+		const token = (req.query as any).token;
 		if (!token) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
+			console.log("NO TOKEN PROVIDED");
 			socket.close();
 			return;
 		}
@@ -37,13 +41,15 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 			player = server.jwt.verify<PlayerPayload>(token);
 		} catch (err) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
+			console.log("COULDN'T PARSE TOKEN");
 			socket.close();
 			return;
 		}
 
-		const userId = player.sub;
+		const userId = player!.sub;
 		if (!userSockets.has(userId)) userSockets.set(userId, new Set());
 		userSockets.get(userId)!.add(socket);
+		userInfo.set(player!.sub, player!.username);
 
 		console.log(`socket User connected: ${userId} (sockets: ${userSockets.get(userId)!.size})`);
 
@@ -51,49 +57,36 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 			try {
 				const text = msg.toString('utf8');
 				const data = JSON.parse(text);
-
+			
 				if (data.type === "join_match") {
-					const payload: JoinMatchPayload = data.payload;
-					if (!matchPlayers.has(payload.id)) matchPlayers.set(payload.id, new Set());
-					matchPlayers.get(payload.id)!.add(userId);
+					const matchName = data.name;
+					if (!matchPlayers.has(matchName)) matchPlayers.set(matchName, new Set());
+					matchPlayers.get(matchName)!.add(userId);
 
-					console.log(`User ${userId} joined match ${payload.name}`);
+					console.log(`User ${userId} joined match ${matchName}`);
 
 					// Broadcast to everyone in the room
-					const players = matchPlayers.get(payload.id)!;
+					const players = matchPlayers.get(matchName)!;
 					players.forEach((uid) => {
 						userSockets.get(uid)?.forEach((s) => {
 							if (s.readyState === WebSocket.OPEN) {
 								s.send(JSON.stringify({
 									type: "player_joined",
-									matchId: payload.id,
-									name: payload.name,
-									userId,
-									alias: player.username
+									name: matchName,
+									alias: player!.username
 								}));
 							}
 						});
 					});
 				}
 
-				// if (data.type === "start_match") {
-				// 	const matchId = data.matchId;
-				// 	const players = matchPlayers.get(matchId);
-				// 	if (!players || !players.has(userId)) return;
-
-				// 	if (players.size < 2) {
-				// 		socket.send(JSON.stringify({ error: "Not enough players to start" }));
-				// 		return;
-				// 	}
-
-				// 	console.log(`Match ${matchId} started by ${userId}`);
-
-				// 	players.forEach((uid) => {
-				// 		userSockets.get(uid)?.forEach((s) => {
-				// 			s.send(JSON.stringify({ type: "match_started", id: matchId }));
-				// 		});
-				// 	});
-				// }
+				if (data.type === "new_match"){
+					if (!matchPlayers.has(data.name)) matchPlayers.set(data.name, new Set());
+				else {
+					socket.send(JSON.stringify({ error: "Match already exists" }));
+					console.log("MATCH ALREADY EXISTS");
+				}
+				}
 
 			} catch (err) {
 				console.error("Failed to parse socket message", err);
@@ -114,13 +107,4 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 	});
 
 	console.log("WebSocket Gateway registered.");
-}
-
-function isPlayerPayload(obj: any): obj is PlayerPayload {
-	return (
-		obj &&
-		typeof obj === "object" &&
-		typeof obj.sub === "number" &&
-		typeof obj.username === "string"
-	);
 }

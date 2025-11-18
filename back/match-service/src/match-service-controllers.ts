@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createMatchSchema, newMatchSchema, resultSchema } from "./schemas";
-import { CreateMatchPayload, GamePayload, PlayerPayload, newRemoteMatch, resultPayload } from "./models";
+import { CreateMatchPayload, GamePayload, PlayerPayload, resultPayload } from "./models";
 import { MatchService } from "./match-service";
 import dotenv from "dotenv";
 
@@ -16,8 +16,6 @@ function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 	}
 	return true;
 }
-
-
 
 export async function matchRoutes(fastify: FastifyInstance, matchService: MatchService) {
 	fastify.post<{
@@ -72,26 +70,27 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		return res;
 	})
 
-	fastify.post('/match/remote/new', {schema: newMatchSchema}, async (request, reply) => {
+	fastify.post('/match/remote/new', { schema: newMatchSchema }, async (request, reply) => {
 		console.log("Match service received a get request at /match/remote/new");
-		const newPlayer: PlayerPayload = {
-					alias: request.headers['x-username'],
-					id: request.headers['x-user-id']
-				}
-		const payload = request.body as {name: string};
-		const newMatchId = await matchService.addMatchRow("REMOTE", payload.name);
-		await matchService.addPlayer(newPlayer, newMatchId);
-		const res: newRemoteMatch = {name: payload.name, id: newMatchId, player:newPlayer};
+		const payload = (request.body as { name: string }).name;
+		const newMatchId = await matchService.addMatchRow("REMOTE", payload);
+		const res = { name: payload, id: newMatchId };
 		return res;
 	})
 
-	// fastify.post('/match/join', async (request, reply)=>{
-	// 	const player: PlayerPayload = {
-	// 		alias: request.headers['x-username'],
-	// 		id: request.headers['x-user-id']
-	// 	}
-	// 	console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
-	// 	const match = matchService.joinRemoteMatch(player);
-	// 	return match;
-	// })
+	fastify.post('/match/remote/join', async (request, reply) => {
+		const rawId = request.headers["x-user-id"];
+		if (typeof rawId !== "string") {
+			throw new Error("Missing x-user-id header");
+		}
+
+		const player: PlayerPayload = {
+			alias: request.headers["x-username"] as string,
+			id: Number(rawId)
+		};
+		const payload = (request.body as { matchId: number }).matchId;
+		console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
+		const playerId = await matchService.addPlayer(player, payload);
+		return playerId;
+	})
 }

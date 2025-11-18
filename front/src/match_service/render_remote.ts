@@ -1,17 +1,18 @@
-import { createRemoteMatch, getOpenMatches } from "../api.js";
 import { ws, connectWS } from "./socket.js";
+import { getMatchPlayers, getOpenMatches } from "../api.js"
 
 interface matchPayload {
 	id: number;
 	name: string;
 }
-interface PlayerPayload{
+interface PlayerPayload {
 	id: number;
 	alias: string;
 }
 
 export async function renderNewRemoteTournament(container: HTMLElement, box: HTMLElement) {
 	await connectWS();
+	let gameOwner = false;
 	box.innerHTML = "";
 
 	const title = document.createElement("div");
@@ -37,18 +38,18 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 	async function refreshMatches() {
 		listBox.innerHTML = "Loading...";
 		try {
-			const matches: matchPayload[] = await getOpenMatches(); // [{id, name}, ...]
+			const matches: string[] = await getOpenMatches(); // REQUEST VIA WEBSOCKET
 			listBox.innerHTML = "";
 
 			for (const match of matches) {
 				const btn = document.createElement("button");
-				btn.textContent = match.name;
+				btn.textContent = match;
 				btn.className = `
 					bg-gray-100 text-black font-sans text-2xl p-4 rounded
 					hover:bg-gray-300 transition
 				`;
 				btn.addEventListener("click", async () => {
-					await joinRoom(match.id, match.name);
+					await joinRoom(match);
 				});
 				listBox.appendChild(btn);
 			}
@@ -84,34 +85,36 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		create.addEventListener("click", async () => {
 			const name = input.value.trim();
 			if (!name) return;
-		
+
 			try {
 				// Fetch current matches
-				const currentMatches:matchPayload[] = await getOpenMatches();
-		
+				const currentMatches: string[] = await getOpenMatches();
+
 				// Check if the name already exists
 				const nameExists = currentMatches.some(
-					(m) => m.name.toLowerCase() === name.toLowerCase()
+					(m) => m.toLowerCase() === name.toLowerCase()
 				);
 				if (nameExists) {
 					alert("A match with this name already exists. Choose a different name.");
 					return;
 				}
-		
-				// Create new matchREPLACE WITH GETTING NEW MATCH ID API CALL
-				const newMatch: { id:number, name:string, player: PlayerPayload } = await createRemoteMatch(name);
-				console.log("Received a new remote match: ", newMatch);
-				await joinRoom(newMatch.id, newMatch.name);
+				ws?.send(JSON.stringify({
+					type: "new_match",
+					name: name,
+				}))
+				console.log("Received a new remote match: ", name);
+				gameOwner = true;
+				await joinRoom(name);
 			} catch (err) {
 				console.error(err);
 				alert("Failed to create match. Try again.");
 			}
 		});
-		
+
 	});
 
 
-	async function joinRoom(matchId: number, matchName: string) {
+	async function joinRoom(matchName: string) {
 		box.innerHTML = "";
 
 		const title = document.createElement("div");
@@ -135,23 +138,23 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			bg-gray-500 text-black font-sans font-semibold
 			w-1/3 h-16 text-3xl transition
 		`;
-		box.appendChild(startButton);
-		// socket.emit("join_match", { matchId });
-		ws?.send(JSON.stringify({
-			id: matchId,
-			name: matchName,
-		}))
+		if (gameOwner) box.appendChild(startButton);
 
-		const players: PlayerPayload[] = [];
+		let players: string[] = await getMatchPlayers(matchName) || [];
+		console.log("Players from gateway: ", players);
+		refreshPlayers();
 
-		ws?.addEventListener("message", (ev)=>{
+		ws?.addEventListener("message", (ev) => {
 			const msg = JSON.parse(ev.data);
-			if (msg.type === "player_joined" && msg.matchId === matchId && players.indexOf(msg.alias) === -1){
-				let payload: PlayerPayload = {alias: msg.alias, id: msg.userId}
-				players.push(payload);
-				refreshPlayers();
+			console.log ("Message: ", msg);
+
+			if (msg.type === "player_joined" && msg.name === matchName) {
+				if (players.indexOf(msg.alias) === -1){
+					players.push(msg.alias);
+					refreshPlayers();
+				}
 			}
-			if (msg.type === "start_game" && msg.matchId === matchId){
+			if (msg.type === "start_game" && msg.matchName === matchName) {
 				console.log("Ready to start the game: ", msg);
 				//TO DO: SEND THE INFORMATION TO THE GAME ENGINE
 			}
@@ -160,7 +163,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			playersList.innerHTML = "";
 			for (const p of players) {
 				const row = document.createElement("div");
-				row.textContent = p.alias;
+				row.textContent = p;
 				row.className = "text-2xl";
 				playersList.appendChild(row);
 			}
@@ -177,8 +180,15 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		}
 
 		startButton.addEventListener("click", () => {
-			// socket.emit("start_match", { matchId });
-
+			ws?.send(JSON.stringify({
+				type: "start_match",
+				matchName: matchName
+			}))
 		});
+
+		ws?.send(JSON.stringify({
+			type: "join_match",
+			name: matchName,
+		}))
 	}
 }

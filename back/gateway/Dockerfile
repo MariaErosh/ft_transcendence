@@ -1,22 +1,23 @@
-FROM node:20-alpine AS prod
+#base stage
+FROM node:20-alpine AS base
 
 WORKDIR /app
 
-# Install build tools for native modules
-RUN apk add --no-cache python3 make g++
-
-# Copy package files first for caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# prod stage
+FROM base AS prod
 
-# Copy source code
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install || echo "No dependencies yet"
+
 COPY . .
 
-# Build
-RUN npm run build
+RUN npm run build || echo "Build skipped"
 
-EXPOSE 3000
+EXPOSE 3001
 
 CMD ["npm", "run", "start"]
