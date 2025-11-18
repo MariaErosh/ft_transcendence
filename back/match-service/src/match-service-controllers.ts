@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { createMatchSchema, newMatchSchema, resultSchema } from "./schemas";
+import { createMatchSchema, resultSchema } from "./schemas";
 import { CreateMatchPayload, GamePayload, PlayerPayload, resultPayload } from "./models";
 import { MatchService } from "./match-service";
 import dotenv from "dotenv";
@@ -64,33 +64,61 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		return newGame;
 	})
 
-	fastify.get('/match/remote/open', async (request, reply) => {
-		console.log("Match service received a get request at /match/open");
-		const res = await matchService.getOpenMatches();
-		return res;
-	})
-
-	fastify.post('/match/remote/new', { schema: newMatchSchema }, async (request, reply) => {
-		console.log("Match service received a get request at /match/remote/new");
-		const payload = (request.body as { name: string }).name;
-		const newMatchId = await matchService.addMatchRow("REMOTE", payload);
-		const res = { name: payload, id: newMatchId };
-		return res;
-	})
-
-	fastify.post('/match/remote/join', async (request, reply) => {
-		const rawId = request.headers["x-user-id"];
-		if (typeof rawId !== "string") {
-			throw new Error("Missing x-user-id header");
+	fastify.post<{
+		Body: CreateMatchPayload
+	}>('/match/remote/new', { schema: createMatchSchema }, async (request, reply) => {
+		// if (!ensureFromGateway(request, reply)) return;
+		console.log("In match/remote/new");
+		const match = request.body;
+		const matchId = await matchService.addMatchRow(match.type, match.name);
+		for (const player of match.players) {
+			await matchService.addPlayer(player, matchId);
 		}
-
-		const player: PlayerPayload = {
-			alias: request.headers["x-username"] as string,
-			id: Number(rawId)
-		};
-		const payload = (request.body as { matchId: number }).matchId;
-		console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
-		const playerId = await matchService.addPlayer(player, payload);
-		return playerId;
+		const games = await matchService.createNewRound(matchId);
+		for (const game of games) {
+			let payload: GamePayload = {
+				type: "REMOTE",
+				matchId: game.id,
+				leftPlayer: { id: game.left_player_id, alias: game.left_player_alias },
+				rightPlayer: { id: game.right_player_id, alias: game.right_player_alias },
+			}
+			await fetch(`http://gateway:3000/game/start`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(game)
+			});
+			console.log("REMOTE game sent to game engine");
+		}
+		//ADD ERROR CHECKING
+		return { matchId: matchId, games: games };
 	})
+
+	// fastify.post('/match/remote/new', { schema: newMatchSchema }, async (request, reply) => {
+	// 	console.log("Match service received a get request at /match/remote/new");
+	// 	const payload = (request.body as { name: string }).name;
+	// 	const newMatchId = await matchService.addMatchRow("REMOTE", payload);
+	// 	const res = { name: payload, id: newMatchId };
+	// 	return res;
+	// })
+
+	// fastify.get('/match/remote/open', async (request, reply) => {
+	// 	console.log("Match service received a get request at /match/open");
+	// 	const res = await matchService.getOpenMatches();
+	// 	return res;
+	// })
+	// fastify.post('/match/remote/join', async (request, reply) => {
+	// 	const rawId = request.headers["x-user-id"];
+	// 	if (typeof rawId !== "string") {
+	// 		throw new Error("Missing x-user-id header");
+	// 	}
+
+	// 	const player: PlayerPayload = {
+	// 		alias: request.headers["x-username"] as string,
+	// 		id: Number(rawId)
+	// 	};
+	// 	const payload = (request.body as { matchId: number }).matchId;
+	// 	console.log(`Received from gateway: player alias: ${player.alias}, id: ${player.id}`);
+	// 	const playerId = await matchService.addPlayer(player, payload);
+	// 	return playerId;
+	// })
 }

@@ -137,8 +137,17 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		startButton.className = `
 			bg-gray-500 text-black font-sans font-semibold
 			w-1/3 h-16 text-3xl transition
+			${gameOwner ? "" : "hidden"}
 		`;
-		if (gameOwner) box.appendChild(startButton);
+		box.appendChild(startButton);
+
+		startButton.addEventListener("click", () => {
+			console.log("SENDING start_match");
+			ws?.send(JSON.stringify({
+				type: "start_match",
+				name: matchName
+			}))
+		});
 
 		let players: string[] = await getMatchPlayers(matchName) || [];
 		console.log("Players from gateway: ", players);
@@ -156,7 +165,10 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			}
 			if (msg.type === "start_game" && msg.matchName === matchName) {
 				console.log("Ready to start the game: ", msg);
-				//TO DO: SEND THE INFORMATION TO THE GAME ENGINE
+			}
+			if (msg.type == "game_ready"){
+				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
+				//TO DO: CALL THE GAME FRONTEND
 			}
 		})
 		function refreshPlayers() {
@@ -178,13 +190,6 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 				startButton.classList.remove("bg-white", "hover:bg-gray-200");
 			}
 		}
-
-		startButton.addEventListener("click", () => {
-			ws?.send(JSON.stringify({
-				type: "start_match",
-				matchName: matchName
-			}))
-		});
 
 		ws?.send(JSON.stringify({
 			type: "join_match",

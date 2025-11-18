@@ -3,9 +3,11 @@ import proxy from "@fastify/http-proxy";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
-import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./sockets";
 
 dotenv.config();
+import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./sockets";
+
+
 
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -41,7 +43,6 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
-		"/match/remote"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {

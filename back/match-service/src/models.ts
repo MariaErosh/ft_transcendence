@@ -26,6 +26,7 @@ export interface PlayerPayload {
 
 export interface CreateMatchPayload{
 	type: string;
+	name: string | null;
 	players: PlayerPayload[];
 }
 
@@ -42,8 +43,3 @@ export interface resultPayload{
 	loser: PlayerPayload
 }
 
-export interface newRemoteMatch{
-	id: number,
-	name: string,
-	player: PlayerPayload
-}

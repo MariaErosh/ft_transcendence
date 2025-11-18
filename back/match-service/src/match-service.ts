@@ -9,7 +9,7 @@ export class MatchService {
 
 	async addMatchRow(matchType: string, name: string | null) {
 		return new Promise<number>((resolve, reject) => {
-			this.db.run("INSERT INTO matches (status, type, round, name) VALUES (?, ?, ?)", ['OPEN', matchType, 0, name],
+			this.db.run("INSERT INTO matches (status, type, round, name) VALUES (?, ?, ?, ?)", ['OPEN', matchType, 0, name],
 				function (err) {
 					if (err) { return reject(err) };
 					resolve(this.lastID);
@@ -121,7 +121,7 @@ export class MatchService {
 		let players: Player[] = await dbAll(this.db, "SELECT * FROM players WHERE match_id = ? AND status = ?", [matchId, "NOT PLAYED"]);
 		if (players === undefined || players.length === 0)
 			throw new Error("No winners in the match");
-		if (players.length > 2){
+		if (players.length > 1){
 			const row = await dbGet<{ round: number }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
 			if (!row)throw new Error(`No match found with id ${ matchId}`);
 			const round = row.round + 1;
@@ -136,10 +136,10 @@ export class MatchService {
 		return games;
 	}
 
-	async getOpenMatches(){
-		const res = await dbAll(this.db, 'SELECT id, name FROM matches WHERE type = ? and status = ?', ['REMOTE', 'OPEN']);
-		return res;
-	}
+	// async getOpenMatches(){
+	// 	const res = await dbAll(this.db, 'SELECT id, name FROM matches WHERE type = ? and status = ?', ['REMOTE', 'OPEN']);
+	// 	return res;
+	// }
 
 }
 
