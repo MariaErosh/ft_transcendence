@@ -10,7 +10,7 @@ export function setupEngineSocket(gameId: number, token: string): Promise<void> 
 		if (engineSocket && engineSocket.readyState === WebSocket.OPEN)
 			engineSocket.close();
 
-	engineSocket = new WebSocket(`ws://localhost:3000/game/ws?matchId=${gameId}&token=${token}`);
+	engineSocket = new WebSocket(`ws://localhost:3000/game/ws?gameId=${gameId}&token=${token}`);
 	engineSocket.addEventListener("open", () => {
 			console.log("Game engine socket open for match with id: ", gameId);
 			resolve();
@@ -29,7 +29,7 @@ export function setupEngineSocket(gameId: number, token: string): Promise<void> 
 	});
 }
 
-export function readyToRender() {
+export function readyToRender(gameId: any) {
 	const matchMenu = document.getElementById("match-menu");
 	if (matchMenu) matchMenu.innerHTML = '';
 	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
@@ -37,13 +37,13 @@ export function readyToRender() {
 		gameBoard.remove();
 	}
 	const container = document.getElementById('app') as HTMLElement;
-	renderGameBoard(container);
+	renderGameBoard(container, gameId);
 }
 				
 
-export async function renderGameBoard(container: HTMLElement) {
+export async function renderGameBoard(container: HTMLElement, gameId: any) {
 
-	await setupEngineSocket(defGameId, defToken);
+	await setupEngineSocket(gameId, defToken);
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
 	Object.assign(board, getConsts);

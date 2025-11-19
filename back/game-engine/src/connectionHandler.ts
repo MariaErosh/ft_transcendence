@@ -61,9 +61,9 @@ server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
 	}
 	console.log(`Client connected for match ${gameId}, player token ${token}`);
 
-	// console.log("sending set message to front end");
-	// ws.send(JSON.stringify({ type: "consts", data: board}));
-	// ws.send(JSON.stringify({type: "set", data: gameState}));
+	console.log("sending set message to front end");
+	ws.send(JSON.stringify({ type: "consts", data: board}));
+	ws.send(JSON.stringify({type: "set", data: gameStates.get(gameId)}));
 	ws.on('message', (data: RawData) => {
 		try {
 			const message = JSON.parse(data.toString());

@@ -1,5 +1,6 @@
 import { ws, connectWS } from "./socket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
+import { renderGameBoard } from "../game_front/gameMenu.js";
 
 interface matchPayload {
 	id: number;
@@ -167,8 +168,10 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 				console.log("Ready to start the game: ", msg);
 			}
 			if (msg.type == "game_ready"){
+		
 				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
 				//TO DO: CALL THE GAME FRONTEND
+				renderGameBoard(container, msg.gameId);
 			}
 		})
 		function refreshPlayers() {
