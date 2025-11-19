@@ -18,6 +18,6 @@ COPY . .
 
 RUN npm run build || echo "Build skipped" 
 
-EXPOSE 3001
+EXPOSE 3003
 
 CMD ["npm", "run", "start"]

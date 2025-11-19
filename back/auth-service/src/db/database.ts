@@ -46,27 +46,35 @@ export function initDB() {
       }
     );
 
-    db.run(
-      `
-      CREATE TABLE IF NOT EXISTS refresh_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        token_hash TEXT NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
-      CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
-      `,
-      (err) => {
-        if (err) {
-          console.error('Failed to create "refresh_tokens" table:', err.message);
-          logger.error('Failed to create "refresh_tokens" table:', { error: err.message });
-        } else {
-          console.log('"refresh_tokens" table created or already exists');
-          logger.info('"refresh_tokens" table created or already exists');
-        }
-      }
-    );
-  });
+	db.run(`
+		CREATE TABLE IF NOT EXISTS refresh_tokens (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			token_hash TEXT NOT NULL,
+			expires_at DATETIME NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+		`
+		, (err) => {
+			if (err) {
+			console.error('Failed to create "refresh_tokens" table:', err.message);
+			} else {
+				console.log('"refresh_tokens" table created or already exists');
+			}
+		}
+	);
+
+	db.run(`
+		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+		`
+		, (err) => {
+			if (err) {
+			console.error('Failed to create index:', err.message);
+			} else {
+				console.log('Index idx_refresh_tokens_user_id created or already exist');
+			}
+		}
+	);
+ });
 }

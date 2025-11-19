@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# prod stage 
+# prod stage
 FROM base AS prod
 
 WORKDIR /app
@@ -16,8 +16,8 @@ RUN npm install || echo "No dependencies yet"
 
 COPY . .
 
-RUN npm run build || echo "Build skipped" 
+RUN npm run build || echo "Build skipped"
 
-EXPOSE 3001
+EXPOSE 3004
 
 CMD ["npm", "run", "start"]

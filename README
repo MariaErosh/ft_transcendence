@@ -2,12 +2,12 @@
 
 ---
 
-## 1) Backend Services
-To start each backend service, navigate to the service’s folder and run:
-```bash
-npm run build
-npm run start
-```
+1)  Backend Services
+To start backend services,
+navigate to the folder infrastructure/ and run:
+docker compose down
+docker compose up --build
+
 
 ---
 
@@ -89,3 +89,25 @@ http://localhost:8080
 - `db_query_duration_seconds`: Measures the duration of database queries.
 - `db_errors_total`: Tracks the total number of database errors.
 
+
+
+CLI USAGE (when backend and frontend are running)
+- to start the game:
+curl -X POST http://localhost:3000/game/start -H "Content-Type: application/json" -d '{"leftPlayer": { "alias": "Alice", "id": "44" },"rightPlayer": { "alias": "Bob", "id": "66" },"matchId": 1,"type": "CONSOLE"}'
+
+- to stop the game:
+curl http://localhost:3000/game/stop
+
+- to move paddles:
+  - left Player down:
+    curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "left","dir": "down"}'
+  - left Player up:
+    curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "left","dir": "up"}'
+  - left Player stop moving:
+    curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "left","dir": "stop"}'
+  - right Player down:
+      curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "right","dir": "down"}'
+  - right Player up:
+      curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "right","dir": "up"}'
+  - right Player stop moving:
+      curl -X POST http://localhost:3000/game/move -H "Content-Type: application/json" -d '{"whichPlayer": "right","dir": "stop"}'
