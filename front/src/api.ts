@@ -1,13 +1,71 @@
 //todo: rewrite via http://gateway:4000"
 const BASE_URL = "http://localhost:3000";
 
+interface ApiRequestOptions extends RequestInit {
+  headers?: Record<string, string>;
+}
+
+interface RefreshResponse {
+  accessToken?: string;
+  refreshToken?: string;
+  refreshExpiresAt?: string;
+}
+
+
+export async function authorisedRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
+  const accessToken = localStorage.getItem("accessToken");
+
+  options.headers = {
+    ...(options.headers || {}),
+    "Authorization": `Bearer ${accessToken}`,
+  };
+
+  let res = await fetch(`${BASE_URL}${url}`, options);
+
+  if (res.status === 401 && localStorage.getItem("refreshToken")) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return authorisedRequest(url, options); // retry request
+  }
+  const data = await res.json();
+  console.log("Result in authorisedRequest:", data);
+  return data;
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem("refreshToken");
+  if (!refreshToken) return false;
+
+  const res = await fetch(`${BASE_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) return false;
+
+  const data: RefreshResponse = await res.json();
+
+  if (!data.accessToken) return false;
+
+  localStorage.setItem("accessToken", data.accessToken);
+  if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+
+  return true;
+}
+
 export async function login(username: string, password: string) {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
-  return res.json();
+  const data = await res.json();
+  if (data.accessToken) {
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
+  }
+  return data;
 }
 
 export async function verify2FA(userId: number, token: string) {
@@ -31,18 +89,15 @@ export async function register(username: string, password: string) {
   return data;
 }
 
-export interface PlayerPayload {
-	auth_user_id: number | null,
-	alias: string,
-}
+
 interface CreateMatchPayload{
 	type: string;
-	players: PlayerPayload[];
+	players: Player[];
 }
 
 export async function createConsoleMatch(aliases:string[]) {
-	const players: PlayerPayload[] = aliases.map(alias => ({
-		auth_user_id: null,
+	const players: Player[] = aliases.map(alias => ({
+		id: null,
 		alias
 	}));
 
@@ -51,12 +106,11 @@ export async function createConsoleMatch(aliases:string[]) {
 		players
 	};
 
-	const res = await fetch(`${BASE_URL}/match/new`, {
+	const res = await fetch(`${BASE_URL}/match/console/new`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  //return res.json();
 	const data = await res.json();
 	console.log("Register response:", data);
 	return data;
@@ -73,6 +127,46 @@ export interface GameInstance {
     rightPlayer: Player;
 }
 
+export async function getOpenMatches(): Promise<string[]> {
+	try {
+		const response = await fetch(`${BASE_URL}/open`, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+		if (!response.ok) {
+			throw new Error(`Failed to fetch matches: ${response.status}`);
+		}
+		const data = await response.json();
+		return data.matches || [];
+	} catch (err) {
+		console.error("Error fetching open matches:", err);
+		return [];
+	}
+}
+
+export async function getMatchPlayers(matchName: string): Promise <string[]>{
+	try{
+		const response = await fetch(`${BASE_URL}/players`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({matchName})
+		})
+		if (!response.ok) {
+			throw new Error(`Failed to fetch match players: ${response.status}`);
+		}
+		const data = await response.json();
+		return data.players || [];
+	} catch (err){
+		console.error("Error fetching match players: ", err);
+		return[];
+	}
+}
+
+
 export async function sendGameToGameEngine(game:GameInstance){
 	const res = await fetch (`http://localhost:3003/game/start`, {
 		method: "POST",
@@ -82,3 +176,4 @@ export async function sendGameToGameEngine(game:GameInstance){
 	// const data = await res.json();
 	console.log("Data sent to game engine");
 }
+

@@ -11,9 +11,7 @@ async function runMatchService() {
 	const matchService = new MatchService(database);
 
 
-	await fastify.register(async(instance) =>{
-		matchRoutes(instance, matchService);
-	});
+	await matchRoutes(fastify, matchService);
 
 	fastify.listen({ port: 3004, host: "0.0.0.0" }, (err, address) => {
 		if (err) {

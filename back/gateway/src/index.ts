@@ -5,6 +5,9 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
+import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./sockets";
+
+
 
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -13,6 +16,19 @@ const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
 const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
+const onlineUsers = new Map<number, number>();
+
+function markUserOnline(userId: number) {
+	onlineUsers.set(userId, Date.now());
+}
+
+function getOnlineUsers(): number[] {
+	const cutoff = Date.now() - 120_000; // 2 minutes timeout
+	for (const [id, lastSeen] of onlineUsers.entries()) {
+		if (lastSeen < cutoff) onlineUsers.delete(id);
+	}
+	return [...onlineUsers.keys()];
+}
 
 async function buildServer() {
 	const server = Fastify({ logger: true });
@@ -20,11 +36,14 @@ async function buildServer() {
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
 
+	//websocket registration
+	await registerGatewayWebSocket(server);
+
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
-							"/users",
-							"/auth/2fa/enable"
-							];
+		"/users",
+		"/auth/2fa/enable",
+	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
 		const url = (request.raw.url || "").split("?")[0];
@@ -32,10 +51,12 @@ async function buildServer() {
 		if (PROTECTED_PREFIXES.some(p => url === p || url.startsWith(p + "/"))) {
 			try {
 				await request.jwtVerify();
+				const userId = (request.user as any).sub;
 				(request.headers as any)['x-user-id'] = String((request.user as any).sub);
 				(request.headers as any)['x-username'] = String((request.user as any).username ?? "");
 				(request.headers as any)['x-user-service'] = String((request.user as any).service ?? "user");
 				(request.headers as any)['x-gateway-secret'] = GATEWAY_SECRET;
+				markUserOnline(userId);
 			} catch (err) {
 				reply.status(401).send({ error: "Unauthorized" });
 				throw err;
@@ -66,7 +87,7 @@ async function buildServer() {
 		upstream: GENGINE_URL,
 		prefix: "/game",
 		rewritePrefix: "/game",
-		http2:false,
+		http2: false,
 	});
 
 	server.get("/health", async () => ({
@@ -80,6 +101,19 @@ async function buildServer() {
 		rewritePrefix: "/match",
 		http2: false,
 	});
+
+	server.get("/online", async () => {
+		return { online: getOnlineUsers() };
+	});
+
+	server.get("/open", async () => {
+		return { matches: getOpenMatches() };
+	})
+
+	server.post("/players", async (req, response) => {
+		let matchName = (req.body as {matchName:string}).matchName;
+		return { players: getMatchPlayers(matchName) };
+	})
 
 	return server;
 }

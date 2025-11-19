@@ -1,15 +1,15 @@
 import { Database } from "sqlite3";
 import { Player, PlayerPayload } from "./models";
-import { dbAll, dbGet, dbRunQuery } from "./helpers";
+import { dbAll, dbGet, dbRunQuery, shuffle } from "./helpers";
 
 
 
 export class MatchService {
 	constructor(private db: Database) { }
 
-	async addMatchRow(matchType: string) {
+	async addMatchRow(matchType: string, name: string | null) {
 		return new Promise<number>((resolve, reject) => {
-			this.db.run("INSERT INTO matches (status, type) VALUES (?, ?)", ['IN PROGRESS', matchType],
+			this.db.run("INSERT INTO matches (status, type, round, name) VALUES (?, ?, ?, ?)", ['OPEN', matchType, 0, name],
 				function (err) {
 					if (err) { return reject(err) };
 					resolve(this.lastID);
@@ -20,7 +20,7 @@ export class MatchService {
 	async addPlayer(player: PlayerPayload, match_id: number): Promise<number> {
 		return new Promise<number>((resolve, reject) => {
 			this.db.run(
-				"INSERT INTO players(auth_user_id, alias, match_id, status)" +
+				"INSERT INTO players(user_id, alias, match_id, status)" +
 				" VALUES(?, ?, ?, ?)",
 				[player.id, player.alias, match_id, 'NOT PLAYED'],
 				function (err) {
@@ -30,10 +30,10 @@ export class MatchService {
 		})
 	}
 
-	async createNewMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
+	async createNewConsoleMatch(matchType: string, players: PlayerPayload[]): Promise<number> {
 		try {
 			await dbRunQuery(this.db, "BEGIN TRANSACTION");
-			const matchId = await this.addMatchRow(matchType);
+			const matchId = await this.addMatchRow(matchType, "");
 
 			for (let player of players) {
 				await this.addPlayer(player, matchId);
@@ -61,7 +61,7 @@ export class MatchService {
 		let winner = await dbAll(this.db, "SELECT from players WHERE match_id = ? AND status = ?", [matchId, 'WON']);
 		if (winner.length !== 1)
 			throw new Error("Number of match winners: " + winner.length);
-		const winnerId = winner[0].auth_user_id;
+		const winnerId = winner[0].user_id;
 		//SEND USER ID TO USER SERVICE
 	}
 
@@ -108,6 +108,39 @@ export class MatchService {
 		const match = await dbGet(this.db, "SELECT * from matches WHERE id = ?", [matchId]);
 		return match;
 	}
+
+	async createNewGame(leftPlayer: Player, rightPlayer: Player, matchId: number, round: number){
+		await dbRunQuery(this.db, "INSERT INTO games(left_player_id, left_player_alias, right_player_id, right_player_alias, match_id, round)" +
+				" VALUES(?, ?, ?, ?, ?, ?)",
+				[leftPlayer.id, leftPlayer.alias, rightPlayer.id, rightPlayer.alias, matchId, round]);
+	}
+
+	async createNewRound(matchId: number){
+		let games = [];
+		await dbRunQuery(this.db, "UPDATE players SET status = ? WHERE match_id = ? AND status = ?", ['NOT PLAYED', matchId, "WON"]);
+		let players: Player[] = await dbAll(this.db, "SELECT * FROM players WHERE match_id = ? AND status = ?", [matchId, "NOT PLAYED"]);
+		if (players === undefined || players.length === 0)
+			throw new Error("No winners in the match");
+		if (players.length > 1){
+			const row = await dbGet<{ round: number }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+			if (!row)throw new Error(`No match found with id ${ matchId}`);
+			const round = row.round + 1;
+			players = shuffle(players);
+			while (players.length > 1){
+				await this.createNewGame(players[0]!, players[1]!, matchId, round);
+				players.splice(0, 2);
+			}
+			games = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, round]);
+		}
+		console.log ("Games of the round: ", games);
+		return games;
+	}
+
+	// async getOpenMatches(){
+	// 	const res = await dbAll(this.db, 'SELECT id, name FROM matches WHERE type = ? and status = ?', ['REMOTE', 'OPEN']);
+	// 	return res;
+	// }
+
 }
 
 

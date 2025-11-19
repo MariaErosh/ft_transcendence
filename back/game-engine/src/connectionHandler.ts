@@ -189,7 +189,7 @@ function handleMessage(gameId: number, player:PlayerSocket, message: any) {
 }
 
 async function getNextGame(gameState: GameState): Promise<GameObject> {
-	const response = await fetch("http://gateway:3000/match/result", {
+	const response = await fetch("http://gateway:3000/match/console/result", {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser}),

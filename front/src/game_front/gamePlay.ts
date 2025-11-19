@@ -1,7 +1,7 @@
 import { gameState, GameState, board } from "./gameSpecs.js";
 import { engineSocket, waitForInput, disconnectEngine} from "./gameMenu.js"
 import { draw, drawNumber, drawText } from "./draw.js";
-import { renderCreateTournamentForm } from "../match_service.js"
+import { renderCreateTournamentForm } from "../match_service/start_page.js"
 
 
 let frameID: number;
