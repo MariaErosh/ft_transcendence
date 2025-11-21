@@ -161,45 +161,4 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 	});
 
 	console.log("WebSocket Gateway registered.");
-
-	const gameSockets = new Map<number, Set<WebSocket>>();
-
-	server.get("/game/ws", { websocket: true }, (gameWs, req) => {
-		const { gameId, token } = req.query as {gameId: number, token: string };
-		if (!matchId || !token) {
-			gameWs.close();
-			return;
-		}
-
-		let player: PlayerPayload | null = null;
-		try {
-			player = server.jwt.verify<PlayerPayload>(token);
-		} catch (err) {
-			gameWs.send(JSON.stringify({ error: "Unauthorized" }));
-			gameWs.close();
-			return;
-		}
-
-		if (!gameSockets.has(gameId))
-			gameSockets.set(gameId, new Set());
-		gameSockets.get(gameId)!.add(gameWs);
-
-		const engineWs = new WebSocket(`ws://localhost:3003/ws?gameId=${gameId}&token=${token}`);
-
-		gameWs.on("message", (msg) => {
-			if (engineWs.readyState === WebSocket.OPEN)
-				engineWs.send(msg);
-			});
-		});
-
-		gameWs.on("close", () => {
-			gameSockets.get(gameId)?.delete(gameWs);
-			engineWs.close();
-		});
-
-		engineWs.on("close", () => {
-			gameSockets.get(gameId)?.forEach(client => client.close());
-		});
-		gameWs.on("error", console.error);
-		engineWs.on("error", console.error);
 }

@@ -25,9 +25,9 @@ export interface Player { alias: string, id: number | null }
 
 export interface PlayerSocket {
 	ws: WS;
-	token: string;
-	id: number;
 	alias: string;
+	id: number;
+	side: "left" | "right";
 }
 
 export interface GameObject {
@@ -37,19 +37,39 @@ export interface GameObject {
 	type: string;
 }
 
-export interface GameState {
-	ball: { x: number; y: number };
-	leftPaddle: { x: number; y: number };
-	rightPaddle: { x: number; y: number };
-	speed: { bX: number; bY: number; p: number };
-	score: {left: number; right: number };
-	servingPlayer: 'left' | 'right';
-	current: GameObject;
-	winner: Player;
-	loser: Player;
+// export interface GameState {
+// 	ball: { x: number; y: number };
+// 	leftPaddle: { x: number; y: number };
+// 	rightPaddle: { x: number; y: number };
+// 	speed: { bX: number; bY: number; p: number };
+// 	score: {left: number; right: number };
+// 	servingPlayer: 'left' | 'right';
+// 	current: GameObject;
+// 	winner: Player;
+// 	loser: Player;
+// }
+
+export class GameState {
+		ball: { x: number; y: number };
+		leftPaddle: { x: number; y: number };
+		rightPaddle: { x: number; y: number };
+		speed: { bX: number; bY: number; p: number };
+		score: {left: number; right: number };
+		servingPlayer: 'left' | 'right';
+		current: GameObject;
+		winner: Player;
+		loser: Player;
+
+		constructor(game?: GameObject) {
+			this.ball = {
+				x: board.CANVAS_WIDTH / 2,
+				y: board.CANVAS_HEIGHT / 2,
+			};
+		}
 }
 
-export function initGameState (): GameState {
+export function initGameState (next: GameObject | -1 ): GameState {
+	
 	let init: GameState = {} as GameState;
 	init.ball = {
 		x: board.CANVAS_WIDTH / 2,

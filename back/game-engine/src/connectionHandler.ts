@@ -21,6 +21,7 @@ await server.register(cors, { origin: true });
 await server.register(websocketPlugin);
 
 export const gameStates = new Map<number, GameState>();
+const games = new Map<number, GameObject>();
 const gameSockets = new Map<number, Set<PlayerSocket>>();
 const gameIntervals = new Map<number, NodeJS.Timeout>();
 
@@ -40,30 +41,30 @@ function broadcast(gameId: number, payload: object) {
 }
 
 server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
-	const { gameId, token } = req.query as {gameId: number, token: string };
+	const { gameId, alias } = req.query as {gameId: number, alias: string };
 
-	if (!gameId || !token) {
+	if (!gameId || !alias) {
 		ws.close();
 		return;
 	}
 
 	// FOR LATER: VERIFY TOKEN AND EXTRACT PLAYER ID AND ALIAS
 
-	const player: PlayerSocket = { ws, token, id : 11, alias: "default"};
+	const player: PlayerSocket = { ws, alias: alias, id : 11 };
 
 	if (!gameSockets.has(gameId)) {
 		gameSockets.set(gameId, new Set());
 	}
 	gameSockets.get(gameId)!.add(player);
 
-	if (!gameStates.has(gameId)) {
-		gameStates.set(gameId, initGameState());
-	}
-	console.log(`Client connected for match ${gameId}, player token ${token}`);
+	// if (!gameStates.has(gameId)) {
+	// 	gameStates.set(gameId, initGameState());
+	// }
+	console.log(`Client connected for match ${gameId}, player ${alias}`);
 
-	console.log("sending set message to front end");
-	ws.send(JSON.stringify({ type: "consts", data: board}));
-	ws.send(JSON.stringify({type: "set", data: gameStates.get(gameId)}));
+	// console.log("sending set message to front end");
+	// ws.send(JSON.stringify({ type: "consts", data: board}));
+	// ws.send(JSON.stringify({type: "set", data: gameStates.get(gameId)}));
 	ws.on('message', (data: RawData) => {
 		try {
 			const message = JSON.parse(data.toString());
@@ -94,7 +95,11 @@ server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) =
 	if(!newGame.leftPlayer || !newGame.rightPlayer || !newGame.gameId || !newGame.type) {
 		return reply.status(400).send({error: "Missing player info or match id" });
 	}
-	resetSpecs(gameState, newGame);
+	games.set(newGame.gameId, newGame);
+	if (!gameStates.has(newGame.gameId)) {
+		gameStates.set(newGame.gameId, initGameState(newGame));
+	}
+	resetSpecs(gameStates.get(newGame.gameId), newGame);
 	// gameState.current.leftPlayer = leftPlayer;
 	// gameState.current.rightPlayer = rightPlayer;
 	// gameState.current.matchId = matchId;
