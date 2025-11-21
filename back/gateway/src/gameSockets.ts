@@ -49,7 +49,7 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 	  
 		  const engineWs = new WebSocket(
 			`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
-			`?gameId=${gameId}&side=${side}`
+			`?gameId=${gameId}&side=${side}&player=${player.username}`
 		  );
 	  
 		  sideConn = {
