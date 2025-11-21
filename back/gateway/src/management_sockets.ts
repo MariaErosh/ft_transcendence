@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import websocketPlugin from "@fastify/websocket";
 import { WebSocket } from "ws";
 import dotenv from "dotenv";
-interface PlayerPayload {
+export interface PlayerPayload {
 	sub: number;
 	username: string;
 }
@@ -20,14 +20,11 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
 	console.log("websocket registered on gateway");
 
-	// Map userId → Set of WebSocket connections
 	const userSockets = new Map<number, Set<WebSocket>>();
-
-	// Map matchId → Set of player userIds
 
 	server.get("/ws", { websocket: true }, (socket, req) => {
 
-		// JWT from query parameter
+
 		const token = (req.query as any).token;
 		if (!token) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
@@ -65,7 +62,6 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 					console.log(`User ${userId} joined match ${matchName}`);
 
-					// Broadcast to everyone in the room
 					const players = matchPlayers.get(matchName)!;
 					players.forEach((uid) => {
 						userSockets.get(uid)?.forEach((s) => {
@@ -100,7 +96,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
 					const result = await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
 						method: "POST",
-						headers: { "Content-Type": "application/json", "x-gateway-secret": process.env.GATEWAY_SECRET, },
+						headers: { "Content-Type": "application/json", "x-gateway-secret": `${process.env.GATEWAY_SECRET}`, },
 						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE" })
 					});
 

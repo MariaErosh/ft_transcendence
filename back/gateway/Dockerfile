@@ -10,14 +10,16 @@ FROM base AS prod
 
 WORKDIR /app
 
+RUN apk add --no-cache python3 make g++
+
 COPY package*.json ./
 
-RUN npm install || echo "No dependencies yet"
+RUN npm install
 
 COPY . .
 
-RUN npm run build || echo "Build skipped"
+RUN npm run build
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["npm", "run", "start"]

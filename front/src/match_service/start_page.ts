@@ -1,4 +1,4 @@
-import { setupSocket } from "../game_front/gameMenu.js";
+// import { setupSocket } from "../game_front/gameMenu.js";
 import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
 

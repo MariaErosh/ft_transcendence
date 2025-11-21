@@ -1,5 +1,7 @@
-import { ws, connectWS } from "./socket.js";
+import { ws, connectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
+import { socket, connectGameWS } from "./gameSocket.js";
+import { renderGameBoard } from "../game_front/gameMenu.js";
 
 interface matchPayload {
 	id: number;
@@ -130,14 +132,12 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		`;
 		box.appendChild(playersList);
 
-		//TO CONSIDER: make this button visible only to tournanent owner?
 		const startButton = document.createElement("button");
 		startButton.textContent = "START";
 		startButton.disabled = true;
 		startButton.className = `
 			bg-gray-500 text-black font-sans font-semibold
 			w-1/3 h-16 text-3xl transition
-			${gameOwner ? "" : "hidden"}
 		`;
 		box.appendChild(startButton);
 
@@ -153,7 +153,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		console.log("Players from gateway: ", players);
 		refreshPlayers();
 
-		ws?.addEventListener("message", (ev) => {
+		ws?.addEventListener("message", async (ev) => {
 			const msg = JSON.parse(ev.data);
 			console.log ("Message: ", msg);
 
@@ -168,7 +168,8 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			}
 			if (msg.type == "game_ready"){
 				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
-				//TO DO: CALL THE GAME FRONTEND
+				await connectGameWS(msg.gameId, msg.side);
+				await renderGameBoard(container);
 			}
 		})
 		function refreshPlayers() {
