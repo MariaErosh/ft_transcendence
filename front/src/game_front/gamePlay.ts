@@ -1,46 +1,61 @@
-import { gameState, GameState, board} from "./gameSpecs.js";
-import { socket, showPlayMenu, waitForInput} from "./gameMenu.js"
+import { gameState, GameState, board } from "./gameSpecs.js";
+import { socket, waitForInput, disconnectEngine} from "./gameMenu.js"
 import { draw, drawNumber, drawText } from "./draw.js";
+import { renderCreateTournamentForm } from "../match_service.js"
 
 
 let frameID: number;
+let gameActive: boolean = false;
+let stopGame: boolean = false; 
 const keys: Record<string, boolean> = {};
-window.addEventListener('keydown', (e: KeyboardEvent) => { 
-	//prevent page scrolling with arrow keys
+
+function handleKeyDown(e: KeyboardEvent) {
+	if (!gameActive) return;
 	if (e.code === "ArrowUp" || e.code === "ArrowDown" ||
-		e.code === "KeyW" || e.code === "KeyS" || e.code === 'Escape') e.preventDefault();
+	e.code === "KeyW" || e.code === "KeyS" || e.code === 'Escape') e.preventDefault();
 	if (!keys[e.code]) {
 		keys[e.code] = true;
-		sendKey(e.code, true); }});
-window.addEventListener('keyup', (e: KeyboardEvent) => {
+		sendKey(e.code, true); 
+	}
+	if (keys['Escape'])
+		stopGame = true;
+}
+function handleKeyUp(e: KeyboardEvent) {
+	if (!gameActive) return;
 	if (keys[e.code]) {
-		keys[e.code] = false;
-		sendKey(e.code, false); }});
+	keys[e.code] = false;
+	sendKey(e.code, false); }
+}
 
 function sendKey(code: string, pressed: boolean) {
+	if (!socket) {
+		//console.warn("Socket not initialized yet");
+		return;
+	}
+
 	if (socket.readyState === WebSocket.OPEN) {
 		socket.send(JSON.stringify({ type: "input", data: { code, pressed }}));
 	}
 }
 
-export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	// console.log('starting game');
-	// overlay.innerHTML = '';
-	
-	// const instructions = [
-	// 	"Use 'W' and 'S' keys for left paddle.", 
-	// 	"Use UP and DOWN arrows for right paddle.",
-	// 	"Press ESC to return to the menu"
-	// ];
-	// drawText(canvas, instructions);
 
-	showInstructions(overlay, canvas);
+export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
+
+	gameActive = true;
+	//showInstructions(overlay, canvas);
+	//overlay.innerHTML = '';
+	overlay.style.display = "none";
+
+	window.addEventListener('keydown', handleKeyDown);
+	window.addEventListener('keyup', handleKeyUp);
 
 	socket.addEventListener("message", (event) => {
 	const message = JSON.parse(event.data);
 	if (message.type === "go") {
 		loop(overlay, canvas);
 	}
+	if (message.type === "stop")
+		stopGame = true;
 	if (message.type === "state" || message.type === "win") {
 		const getState: GameState = message.data;
 		Object.assign(gameState, getState);
@@ -50,17 +65,45 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 			overlay.style = 'flex';
 			const winner = ["THE WINNER IS ", gameState.winner.alias];
 			drawText(canvas, winner);
+			gameActive = false;
 
 			overlay.innerHTML = '';
+			if (message.next === -1)
+			{
+				const statBtn = document.createElement('button');
+				statBtn.textContent = "THE END - SEE RESULTS";
+				statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+				statBtn.style.marginTop = '100px';
+				statBtn.onclick = () => {
+					overlay.innerHTML = '';
+					let lines = [
+						"THIS IS A PLACEHOLDER FOR THE DISPLAY",
+						"OF THE TOURNAMENT'S RESULTS",
+					];
+					const menuBtn = document.createElement('button');
+					menuBtn.textContent = "BACK TO MENU";
+					menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+					menuBtn.style.marginTop = '200px';
+					drawText(canvas, lines);
+					menuBtn.onclick = () => {
+						toMatchMenu();
+					}
+					overlay.appendChild(menuBtn);
+				}
+				overlay.appendChild(statBtn);
+
+			} else { 
 			const nextBtn = document.createElement('button');
 			nextBtn.textContent = 'READY FOR NEXT GAME';
-			nextBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
+			nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
 			nextBtn.style.marginTop = '200px';
 			nextBtn.onclick = () => {
-				// socket.send(JSON.stringify({ type: "ready" }));
+				//socket.send(JSON.stringify({ type: "ready" }));
+				//disconnectEngine()
 				startGame(overlay, canvas);
 			};
 			overlay.appendChild(nextBtn);
+		}
 			}
 	}
 	});
@@ -79,16 +122,10 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 
 	const getState = await waitForInput<GameState>("set");
 	Object.assign(gameState, getState);
-	overlay.style.display = 'none';
+	//overlay.style.display = 'none';
 	draw(canvas);
 	startCountdown(3, canvas, () => {
 		socket.send(JSON.stringify({ type: "please serve" }));
-	});
-
-
-	socket.addEventListener("close", (event) => {
-		console.warn(`Socket closed: code=${event.code}, reason=${event.reason || "no reason"}`);
-		alert("Connection to the game server was lost.");
 	});
 
 	socket.addEventListener("error", (event) => {
@@ -96,56 +133,41 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 	});
 }	
 
-function showInstructions(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	console.log('starting game');
-	overlay.innerHTML = '';
-	
-	const ctx = canvas.getContext('2d');
-	if (!ctx) return console.log('ctx failed to load inside showInstructions function');
-	ctx.clearRect(0, 0, board.CANVAS_HEIGHT, board.CANVAS_WIDTH);
-	const instructions = [
-		"Use 'W' and 'S' keys for left paddle.", 
-		"Use UP and DOWN arrows for right paddle.",
-		"Press ESC to return to the menu"
-	];
-	drawText(canvas, instructions);
-
-	const readyBtn = document.createElement('button');
-	readyBtn.textContent = 'READY';
-	readyBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-	readyBtn.style.marginTop = '200px';
-	readyBtn.onclick = () => {
-		socket.send(JSON.stringify({ type: "ready" }));
-		readyBtn.disabled = true;
-		readyBtn.textContent = 'WAITING...';
-		readyBtn.className = 'bg-gray-200 text-gray-400 text-2xl font-bold px-10 py-3 rounded w-64';
-	};
-	overlay.appendChild(readyBtn);
-
-}
 function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return console.log('ctx failed to load inside loop function');
 
 	draw(canvas);
-	if (keys['Escape']) {
+	if (stopGame) {
+		keys['Escape'] = false;
+		stopGame = false;
 		cancelAnimationFrame(frameID);
-		ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-		showPlayMenu(overlay, canvas);
+		//ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
+		// const rootContainer = document.getElementById('app') as HTMLElement;
+		// cleanup();
+		// renderCreateTournamentForm(rootContainer);
+		toMatchMenu();
 		return;
 	}
 	frameID = requestAnimationFrame(() => loop(overlay, canvas));
 }
 
-// function stopGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-	
+export function toMatchMenu() {
+	const rootContainer = document.getElementById('app') as HTMLElement;
+	for (const key in keys) keys[key] = false;
+	cleanup();
+	renderCreateTournamentForm(rootContainer);
+}
 
-// 	const ctx = canvas.getContext('2d');
-// 	if (!ctx) return console.log('ctx failed to load inside stopGame function');
-// 	ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-
-// 	overlay.style.display = 'flex';
-// }
+export function cleanup() {
+	gameActive = false;
+	stopGame = false;
+	window.removeEventListener('keydown', handleKeyDown);
+	window.removeEventListener('keyup', handleKeyUp);
+	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+	if (gameBoard) gameBoard.remove();
+	disconnectEngine();
+}
 
 
 function startCountdown(count: number, canvas: HTMLCanvasElement, callback: () => void) {

@@ -50,8 +50,13 @@ function drawScore(ctx: CanvasRenderingContext2D) {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'top';
 
-	ctx.fillText(gameState.score.left.toString(), board.CANVAS_WIDTH / 2 - 100, 20);
-	ctx.fillText(gameState.score.right.toString(), board.CANVAS_WIDTH / 2 + 100, 20);
+	const leftStat = gameState.current.leftPlayer.alias.concat(" ", gameState.score.left.toString());
+	const rightStat = gameState.current.rightPlayer.alias.concat(" ", gameState.score.right.toString());
+	
+	ctx.textAlign = 'right'
+	ctx.fillText(leftStat, board.CANVAS_WIDTH / 2 - 50, 20);
+	ctx.textAlign = 'left'
+	ctx.fillText(rightStat, board.CANVAS_WIDTH / 2 + 50, 20);
 }
 
 export function drawText(canvas: HTMLCanvasElement, lines: string[]) {
@@ -64,11 +69,6 @@ export function drawText(canvas: HTMLCanvasElement, lines: string[]) {
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
-	// const lines = [
-	// 	"Use 'W' and 'S' keys for left paddle.", 
-	// 	"Use UP and DOWN arrows for right paddle.",
-	// 	"Press ESC to return to the menu"
-	// ];
 	lines.forEach((line, i) => {
 		ctx.fillText(line, board.CANVAS_WIDTH / 2, board.CANVAS_HEIGHT / 2 - 30 + i * 30);
 	})
