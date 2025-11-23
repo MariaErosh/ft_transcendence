@@ -42,10 +42,8 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: game-engine
-    expose:
-      - 3003
-    networks:
-      - internal
+    ports:
+      - "3003:3003"
 
 
   match:
