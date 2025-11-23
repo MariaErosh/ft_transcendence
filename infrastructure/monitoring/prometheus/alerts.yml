@@ -1,0 +1,24 @@
+groups:
+  - name: transcendence_alerts
+    interval: 30s
+    rules:
+      # Elasticsearch down
+      - alert: ElasticsearchDown
+        expr: up{job="elasticsearch"} == 0
+        for: 1m
+        annotations:
+          summary: "Elasticsearch is down"
+
+      # Service down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        annotations:
+          summary: "{{ $labels.job }} is down"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        annotations:
+          summary: "High error rate in {{ $labels.job }}"
