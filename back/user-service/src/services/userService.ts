@@ -6,6 +6,8 @@ interface UserRow {
   username: string;
   email: string;
   created_at: string;
+  games_played: number;
+  games_won: number;
 }
 
 
@@ -77,45 +79,118 @@ export class UserService {
 						displayName: string 
 					}>
 	): Promise<UserRow | undefined> {
-	const fields: string[] = [];
-	const values: (string | number | null)[] = [];
+		const fields: string[] = [];
+		const values: (string | number | null)[] = [];
 
-	if (data.username) {
-		fields.push("username = ?");
-		values.push(data.username);
-	}
-	if (data.email) {
-		fields.push("email = ?");
-		values.push(data.email);
-	}
-	if (data.displayName) {
-		fields.push("display_name = ?");
-		values.push(data.displayName);
-	}
-	if (fields.length === 0) 
-		return undefined;
-	
-	values.push(auth_user_id);
-	const db = this.db_inst;
+		if (data.username) {
+			fields.push("username = ?");
+			values.push(data.username);
+		}
+		if (data.email) {
+			fields.push("email = ?");
+			values.push(data.email);
+		}
+		if (data.displayName) {
+			fields.push("display_name = ?");
+			values.push(data.displayName);
+		}
+		if (fields.length === 0) 
+			return undefined;
+		
+		values.push(auth_user_id);
+		const db = this.db_inst;
 
-	return new Promise<UserRow | undefined>((resolve, reject) => {
-		db.run(
-			`UPDATE users SET ${fields.join(", ")} WHERE auth_user_id = ?`,
-			values,
-			function (err) {
-				if (err) return reject(err);
-				if (this.changes === 0) return resolve(undefined);
+		return new Promise<UserRow | undefined>((resolve, reject) => {
+			db.run(
+				`UPDATE users SET ${fields.join(", ")} WHERE auth_user_id = ?`,
+				values,
+				function (err) {
+					if (err) return reject(err);
+					if (this.changes === 0) return resolve(undefined);
 
-				db.get(
-				"SELECT * FROM users WHERE auth_user_id = ?",
-				[auth_user_id],
-				(err2, row) => {
-					if (err2) return reject(err2);
-					resolve(row as UserRow | undefined);
+					db.get(
+					"SELECT * FROM users WHERE auth_user_id = ?",
+					[auth_user_id],
+					(err2, row) => {
+						if (err2) return reject(err2);
+						resolve(row as UserRow | undefined);
+					}
+					);
 				}
-				);
-			}
-		);
-	});
+			);
+		});
 	}
+
+	async getStats(auth_user_id: number): Promise<{ games_played: number; games_won: number } | undefined> {
+		return new Promise((resolve, reject) => {
+			(this.db_inst.get as any)(
+				"SELECT games_played, games_won FROM users WHERE auth_user_id = ?",
+				[auth_user_id],
+				(
+					err: Error | null, 
+					row :{games_played: number; games_won: number } | undefined) => {
+						if (err) return reject(err);
+						if (!row) return resolve(undefined);
+						resolve({
+						games_played: Number(row.games_played) || 0,
+						games_won: Number(row.games_won) || 0,
+					});
+				}
+			);
+		});
+	}
+
+	async getStatsForUsers(ids: number[]): Promise<{ auth_user_id: number; games_played: number; games_won: number}[]> {
+		if (!ids.length) return [];
+		const placeholders = ids.map(() => "?").join(", ");
+		const sql = `SELECT auth_user_id, games_played, games_won FROM users WHERE auth_user_id IN (${placeholders})`;
+		return new Promise((resolve, reject) => {
+			(this.db_inst.all as any)(sql, ids, (err: Error | null, rows: {auth_user_id: number; games_played: number; games_won: number}[]) => {
+			if (err) return reject(err);
+			resolve(rows.map(r => ({
+				auth_user_id: r.auth_user_id,
+				games_played: Number(r.games_played) || 0,
+				games_won: Number(r.games_won) || 0,
+			})));
+			});
+		});
+	}
+	
+	async updateStats(
+						auth_user_id: number,
+						played: number = 1,
+						won: number = 0
+	): Promise<UserRow | undefined> {
+		const db = this.db_inst;		
+
+		return new Promise<UserRow | undefined>((resolve, reject) => {
+			if (played < 0 || won < 0) return reject(new Error("Invalid stats values"));
+
+			db.run(
+				`UPDATE users
+				 SET games_played = games_played + ?,
+					games_won = games_won + ?
+				 WHERE auth_user_id = ?`,
+				[played, won, auth_user_id],
+				function (err) {
+					if (err) return reject(err);
+					if (this.changes === 0) return resolve(undefined);
+					
+					db.get(
+					"SELECT * FROM users WHERE auth_user_id = ?",
+					[auth_user_id],
+					(err2, row) => {
+						if (err2) return reject(err2);
+						resolve(row as UserRow | undefined);
+					}
+					);
+				}
+			);
+		});
+	}
+
+	
+	
+
+
 }
