@@ -56,11 +56,11 @@ export function readyToRender(gameId: any) {
 		gameBoard.remove();
 	}
 	const container = document.getElementById('app') as HTMLElement;
-	renderGameBoard(container, gameId);
+	renderGameBoard(container);
 }
 				
 
-export async function renderGameBoard(container: HTMLElement, gameId: any) {
+export async function renderGameBoard(container: HTMLElement) {
 
 	if (!socket || socket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
