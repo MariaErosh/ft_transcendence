@@ -50,6 +50,17 @@ services:
     ports:
       - "3004:3004"
 
+  chat:
+    build:
+      context: ../back/chat-service
+      dockerfile: Dockerfile
+    container_name: chat
+    ports:
+      - "3005:3005"
+    volumes:
+      - ../back/chat-service/data/:/app/data
+    env_file:
+      - ../back/chat-service/.env
 
   gateway:
     build:
@@ -62,5 +73,6 @@ services:
     depends_on:
       - auth
       - user
+      - chat
     env_file:
     - ../back/gateway/.env
