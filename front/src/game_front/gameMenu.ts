@@ -1,33 +1,52 @@
 import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
+import { disconnectGameWS, socket } from "../match_service/gameSocket.js";
 
-export let engineSocket: WebSocket;
+// // export let engineSocket: WebSocket;
 export let defGameId: number = 111;
 export let defToken: string = 'token';
 
-export function setupEngineSocket(gameId: number, token: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		if (engineSocket && engineSocket.readyState === WebSocket.OPEN)
-			engineSocket.close();
+// export function setupSocket(): Promise<void> {
+// 	return new Promise((resolve, reject) => {
+// 		// if (socket && socket.readyState === WebSocket.OPEN)
+// 		// 	return resolve();
 
-	engineSocket = new WebSocket(`ws://localhost:3000/game/ws?gameId=${gameId}&token=${token}`);
-	engineSocket.addEventListener("open", () => {
-			console.log("Game engine socket open for match with id: ", gameId);
-			resolve();
-		});
+// 	// socket = new WebSocket("ws://localhost:3003/ws");
+// 	socket!.addEventListener("open", () => {
+// 			console.log("Game engine socket open");
+// 			resolve();
+// 		});
 
-		engineSocket.addEventListener("message", (event) => {
-			const message = JSON.parse(event.data);
-			console.log("message received through engine websocket: ", message.data);
-			
-		});
+// 		socket!.addEventListener("message", (event) => {
+// 			const message = JSON.parse(event.data);
+// 			if (message.type === "start") {
+// 				console.log("received start message from backend: ", message.data);
+// 				const matchMenu = document.getElementById("match-menu");
+// 				if (matchMenu) matchMenu.innerHTML = '';
+// 				const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+// 				if (gameBoard) {
+// 					gameBoard.remove();
+// 				}
+// 				const container = document.getElementById('app') as HTMLElement;
+// 				renderGameBoard(container);//PASS GAMEID AND TOCKEN HERE
+// 				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+// 				// if (gameBoard) {
+// 				// 	const overlay = document.getElementById('overlay') as HTMLElement;
+// 				// 	const canvas = document.getElementById('game-board') as HTMLCanvasElement;
+// 				// 	startGame(overlay, canvas);
+// 				// } else {
+// 				// const container = document.getElementById('app') as HTMLElement;
+// 				// renderGameBoard(container);
+// 				// }
+// 			}
+// 		});
 
-		engineSocket.addEventListener("error", (err) => {
-			console.error("Socket connection error:", err);
-			reject(err);
-		});
-	});
-}
+// 		socket.addEventListener("error", (err) => {
+// 			console.error("Socket connection error:", err);
+// 			reject(err);
+// 		});
+// 	});
+// }
 
 export function readyToRender(gameId: any) {
 	const matchMenu = document.getElementById("match-menu");
@@ -43,7 +62,10 @@ export function readyToRender(gameId: any) {
 
 export async function renderGameBoard(container: HTMLElement, gameId: any) {
 
-	await setupEngineSocket(gameId, defToken);
+	if (!socket || socket.readyState !== WebSocket.OPEN) {
+		throw new Error("Game socket not connected");
+	  }
+	// await setupEngineSocket(gameId, defToken);
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
 	Object.assign(board, getConsts);
@@ -82,8 +104,12 @@ export async function renderGameBoard(container: HTMLElement, gameId: any) {
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
-		engineSocket.send(JSON.stringify({ type: expectedType }));
-		engineSocket.addEventListener("message", (event) => {
+
+	if (!socket || socket.readyState !== WebSocket.OPEN) {
+		throw new Error("Game socket not connected");
+	  }
+		socket.send(JSON.stringify({ type: expectedType }));
+		socket.addEventListener("message", (event) => {
 			const message = JSON.parse(event.data);
 			if (message.type === expectedType) {
 				console.log('receiving input with type ', expectedType);
@@ -102,16 +128,17 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 // }
 
 export async function disconnectEngine() {
-    return new Promise<void>((resolve) => {
-        if (engineSocket && engineSocket.readyState !== WebSocket.CLOSED) {
-            engineSocket.addEventListener("close", () => {
-               // console.log("old socket closed");
-                setupEngineSocket(defGameId, defToken).then(resolve);
-            }, { once: true });
-            engineSocket.close();
-        } else {
-            // If already closed, just setup a new one
-            setupEngineSocket(defGameId, defToken).then(resolve);
-        }
-    });
+    // return new Promise<void>((resolve) => {
+    //     if (socket && socket.readyState !== WebSocket.CLOSED) {
+    //         socket.addEventListener("close", () => {
+    //            // console.log("old socket closed");
+    //             setupSocket().then(resolve);
+    //         }, { once: true });
+    //         socket.close();
+    //     } else {
+    //         // If already closed, just setup a new one
+    //         setupSocket().then(resolve);
+    //     }
+    // });
+	disconnectGameWS();
 }

@@ -5,7 +5,8 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./sockets";
+import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./management_sockets";
+import { registerGameWebSocket } from "./gameSockets";
 
 
 
@@ -38,6 +39,7 @@ async function buildServer() {
 
 	//websocket registration
 	await registerGatewayWebSocket(server);
+	await registerGameWebSocket(server);
 
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
