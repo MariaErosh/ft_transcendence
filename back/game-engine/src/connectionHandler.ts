@@ -1,4 +1,4 @@
-import { WebSocket as WS, RawData } from "ws";
+import { RawData } from "ws";
 import { serveBall, resetSpecs, updatePos } from "./gamePlay.js";
 import { board, GameObject, GameState, PlayerSocket } from "./gameSpecs.js";
 import Fastify from "fastify";
@@ -40,24 +40,30 @@ function broadcast(gameId: number, payload: object) {
 		player.ws.send(message);
 }
 
-server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
-	const { gameId, side, player } = req.query as {gameId: number, side: 'left' | 'right', player: string };
+server.get("/ws", {websocket: true }, (ws, req) => {
+	const { gameId, side, player } = req.query as {gameId: string, side: 'left' | 'right', player: string };
 
+	
+	console.log("inside game socket");
 	if (!gameId || !player || !side) {
 		ws.close();
 		return;
 	}
-
-	// FOR LATER: VERIFY TOKEN AND EXTRACT PLAYER ID AND ALIAS
+	const gameIdN = Number(gameId);
+	if (isNaN(gameIdN)) {
+		ws.close();
+		console.log("game Id is not a number");
+		return;
+	}
 
 	const playerSocket: PlayerSocket = { ws, alias: player, side: side };
 
-	if (!gameSockets.has(gameId)) {
-		gameSockets.set(gameId, new Set());
+	if (!gameSockets.has(gameIdN)) {
+		gameSockets.set(gameIdN, new Set());
 	}
-	gameSockets.get(gameId)!.add(playerSocket);
+	gameSockets.get(gameIdN)!.add(playerSocket);
 
-	console.log(`Client connected for match ${gameId}, player ${player}, playing on ${side} side`);
+	console.log(`Client connected for match ${gameIdN}, player ${player}, playing on ${side} side`);
 
 	// console.log("sending set message to front end");
 	// ws.send(JSON.stringify({ type: "consts", data: board}));
@@ -65,19 +71,19 @@ server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
 	ws.on('message', (data: RawData) => {
 		try {
 			const message = JSON.parse(data.toString());
-			handleMessage(gameId, playerSocket, message);
+			handleMessage(gameIdN, playerSocket, message);
 		} catch (err) {
 			console.error("Failed to parse incoming message:", err);
 		}
 	});
 	ws.on("close", () => {
-		gameSockets.get(gameId)?.delete(playerSocket);
+		gameSockets.get(gameIdN)?.delete(playerSocket);
 		console.log(`Client disconnected from game with id ${gameId}`);
 		
 		// if no players are connected anymore, stop the loop
-		if (gameSockets.get(gameId)?.size === 0) {
-			clearInterval(gameIntervals.get(gameId));
-			gameIntervals.delete(gameId);
+		if (gameSockets.get(gameIdN)?.size === 0) {
+			clearInterval(gameIntervals.get(gameIdN));
+			gameIntervals.delete(gameIdN);
 			console.log(`Stopped loop for game with id ${gameId}`);
 		}
 	});

@@ -1,5 +1,4 @@
 {
-	// Visit https://aka.ms/tsconfig to read more about this file
 	"compilerOptions": {
 		// File Layout
 		"rootDir": "./src",
@@ -15,7 +14,7 @@
 			//"noImplicitAny": true,      // raise error on expressions and declarations with an implied 'any' type
 			"baseUrl" : "./src",
 			"paths": {},
-			"types" : ["node", "ws", "jest"],
+			"types" : ["node", "ws"],
 		// and npm install -D @types/node
 
 		// Other Outputs

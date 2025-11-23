@@ -110,10 +110,26 @@ export class MatchService {
 	}
 
 	async createNewGame(leftPlayer: Player, rightPlayer: Player, matchId: number, round: number){
-		await dbRunQuery(this.db, "INSERT INTO games(left_player_id, left_player_alias, right_player_id, right_player_alias, match_id, round)" +
-				" VALUES(?, ?, ?, ?, ?, ?)",
-				[leftPlayer.id, leftPlayer.alias, rightPlayer.id, rightPlayer.alias, matchId, round]);
-	}
+        await dbRunQuery(
+            this.db,
+            `INSERT INTO games(
+                left_player_id,
+                left_player_alias,
+                right_player_id,
+                right_player_alias,
+                match_id,
+                round
+            ) VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                leftPlayer.user_id,
+                leftPlayer.alias,
+                rightPlayer.user_id,
+                rightPlayer.alias,
+                matchId,
+                round
+            ]
+        );
+    }
 
 	async createNewRound(matchId: number){
 		let games = [];

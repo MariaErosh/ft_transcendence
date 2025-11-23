@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import websocketPlugin from "@fastify/websocket";
-import { WebSocket } from "ws";
+//import { WebSocket } from "ws";
+import WebSocket from 'ws';
 import { PlayerPayload } from "./management_sockets";
 
 
@@ -23,12 +24,13 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		if (isNaN(gameId) || !query.token) {
 		  return frontendWs.close(1008, "Invalid params");
 		}
-	  
+
 		let player: PlayerPayload;
 		try {
-		  player = await req.jwtVerify<PlayerPayload>();
+		player = server.jwt.verify<PlayerPayload>(query.token);
 		} catch {
-		  return frontendWs.close(1008, "Invalid token");
+		console.log("Returning from registerGameWebsocket: token");
+		return frontendWs.close(1008, "Invalid token");
 		}
 
 	  //CONSDER checking in DB instead of passing as a query
@@ -44,10 +46,14 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		const sidesMap = gameSideConnections.get(gameId)!;
 	  
 		let sideConn = sidesMap.get(side);
-	  
+          
+
 		if (!sideConn) {
 	  
-		  const engineWs = new WebSocket(
+		console.log("Gateway attempting to connect socket on ", `ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+                `?gameId=${gameId}&side=${side}&player=${player.username}`);
+
+		const engineWs = new WebSocket(
 			`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
 			`?gameId=${gameId}&side=${side}&player=${player.username}`
 		  );
