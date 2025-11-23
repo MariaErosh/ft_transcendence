@@ -68,7 +68,7 @@ server.get("/ws", {websocket: true }, (ws, req) => {
 	// console.log("sending set message to front end");
 	// ws.send(JSON.stringify({ type: "consts", data: board}));
 	// ws.send(JSON.stringify({type: "set", data: gameStates.get(gameId)}));
-	ws.on('message', (data: RawData) => {
+	ws.on('message', (data) => {
 		try {
 			const message = JSON.parse(data.toString());
 			handleMessage(gameIdN, playerSocket, message);
@@ -172,10 +172,10 @@ function handleMessage(gameId: number, player:PlayerSocket, message: any) {
 					(async () => {
 					try {
 						const nextGame = await getNextGame(gameState);
-						ws.send(JSON.stringify({ type: "win", data: gameState,  next: nextGame.gameId}));
+						player.ws.send(JSON.stringify({ type: "win", data: gameState,  next: nextGame.gameId}));
 						resetSpecs(gameState, nextGame);
 					} catch (err) {
-						ws.send(JSON.stringify({ type: "win", data: gameState,  next: -1}));
+						player.ws.send(JSON.stringify({ type: "win", data: gameState,  next: -1}));
 						resetSpecs(gameState, -1);
 					}
 					})();

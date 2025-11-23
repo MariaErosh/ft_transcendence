@@ -105,17 +105,27 @@ export async function renderGameBoard(container: HTMLElement) {
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
 
-	if (!socket || socket.readyState !== WebSocket.OPEN) {
-		throw new Error("Game socket not connected");
+	function sendRequest() {
+		socket?.send(JSON.stringify({ type: expectedType }));
+	}
+	if (socket?.readyState !== WebSocket.OPEN) {
+		socket?.addEventListener("open", sendRequest, {once: true});
+	  } else {
+		sendRequest();
 	  }
-		socket.send(JSON.stringify({ type: expectedType }));
-		socket.addEventListener("message", (event) => {
-			const message = JSON.parse(event.data);
-			if (message.type === expectedType) {
-				console.log('receiving input with type ', expectedType);
-				resolve(message.data as T);
-			}
-		}, { once: true }); // makes sure listener only runs once
+	socket?.addEventListener("message", async (event) => {
+		let rawData: string;
+		if (event.data instanceof Blob) {
+			rawData = await event.data.text();
+		} else {
+			rawData = event.data.toString();
+		}
+		const message = JSON.parse(rawData);
+		if (message.type === expectedType) {
+			console.log('receiving input with type ', expectedType);
+			resolve(message.data as T);
+		}
+	}, { once: true }); // makes sure listener only runs once
 	});
 }
 

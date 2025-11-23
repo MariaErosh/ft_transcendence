@@ -12,6 +12,7 @@ const gameSideConnections = new Map<
     engineWs: WebSocket;
     frontendWs: Set<WebSocket>;           
     userId: number;
+    pendingMessages: string[];
   }>
 >();
 
@@ -58,16 +59,28 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 			`?gameId=${gameId}&side=${side}&player=${player.username}`
 		  );
 	  
+		// store messages that arrive before sockets are all fully open
+		const pendingMessages: string[] = [];
+		engineWs.on("open", () => {
+			console.log("Engine WS open");
+			pendingMessages.forEach(msg => 
+				engineWs.send(typeof msg === "string" ? msg: JSON.stringify(msg)));
+			pendingMessages.length = 0;
+		});
+
 		  sideConn = {
 			engineWs,
 			frontendWs: new Set(),
 			userId: player.sub,
+			pendingMessages,
 		  };
 		  sidesMap.set(side, sideConn);
 	  
 		  engineWs.on("message", (data) => {
+			const str = (typeof data === "string") ? data : data.toString();
+			console.log("gateway socket sending message", data);
 			sideConn!.frontendWs.forEach(ws => {
-			  if (ws.readyState === WebSocket.OPEN) ws.send(data);
+			  if (ws.readyState === WebSocket.OPEN) ws.send(str);
 			});
 		  });
 	  
@@ -83,8 +96,11 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		sideConn.frontendWs.add(frontendWs);
 	  
 		frontendWs.on("message", (msg: Buffer) => {
+			console.log("gateway socket receiving message", msg);
 		  if (sideConn!.engineWs.readyState === WebSocket.OPEN) {
 			sideConn!.engineWs.send(msg);
+		  } else {
+			sideConn!.pendingMessages.push(msg.toString());
 		  }
 		});
 	  
