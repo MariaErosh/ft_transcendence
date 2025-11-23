@@ -1,0 +1,21 @@
+{
+  "name": "observability",
+  "version": "1.0.0",
+  "description": "Logging and metrics module for ft_transcendence",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "prom-client": "^15.1.3",
+    "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.9.3",
+    "ts-node": "^10.9.0"
+  }
+}
