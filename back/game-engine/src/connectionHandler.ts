@@ -1,6 +1,6 @@
 import { WebSocket as WS, RawData } from "ws";
 import { serveBall, resetSpecs, updatePos } from "./gamePlay.js";
-import { board, initGameState, GameObject, GameState, PlayerSocket } from "./gameSpecs.js";
+import { board, GameObject, GameState, PlayerSocket } from "./gameSpecs.js";
 import Fastify from "fastify";
 import { FastifyRequest, FastifyReply } from "fastify";
 import dotenv from "dotenv";
@@ -41,26 +41,23 @@ function broadcast(gameId: number, payload: object) {
 }
 
 server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
-	const { gameId, alias } = req.query as {gameId: number, alias: string };
+	const { gameId, side, player } = req.query as {gameId: number, side: 'left' | 'right', player: string };
 
-	if (!gameId || !alias) {
+	if (!gameId || !player || !side) {
 		ws.close();
 		return;
 	}
 
 	// FOR LATER: VERIFY TOKEN AND EXTRACT PLAYER ID AND ALIAS
 
-	const player: PlayerSocket = { ws, alias: alias, id : 11 };
+	const playerSocket: PlayerSocket = { ws, alias: player, side: side };
 
 	if (!gameSockets.has(gameId)) {
 		gameSockets.set(gameId, new Set());
 	}
-	gameSockets.get(gameId)!.add(player);
+	gameSockets.get(gameId)!.add(playerSocket);
 
-	// if (!gameStates.has(gameId)) {
-	// 	gameStates.set(gameId, initGameState());
-	// }
-	console.log(`Client connected for match ${gameId}, player ${alias}`);
+	console.log(`Client connected for match ${gameId}, player ${player}, playing on ${side} side`);
 
 	// console.log("sending set message to front end");
 	// ws.send(JSON.stringify({ type: "consts", data: board}));
@@ -68,13 +65,13 @@ server.get("/ws", {websocket: true }, (ws: WS, req: FastifyRequest) => {
 	ws.on('message', (data: RawData) => {
 		try {
 			const message = JSON.parse(data.toString());
-			handleMessage(gameId, player, message);
+			handleMessage(gameId, playerSocket, message);
 		} catch (err) {
 			console.error("Failed to parse incoming message:", err);
 		}
 	});
 	ws.on("close", () => {
-		gameSockets.get(gameId)?.delete(player);
+		gameSockets.get(gameId)?.delete(playerSocket);
 		console.log(`Client disconnected from game with id ${gameId}`);
 		
 		// if no players are connected anymore, stop the loop
@@ -96,14 +93,8 @@ server.post("/game/start", async(request: FastifyRequest, reply: FastifyReply) =
 		return reply.status(400).send({error: "Missing player info or match id" });
 	}
 	games.set(newGame.gameId, newGame);
-	if (!gameStates.has(newGame.gameId)) {
-		gameStates.set(newGame.gameId, initGameState(newGame));
-	}
-	resetSpecs(gameStates.get(newGame.gameId), newGame);
-	// gameState.current.leftPlayer = leftPlayer;
-	// gameState.current.rightPlayer = rightPlayer;
-	// gameState.current.matchId = matchId;
-	// gameState.current.type = type;
+	gameStates.set(newGame.gameId, new GameState(newGame));
+
 	const ws = [...clients][0];
 	if (!ws || ws.readyState !== ws.OPEN) {
 		console.warn("No connected WebSocket clients to send start message");
