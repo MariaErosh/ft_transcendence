@@ -44,6 +44,8 @@ services:
     container_name: game-engine
     ports:
       - "3003:3003"
+    networks:
+      - internal
 
 
   match:
@@ -52,8 +54,10 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: match
-    ports:
-      - "3004:3004"
+    expose:
+      - 3004
+    networks:
+      - internal
 
 
   gateway:
