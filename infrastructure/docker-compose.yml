@@ -1,66 +1,193 @@
+version: "3.8"
+
 services:
-  # redis:
-  #   image: redis:7
-  #   ports:
-  #     - "6379:6379"
+  # ========== OBSERVABILITY (СОБИРАЕТСЯ ПЕРВЫМ) ==========
+  observability:
+    build:
+      context: ../observability
+      dockerfile: Dockerfile
+    container_name: observability-build
+    networks:
+      - transcendence
+    # Не запускается, только собирается
 
+  # ========== ELK STACK ==========
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.license.self_generated.type=basic
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "9201:9200"
+      - "9302:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - transcendence
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    container_name: logstash
+    ports:
+      - "5046:5044"
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - transcendence
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - LS_JAVA_OPTS=-Xms128m -Xmx128m
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - NODE_OPTIONS=--max-old-space-size=256
+    depends_on:
+      - elasticsearch
+    networks:
+      - transcendence
+
+  # ========== MONITORING STACK ==========
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - transcendence
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3050:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - transcendence
+
+  # ========== МИКРОСЕРВИСЫ ==========
   auth:
     build:
       context: ../back/auth-service
       dockerfile: Dockerfile
-      target: prod
     container_name: auth
     ports:
       - "3001:3001"
-    volumes:
-      - ../back/auth-service/data/:/app/data
     env_file:
-    - ../back/auth-service/.env
+      - ../back/auth-service/.env
+    environment:
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - SERVICE_NAME=auth-service
+    networks:
+      - transcendence
+    depends_on:
+      - logstash
 
   user:
     build:
       context: ../back/user-service
       dockerfile: Dockerfile
-      target: prod
     container_name: user
     ports:
       - "3002:3002"
-    volumes:
-      - ../back/user-service/data/:/app/data
     env_file:
-    - ../back/user-service/.env
-
+      - ../back/user-service/.env
+    environment:
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - SERVICE_NAME=user-service
+    networks:
+      - transcendence
+    depends_on:
+      - logstash
 
   game-engine:
     build:
       context: ../back/game-engine
       dockerfile: Dockerfile
-      target: prod
     container_name: game
     ports:
       - "3003:3003"
+    environment:
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - SERVICE_NAME=game-engine
+    networks:
+      - transcendence
+    depends_on:
+      - logstash
 
   match:
     build:
       context: ../back/match-service
       dockerfile: Dockerfile
-      target: prod
     container_name: match
     ports:
       - "3004:3004"
-
+    environment:
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - SERVICE_NAME=match-service
+    networks:
+      - transcendence
+    depends_on:
+      - logstash
 
   gateway:
     build:
-      context: ../back/gateway
-      dockerfile: Dockerfile
-      target: prod
+      context: ../
+      dockerfile: back/gateway/Dockerfile
     container_name: gateway
     ports:
       - "3000:3000"
     depends_on:
-      - auth
+      - observability
       - user
+      - logstash
     env_file:
-    - ../back/gateway/.env
+      - ../back/gateway/.env
+    environment:
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5044
+      - SERVICE_NAME=gateway
+    networks:
+      - transcendence
+
+volumes:
+  elasticsearch-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  transcendence:
+    driver: bridge
