@@ -3,6 +3,7 @@
 	import { draw, drawNumber, drawText } from "./draw.js";
 	import { renderCreateTournamentForm } from "../match_service/start_page.js"
 	import { socket } from "../match_service/gameSocket.js";
+	import { renderArena } from "../arena.js";
 
 
 	let frameID: number;
