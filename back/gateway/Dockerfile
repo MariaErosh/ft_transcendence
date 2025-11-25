@@ -10,11 +10,15 @@ FROM base AS prod
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++
-
 COPY package*.json ./
 
-RUN npm install
+# Install tools needed for bufferutil (node-gyp)
+RUN apk add --no-cache python3 make g++ \
+    && npm install \
+    && apk del make g++    # optional: remove build deps after install
+
+
+# RUN npm install
 
 COPY . .
 

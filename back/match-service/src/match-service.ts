@@ -109,7 +109,12 @@ export class MatchService {
 		return match;
 	}
 
-	async createNewGame(leftPlayer: Player, rightPlayer: Player, matchId: number, round: number){
+	async getGameById(gameId:number){
+		const game = await dbGet(this.db, "SELECT * from games WHERE id = ?", [gameId]);
+		return game;
+	}
+
+	async createNewGame(leftPlayer: Player, rightPlayer: Player, matchId: number, round: number, type: string){
         await dbRunQuery(
             this.db,
             `INSERT INTO games(
@@ -118,21 +123,24 @@ export class MatchService {
                 right_player_id,
                 right_player_alias,
                 match_id,
-                round
-            ) VALUES (?, ?, ?, ?, ?, ?)`,
+                round,
+				type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 leftPlayer.user_id,
                 leftPlayer.alias,
                 rightPlayer.user_id,
                 rightPlayer.alias,
                 matchId,
-                round
+                round,
+				type
             ]
         );
     }
 
 	async createNewRound(matchId: number){
 		let games = [];
+		let {type} = await dbGet(this.db, "SELECT type FROM matches WHERE id = ?", [matchId]);
 		await dbRunQuery(this.db, "UPDATE players SET status = ? WHERE match_id = ? AND status = ?", ['NOT PLAYED', matchId, "WON"]);
 		let players: Player[] = await dbAll(this.db, "SELECT * FROM players WHERE match_id = ? AND status = ?", [matchId, "NOT PLAYED"]);
 		if (players === undefined || players.length === 0)
@@ -143,7 +151,7 @@ export class MatchService {
 			const round = row.round + 1;
 			players = shuffle(players);
 			while (players.length > 1){
-				await this.createNewGame(players[0]!, players[1]!, matchId, round);
+				await this.createNewGame(players[0]!, players[1]!, matchId, round, type);
 				players.splice(0, 2);
 			}
 			games = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, round]);

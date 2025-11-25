@@ -12,13 +12,6 @@ export interface Player{
 	status: string,
 }
 
-export interface Game {
-	id: number,
-	left_player_id: number,
-	right_player_id: number,
-	match_id: number
-}
-
 export interface PlayerPayload {
 	id: number | null,
 	alias: string,
@@ -32,13 +25,13 @@ export interface CreateMatchPayload{
 
 export interface GamePayload{
 	type: string;
-	matchId: number;
+	gameId: number;
 	leftPlayer: PlayerPayload;
 	rightPlayer: PlayerPayload;
 }
 
 export interface resultPayload{
-	matchId: number;
+	gameId: number;
 	winner: PlayerPayload;
 	loser: PlayerPayload
 }
