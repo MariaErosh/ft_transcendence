@@ -55,6 +55,19 @@
 
 		socket.addEventListener("message", (event) => {
 		const message = JSON.parse(event.data);
+
+		if (message.type === "set") {
+			console.log("received inital game state from server via set message");
+			//const getState = await waitForInput<GameState>("set");
+			Object.assign(gameState, message.data);
+			//overlay.style.display = 'none';
+			draw(canvas);
+
+			startCountdown(3, canvas, () => {
+				socket!.send(JSON.stringify({ type: "please serve" }));
+			});
+		}
+		
 		if (message.type === "go") {
 			loop(overlay, canvas);
 		}
@@ -124,14 +137,14 @@
 		// };
 		// overlay.appendChild(readyBtn);
 
-		const getState = await waitForInput<GameState>("set");
-		Object.assign(gameState, getState);
-		//overlay.style.display = 'none';
-		draw(canvas);
+		// const getState = await waitForInput<GameState>("set");
+		// Object.assign(gameState, getState);
+		// //overlay.style.display = 'none';
+		// draw(canvas);
 
-		startCountdown(3, canvas, () => {
-			socket!.send(JSON.stringify({ type: "please serve" }));
-		});
+		// startCountdown(3, canvas, () => {
+		// 	socket!.send(JSON.stringify({ type: "please serve" }));
+		// });
 
 		socket.addEventListener("error", (event) => {
 			console.error("WebSocket encountered an error:", event);
