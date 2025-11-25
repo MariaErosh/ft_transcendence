@@ -183,31 +183,21 @@ function handleMessage(gameId: number, player: PlayerSocket, message: any) {
 		broadcast(gameId, { type: "go" });
 		const interval = setInterval(() => {
 			if (updatePos(gameState) === 1) {
-				deleteInterval(gameId);
-				// ws.send(JSON.stringify({ type: "win", data: gameState }));
 
-				(async () => {
-					const sockets = gameSockets.get(gameId);
-					if (!sockets) {
-						console.error("No matching game socket found for game ID", gameId);
-						return;
-					}
-					try {
-						
-						const nextGame = await getNextGame(gameState);
-						for (const p of sockets) {
-							p.ws.send(JSON.stringify({ type: "win", data: gameState, next: nextGame.gameId }));
-						}
-						resetSpecs(gameState, nextGame);
-					} catch (err) {
-						for (const p of sockets) {
-							p.ws.send(JSON.stringify({ type: "win", data: gameState, next: -1 }));
-						}
-						resetSpecs(gameState, -1);
-					}
-				})();
+				const sockets = gameSockets.get(gameId);
+				if (!sockets) {
+					console.error("No matching game socket found for game ID", gameId);
+					return;
+				}
+				sendResult(gameState);
+				for (const p of sockets) {
+					p.ws.send(JSON.stringify({ type: "win", data: gameState }));
+				}
+				deleteInterval(gameId);
+				gameStates.delete(gameId);
+				games.delete(gameId);
+				gameSockets.delete(gameId);
 			}
-			// ws.send(JSON.stringify({ type: "state", data: gameState}));
 			broadcast(gameId, { type: "state", data: gameState });
 		}, 1000 / 60);
 		gameIntervals.set(gameId, interval);
@@ -217,16 +207,26 @@ function handleMessage(gameId: number, player: PlayerSocket, message: any) {
 	}
 }
 
-async function getNextGame(gameState: GameState): Promise<GameObject> {
-	const response = await fetch("http://gateway:3000/match/console/result", {
+async function sendResult(gameState: GameState) {
+	const response = await fetch(`${GATEWAY}/match/result`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
 	});
-	if (!response.ok) throw new Error("failed to fetch new game");
-	const obj: GameObject = await response.json();
-	return obj;
+	if (!response.ok)
+		console.error("failed to record results");
 }
+
+// async function getNextGame(gameState: GameState): Promise<GameObject> {
+// 	const response = await fetch("http://gateway:3000/match/console/result", {
+// 		method: "POST",
+// 		headers: { "Content-Type": "application/json" },
+// 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
+// 	});
+// 	if (!response.ok) throw new Error("failed to fetch new game");
+// 	const obj: GameObject = await response.json();
+// 	return obj;
+// }
 
 function handleInput(gameId: number, player: PlayerSocket, code: string, pressed: boolean) {
 	let gameState = gameStates.get(gameId) as GameState;
