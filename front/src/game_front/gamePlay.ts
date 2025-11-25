@@ -1,212 +1,139 @@
-	import { gameState, GameState, board } from "./gameSpecs.js";
-	import { waitForInput, disconnectEngine} from "./gameMenu.js"
-	import { draw, drawNumber, drawText } from "./draw.js";
-	import { renderCreateTournamentForm } from "../match_service/start_page.js"
-	import { socket } from "../match_service/gameSocket.js";
+import { board, GameObject, GameState, whichSide } from "./gameSpecs.js";
+import { gameStates, playerKeys } from "./connectionHandler.js";
 
+let paused = false;
 
-	let frameID: number;
-	let gameActive: boolean = false;
-	let stopGame: boolean = false; 
-	const keys: Record<string, boolean> = {};
+export function updatePos(gameState: GameState): void | number {
+	if (paused) return;
 
-	function handleKeyDown(e: KeyboardEvent) {
-		if (!gameActive) return;
-		if (e.code === "ArrowUp" || e.code === "ArrowDown" ||
-		e.code === "KeyW" || e.code === "KeyS" || e.code === 'Escape') e.preventDefault();
-		if (!keys[e.code]) {
-			keys[e.code] = true;
-			sendKey(e.code, true); 
+	if (playerKeys.right.up)
+		gameState.rightPaddle.y = Math.max(gameState.rightPaddle.y - gameState.speed.p, 0);
+	if (playerKeys.right.down)
+		gameState.rightPaddle.y = Math.min(gameState.rightPaddle.y + gameState.speed.p, board.CANVAS_HEIGHT - board.PADDLE_HEIGHT);
+	if (playerKeys.left.up)
+		gameState.leftPaddle.y = Math.max(gameState.leftPaddle.y - gameState.speed.p, 0);
+	if (playerKeys.left.down)
+		gameState.leftPaddle.y = Math.min(gameState.leftPaddle.y + gameState.speed.p, board.CANVAS_HEIGHT - board.PADDLE_HEIGHT);
+
+	gameState.ball.x += gameState.speed.bX;
+	gameState.ball.y += gameState.speed.bY;
+
+	// reverse y direction when ball hits up or down walls
+	if (gameState.ball.y - board.BALL_RADIUS / 2 <= 0 || gameState.ball.y + board.BALL_RADIUS / 2 >= board.CANVAS_HEIGHT)
+		gameState.speed.bY *= -1;
+
+	// bounce when ball hits paddel
+	checkPaddelHit(gameState);
+
+	// score when ball hits left or right walls
+	if (gameState.ball.x - board.BALL_RADIUS / 2 <= 0 || gameState.ball.x + board.BALL_RADIUS / 2 >= board.CANVAS_WIDTH) {
+		gameState.ball.x - board.BALL_RADIUS / 2 <= 0 ? gameState.score.right++ : gameState.score.left++;
+		if (gameState.score.right >= 5 || gameState.score.left >= 5) {
+			const rightWins = gameState.score.right >= 5;
+
+			gameState.winner = rightWins
+				? { alias: gameState.current.rightPlayer.alias, id: gameState.current.rightPlayer.id }
+				: { alias: gameState.current.leftPlayer.alias, id: gameState.current.leftPlayer.id };
+
+			gameState.loser = rightWins
+				? { alias: gameState.current.leftPlayer.alias, id: gameState.current.leftPlayer.id }
+				: { alias: gameState.current.rightPlayer.alias, id: gameState.current.rightPlayer.id };
+
+			return 1;
 		}
-		if (keys['Escape'])
-			stopGame = true;
+		serveBall(gameState);
 	}
-	function handleKeyUp(e: KeyboardEvent) {
-		if (!gameActive) return;
-		if (keys[e.code]) {
-		keys[e.code] = false;
-		sendKey(e.code, false); }
-	}
+}
 
-	function sendKey(code: string, pressed: boolean) {
-		if (!socket) {
-			//console.warn("Socket not initialized yet");
-			return;
-		}
+function checkPaddelHit(gameState: GameState) {
+	// Left paddle
+	if (gameState.ball.x - board.BALL_RADIUS / 2 <= gameState.leftPaddle.x + board.PADDLE_WIDTH &&
+		gameState.ball.x - board.BALL_RADIUS / 2 >= gameState.leftPaddle.x &&
+		gameState.ball.y + board.BALL_RADIUS / 2 >= gameState.leftPaddle.y &&
+		gameState.ball.y - board.BALL_RADIUS / 2 <= gameState.leftPaddle.y + board.PADDLE_HEIGHT) {
+		gameState.ball.x + gameState.leftPaddle.x + board.PADDLE_WIDTH + board.BALL_RADIUS / 2;
 
-		if (socket.readyState === WebSocket.OPEN) {
-			socket.send(JSON.stringify({ type: "input", data: { code, pressed }}));
-		}
-	}
+		const speed = Math.sqrt(gameState.speed.bX ** 2 + gameState.speed.bY ** 2);
+		const newSpeed = speed * 1.04;
 
-
-	export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-
-		if (!socket || socket.readyState !== WebSocket.OPEN) {
-			throw new Error("Game socket not connected");
-		}
-		gameActive = true;
-		//showInstructions(overlay, canvas);
-		//overlay.innerHTML = '';
-		overlay.style.display = "none";
-
-		window.addEventListener('keydown', handleKeyDown);
-		window.addEventListener('keyup', handleKeyUp);
-
-		socket.addEventListener("message", (event) => {
-		const message = JSON.parse(event.data);
-
-		if (message.type === "set") {
-			console.log("received inital game state from server via set message");
-			//const getState = await waitForInput<GameState>("set");
-			Object.assign(gameState, message.data);
-			//overlay.style.display = 'none';
-			draw(canvas);
-
-			startCountdown(3, canvas, () => {
-				socket!.send(JSON.stringify({ type: "please serve" }));
-			});
-		}
-		
-		if (message.type === "go") {
-			loop(overlay, canvas);
-		}
-		if (message.type === "stop")
-			stopGame = true;
-		if (message.type === "state" || message.type === "win") {
-			const getState: GameState = message.data;
-			Object.assign(gameState, getState);
-			if (message.type === "win") {
-				draw(canvas);
-				cancelAnimationFrame(frameID);
-				overlay.style = 'flex';
-				const winner = ["THE WINNER IS ", gameState.winner.alias];
-				drawText(canvas, winner);
-				gameActive = false;
-
-				overlay.innerHTML = '';
-				if (message.next === -1)
-				{
-					const statBtn = document.createElement('button');
-					statBtn.textContent = "THE END - SEE RESULTS";
-					statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-					statBtn.style.marginTop = '100px';
-					statBtn.onclick = () => {
-						overlay.innerHTML = '';
-						let lines = [
-							"THIS IS A PLACEHOLDER FOR THE DISPLAY",
-							"OF THE TOURNAMENT'S RESULTS",
-						];
-						const menuBtn = document.createElement('button');
-						menuBtn.textContent = "BACK TO MENU";
-						menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-						menuBtn.style.marginTop = '200px';
-						drawText(canvas, lines);
-						menuBtn.onclick = () => {
-							toMatchMenu();
-						}
-						overlay.appendChild(menuBtn);
-					}
-					overlay.appendChild(statBtn);
-
-				} else { 
-				const nextBtn = document.createElement('button');
-				nextBtn.textContent = 'READY FOR NEXT GAME';
-				nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-				nextBtn.style.marginTop = '200px';
-				nextBtn.onclick = () => {
-					//socket.send(JSON.stringify({ type: "ready" }));
-					//disconnectEngine()
-					startGame(overlay, canvas);
-				};
-				overlay.appendChild(nextBtn);
-			}
-				}
-		}
-		});
-			
-		// const readyBtn = document.createElement('button');
-		// readyBtn.textContent = 'READY';
-		// readyBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-		// readyBtn.style.marginTop = '200px';
-		// readyBtn.onclick = () => {
-		// 	socket.send(JSON.stringify({ type: "ready" }));
-		// 	readyBtn.disabled = true;
-		// 	readyBtn.textContent = 'WAITING...';
-		// 	readyBtn.className = 'bg-gray-200 text-gray-400 text-2xl font-bold px-10 py-3 rounded w-64';
-		// };
-		// overlay.appendChild(readyBtn);
-
-		// const getState = await waitForInput<GameState>("set");
-		// Object.assign(gameState, getState);
-		// //overlay.style.display = 'none';
-		// draw(canvas);
-
-		// startCountdown(3, canvas, () => {
-		// 	socket!.send(JSON.stringify({ type: "please serve" }));
-		// });
-
-		socket.addEventListener("error", (event) => {
-			console.error("WebSocket encountered an error:", event);
-		});
-	}	
-
-	function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return console.log('ctx failed to load inside loop function');
-
-		draw(canvas);
-		if (stopGame) {
-			keys['Escape'] = false;
-			stopGame = false;
-			cancelAnimationFrame(frameID);
-			//ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-			// const rootContainer = document.getElementById('app') as HTMLElement;
-			// cleanup();
-			// renderCreateTournamentForm(rootContainer);
-			toMatchMenu();
-			return;
-		}
-		frameID = requestAnimationFrame(() => loop(overlay, canvas));
+		//how far from the center the ball hit + dividing by (board.PADDLE_HEIGHT / 2) → normalize it to -1..1 to get direction
+		const hitPos = (gameState.ball.y - (gameState.leftPaddle.y + board.PADDLE_HEIGHT / 2)) / (board.PADDLE_HEIGHT / 2);
+		const maxAngle = 0.6; // max vertical component factor
+		const angleFactor = hitPos * maxAngle;
+		gameState.speed.bX = newSpeed * Math.sqrt(1 - angleFactor ** 2);
+		gameState.speed.bY = newSpeed * angleFactor;
 	}
 
-	export function toMatchMenu() {
-		const rootContainer = document.getElementById('app') as HTMLElement;
-		for (const key in keys) keys[key] = false;
-		cleanup();
-		renderCreateTournamentForm(rootContainer);
+	// Right paddle
+	if (
+		gameState.ball.x + board.BALL_RADIUS / 2 >= gameState.rightPaddle.x &&
+		gameState.ball.x - board.BALL_RADIUS / 2 <= gameState.rightPaddle.x + board.PADDLE_WIDTH &&
+		gameState.ball.y + board.BALL_RADIUS / 2 >= gameState.rightPaddle.y &&
+		gameState.ball.y - board.BALL_RADIUS / 2 <= gameState.rightPaddle.y + board.PADDLE_HEIGHT) {
+		gameState.ball.x = gameState.rightPaddle.x - board.BALL_RADIUS / 2; // prevent sticking
+		// Paddle hit – calculate new speed and angle
+		const speed = Math.sqrt(gameState.speed.bX ** 2 + gameState.speed.bY ** 2);
+		const newSpeed = speed * 1.04;
+
+		const hitPos = (gameState.ball.y - (gameState.rightPaddle.y + board.PADDLE_HEIGHT / 2)) / (board.PADDLE_HEIGHT / 2);
+		const maxAngle = 0.6;
+		const angleFactor = hitPos * maxAngle;
+
+		const dir = -1; // ball moving left after hit
+		gameState.speed.bX = newSpeed * Math.sqrt(1 - angleFactor ** 2) * dir;
+		gameState.speed.bY = newSpeed * angleFactor;
 	}
+}
 
-	export function cleanup() {
-		gameActive = false;
-		stopGame = false;
-		window.removeEventListener('keydown', handleKeyDown);
-		window.removeEventListener('keyup', handleKeyUp);
-		const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-		if (gameBoard) gameBoard.remove();
-		disconnectEngine();
-	}
+export async function serveBall(gameState: GameState) {
+	gameState.ball.x = board.CANVAS_WIDTH / 2;
+	gameState.ball.y = board.CANVAS_HEIGHT / 2;
 
+	const angle = (30 + Math.random() * 30) * Math.PI / 180; // random 30°–60°
+	const upDown = Math.random() < 0.5 ? 1 : -1;
+	const direction = gameState.servingPlayer === 'left' ? 1 : -1;
 
-	function startCountdown(count: number, canvas: HTMLCanvasElement, callback: () => void) {
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return console.log('ctx failed to load inside startCountdown function');
+	gameState.speed.bX = direction * board.BALL_SPEED_BASE * Math.cos(angle);
+	gameState.speed.bY = upDown * board.BALL_SPEED_BASE * Math.sin(angle);
 
-		requestAnimationFrame(() => {
-			draw(canvas);
-			drawNumber(ctx, count);
-			count--;
+	gameState.servingPlayer = gameState.servingPlayer === 'left' ? 'right' : 'left';
 
-			const intervalId = setInterval(() => {
-				ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-				draw(canvas);			
-				drawNumber(ctx, count);
+	gameState.leftPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	gameState.rightPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	paused = true;
+	await sleep(200);
+	paused = false;
+}
 
-				count--;
-				if (count < 0) {
-					clearInterval(intervalId);
-					callback();
-				}
-		}, 1000);
-		});
-	}
+function sleep(ms: number) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function resetSpecs(gameState: GameState, next: GameObject | -1) {
+
+	if (next === -1 || next.gameId === -1) {
+		console.log("no next game");
+		gameState.current.leftPlayer = { alias: 'left', id: -1 };
+		gameState.current.rightPlayer = { alias: 'right', id: -2 };
+		gameState.current.gameId = -1;
+		gameState.current.type = 'none';
+	} else
+		gameState.current = next;
+	// Reset gameState to initial values
+	gameState.ball.x = board.CANVAS_WIDTH / 2;
+	gameState.ball.y = board.CANVAS_HEIGHT / 2;
+	gameState.leftPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	gameState.rightPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
+	gameState.speed.bX = 0;
+	gameState.speed.bY = 0;
+	gameState.speed.p = 5;
+	gameState.score.left = 0;
+	gameState.score.right = 0;
+	gameState.servingPlayer = whichSide();
+	gameState.winner.id = -1;
+	gameState.winner.alias = 'none';
+	playerKeys.right.up = false;
+	playerKeys.right.down = false;
+	playerKeys.left.up = false;
+	playerKeys.left.down = false;
+}

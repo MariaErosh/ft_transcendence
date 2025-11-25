@@ -78,7 +78,7 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 	  
 		  engineWs.on("message", (data) => {
 			const str = (typeof data === "string") ? data : data.toString();
-			console.log("gateway socket sending message", data);
+			//console.log("gateway socket sending message", data);
 			sideConn!.frontendWs.forEach(ws => {
 			  if (ws.readyState === WebSocket.OPEN) ws.send(str);
 			});
