@@ -81,7 +81,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 
 	fastify.post<{
 		Body: resultPayload
-	}>('/match/remote/result', { schema: resultSchema }, async (request, reply) => {
+	}>('/match/result', { schema: resultSchema }, async (request, reply) => {
 		console.log("Match service received a post request at /match/remote/result");
 		const gameResult = request.body;
 		await matchService.recordGameResults(gameResult.gameId, gameResult.loser.alias, gameResult.winner.alias);

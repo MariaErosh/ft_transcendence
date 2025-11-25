@@ -1,4 +1,4 @@
-import { socket } from "/match_service/gameSocket.js";
+import { socket } from "./match_service/gameSocket.js";
 
 
 export function renderArena() {
