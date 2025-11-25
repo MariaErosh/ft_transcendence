@@ -28,7 +28,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		//ADD ERROR CHECKING
 		let result: GamePayload = {
 			type: match.type,
-			matchId: matchId,
+			gameId: matchId,
 			leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
 			rightPlayer: { id: nextPlayers[1]!.user_id, alias: nextPlayers[1]!.alias },
 		}
@@ -40,14 +40,14 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		// if (!ensureFromGateway(request, reply)) return;
 		console.log("Match service received a post request at /match/result");
 		const gameResult = request.body;
-		await matchService.recordGameResults(gameResult.matchId, gameResult.loser.alias, gameResult.winner.alias);
-		const match = await matchService.getMatchById(gameResult.matchId);
-		const nextPlayers = await matchService.getNextPlayers(gameResult.matchId);
+		await matchService.recordGameResults(gameResult.gameId, gameResult.loser.alias, gameResult.winner.alias);
+		const match = await matchService.getMatchById(gameResult.gameId);
+		const nextPlayers = await matchService.getNextPlayers(gameResult.gameId);
 		let newGame: GamePayload;
 		if (nextPlayers.length === 1) {
 			newGame = {
 				type: match.type,
-				matchId: -1,
+				gameId: -1,
 				leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
 				rightPlayer: { id: -1, alias: "" },
 			}
@@ -55,7 +55,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		else {
 			newGame = {
 				type: match.type,
-				matchId: gameResult.matchId,
+				gameId: gameResult.gameId,
 				leftPlayer: { id: nextPlayers[0]!.user_id, alias: nextPlayers[0]!.alias },
 				rightPlayer: { id: nextPlayers[1]!.user_id, alias: nextPlayers[1]!.alias },
 			}
@@ -78,19 +78,34 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		for (const game of games) {
 			let payload: GamePayload = {
 				type: "REMOTE",
-				matchId: game.id,
+				gameId: game.id,
 				leftPlayer: { id: game.left_player_id, alias: game.left_player_alias },
 				rightPlayer: { id: game.right_player_id, alias: game.right_player_alias },
 			}
 			await fetch(`http://gateway:3000/game/start`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(game)
+				body: JSON.stringify(payload)
 			});
 			console.log("REMOTE game sent to game engine");
 		}
 		//ADD ERROR CHECKING
 		return { matchId: matchId, games: games };
+	})
+
+	fastify.get('/match/game', async(request, reply) => {
+		const gameId =request.query as {gameId: string};
+		const gameIdN = Number(gameId);
+		if (isNaN(gameIdN)) return reply.status(400).send({ error: "Incorrect gameId" });;
+		const game = await matchService.getGameById(gameIdN);
+		if (!game) return reply.status(400).send({ error: "Game not found" });;
+		let payload: GamePayload = {
+				type: game.type,
+				gameId: game.id,
+				leftPlayer: { id: game.left_player_id, alias: game.left_player_alias },
+				rightPlayer: { id: game.right_player_id, alias: game.right_player_alias },
+			}
+		return payload;
 	})
 
 	// fastify.post('/match/remote/new', { schema: newMatchSchema }, async (request, reply) => {
