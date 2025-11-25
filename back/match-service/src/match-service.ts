@@ -153,7 +153,7 @@ export class MatchService {
 		return games.count;
 	}
 
-	async createNewRound(matchId: number) {
+	async createNewRound(matchId: number, matchName: string) {
 		let games = [];
 		let { type } = await dbGet(this.db, "SELECT type FROM matches WHERE id = ?", [matchId]);
 		await dbRunQuery(this.db, "UPDATE players SET status = ? WHERE match_id = ? AND status = ?", ['NOT PLAYED', matchId, "WON"]);
@@ -193,6 +193,11 @@ export class MatchService {
 				throw error;
 			}
 		}
+		await fetch(`${GATEWAY}/newround`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({matchName:matchName, games: games})
+				});
 		return games;
 	}
 }
