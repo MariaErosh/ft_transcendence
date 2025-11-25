@@ -207,8 +207,18 @@ function handleMessage(gameId: number, player: PlayerSocket, message: any) {
 	}
 }
 
-async function getNextGame(gameState: GameState): Promise<GameObject> {
-	const response = await fetch("http://gateway:3000/match/console/result", {
+// async function getNextGame(gameState: GameState): Promise<GameObject> {
+// 	const response = await fetch("http://gateway:3000/match/console/result", {
+// 		method: "POST",
+// 		headers: { "Content-Type": "application/json" },
+// 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
+// 	});
+// 	if (!response.ok) throw new Error("failed to fetch new game");
+// 	const obj: GameObject = await response.json();
+// 	return obj;
+// }
+async function recordRemoteResult(gameState: GameState): Promise<GameObject> {
+	const response = await fetch("http://gateway:3000/match/remote/result", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),

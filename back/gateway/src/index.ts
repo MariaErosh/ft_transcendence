@@ -104,10 +104,6 @@ async function buildServer() {
 		http2: false,
 	});
 
-	server.get("/online", async () => {
-		return { online: getOnlineUsers() };
-	});
-
 	server.get("/open", async () => {
 		return { matches: getOpenMatches() };
 	})

@@ -47,6 +47,9 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 					match_id INTEGER NOT NULL,
 					round INTEGER NOT NULL,
 					type TEXT NOT NULL,
+					status TEXT NOT NULL,
+					winner TEXT,
+					loser: TEXT
 					FOREIGN KEY(match_id) REFERENCES matches(id)
 			);
 		`, (err) => {
