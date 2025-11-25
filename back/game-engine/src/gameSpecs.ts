@@ -27,6 +27,7 @@ export interface PlayerSocket {
 	ws: WS;
 	alias: string;
 	side: "left" | "right";
+	ready: boolean;
 }
 
 export interface GameObject {
