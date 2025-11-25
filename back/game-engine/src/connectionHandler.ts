@@ -118,15 +118,15 @@ server.post("/game/start", async (request: FastifyRequest, reply: FastifyReply) 
 	games.set(newGame.gameId, newGame);
 	gameStates.set(newGame.gameId, new GameState(newGame));
 
-	const ws = [...clients][0];
-	if (!ws || ws.readyState !== ws.OPEN) {
-		console.warn("No connected WebSocket clients to send start message");
-		return reply.status(503).send({ error: "No active WebSocket client connected" });
-	}
-	ws.send(JSON.stringify({ type: "start" }));
-	console.log("start message sent to client");
-	console.log("Received /game/start, notifying client via WS");
-	return reply.send({ ok: true, message: "game started, client notified" });
+	// const ws = [...clients][0];
+	// if (!ws || ws.readyState !== ws.OPEN) {
+	// 	console.warn("No connected WebSocket clients to send start message");
+	// 	return reply.status(503).send({ error: "No active WebSocket client connected" });
+	// }
+	// ws.send(JSON.stringify({ type: "start" }));
+	// console.log("start message sent to client");
+	// console.log("Received /game/start, notifying client via WS");
+	// return reply.send({ ok: true, message: "game started, client notified" });
 });
 
 server.post("/game/move", async (request: FastifyRequest, reply: FastifyReply) => {
@@ -167,7 +167,7 @@ await server.listen({ port: PORT, host: "0.0.0.0" });
 console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
 
 function handleMessage(gameId: number, player: PlayerSocket, message: any) {
-	console.log('Parsed message: ', message);
+	console.log('Parsed message: ', message, 'received from player ', player.alias);
 	let gameState = gameStates.get(gameId) as GameState;
 	if (message.type === "set") {
 		console.log('Client is ready, starting game');
@@ -187,12 +187,22 @@ function handleMessage(gameId: number, player: PlayerSocket, message: any) {
 				// ws.send(JSON.stringify({ type: "win", data: gameState }));
 
 				(async () => {
+					const sockets = gameSockets.get(gameId);
+					if (!sockets) {
+						console.error("No matching game socket found for game ID", gameId);
+						return;
+					}
 					try {
+						
 						const nextGame = await getNextGame(gameState);
-						player.ws.send(JSON.stringify({ type: "win", data: gameState, next: nextGame.gameId }));
+						for (const p of sockets) {
+							p.ws.send(JSON.stringify({ type: "win", data: gameState, next: nextGame.gameId }));
+						}
 						resetSpecs(gameState, nextGame);
 					} catch (err) {
-						player.ws.send(JSON.stringify({ type: "win", data: gameState, next: -1 }));
+						for (const p of sockets) {
+							p.ws.send(JSON.stringify({ type: "win", data: gameState, next: -1 }));
+						}
 						resetSpecs(gameState, -1);
 					}
 				})();
@@ -220,20 +230,30 @@ async function getNextGame(gameState: GameState): Promise<GameObject> {
 
 function handleInput(gameId: number, player: PlayerSocket, code: string, pressed: boolean) {
 	let gameState = gameStates.get(gameId) as GameState;
-	if (player.id === gameState.current.leftPlayer.id) {
+
+	if (player.alias === gameState.current.rightPlayer.alias) {
 		if (code === 'ArrowUp')
 			playerKeys.right.up = pressed;
 		if (code === 'ArrowDown')
 			playerKeys.right.down = pressed;
 	}
-	if (player.id === gameState.current.rightPlayer.id) {
-		if (code === 'KeyW')
+	if (player.alias === gameState.current.leftPlayer.alias) {
+		if (code === 'KeyW' || (gameState.current.type === 'REMOTE' && code === 'ArrowUp'))
 			playerKeys.left.up = pressed;
-		if (code === 'KeyS')
+		if (code === 'KeyS' || (gameState.current.type === 'REMOTE' && code === 'ArrowDown'))
 			playerKeys.left.down = pressed;
 	}
 	if (code === 'Escape') {
 		deleteInterval(gameId);
 		resetSpecs(gameState, -1);
+		const sockets = gameSockets.get(gameId);
+		if (!sockets) {
+			console.error("No matching game socket found for game ID", gameId);
+			return;
+		}
+		for (const p of sockets) {
+			p.ws.send(JSON.stringify({ type: "stop" }));
+		}
+
 	}
 }
