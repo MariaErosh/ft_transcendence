@@ -1,9 +1,10 @@
 import { login, verify2FA, register } from "./api.js";
 import { renderUserMenu } from "./ui.js";
-import { renderCreateTournamentForm } from "./match_service.js"
+import { renderCreateTournamentForm } from "./match_service/start_page.js"
 
-export function renderLogin(container: HTMLElement) {
-	container.innerHTML = "";
+export function renderLogin() {
+	const main = document.getElementById("main")!;
+	main.innerHTML = "";
 
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
@@ -38,7 +39,7 @@ export function renderLogin(container: HTMLElement) {
 	signupLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	signupLink.textContent = "Don't have an account yet? Sign up here.";
 	signupLink.addEventListener("click", () => {
-		renderRegister(container);
+		renderRegister();
 	});
 	form.appendChild(signupLink);
 
@@ -47,24 +48,25 @@ export function renderLogin(container: HTMLElement) {
 		const response = await login(username.value, password.value);
 
 		if (response.twoFactorRequired) {
-		render2FA(container, response.userId);
+		render2FA(response.userId);
 		} else if (response.accessToken) {
-		msg.textContent = "Login successful!";
-		console.log(response);
-		localStorage.setItem("username", username.value);
-		container.innerHTML = '';
-		renderUserMenu(container);
-		renderCreateTournamentForm(container);
+			msg.textContent = "Login successful!";
+			console.log(response);
+			//container.innerHTML = '';
+			localStorage.setItem("username", username.value);
+			localStorage.setItem("refreshToken", response.refreshToken);
+			renderUserMenu();
+			renderCreateTournamentForm();
 		} else {
-		msg.textContent = response.error || "Login failed";
+			msg.textContent = response.error || "Login failed";
 		}
 	});
-
-	container.appendChild(form);
+	main.appendChild(form);
 }
 
-export function renderRegister(container: HTMLElement) {
-	container.innerHTML = "";
+export function renderRegister() {
+	const main = document.getElementById("main")!;
+	main.innerHTML = "";
 
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
@@ -99,7 +101,7 @@ export function renderRegister(container: HTMLElement) {
 	loginLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	loginLink.textContent = "Already have an account? Login here.";
 	loginLink.addEventListener("click", () => {
-		renderLogin(container);
+		renderLogin();
 	});
 	form.appendChild(loginLink);
 
@@ -114,11 +116,12 @@ export function renderRegister(container: HTMLElement) {
 		}
 	});
 
-	container.appendChild(form);
+	main.appendChild(form);
 }
 
-export function render2FA(container: HTMLElement, userId: number) {
-	container.innerHTML = "";
+export function render2FA(userId: number) {
+	const main = document.getElementById("main")!;
+	main.innerHTML = "";
 
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
@@ -154,6 +157,6 @@ export function render2FA(container: HTMLElement, userId: number) {
 		}
 	});
 
-	container.appendChild(form);
+	main.appendChild(form);
 }
 

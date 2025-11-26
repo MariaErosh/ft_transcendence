@@ -1,12 +1,11 @@
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
-import { renderGameBoard } from "./game_front/gameMenu.js";
+const app = document.getElementById("app")!;
 
-const app = document.getElementById("app");
+app.innerHTML = `
+	<div id="menu" class="fixed top-4 right-4 z-50"></div>
+	<div id="main" class="w-full h-full flex items-center justify-center"></div>`;
 
-if (app) {
-	console.log("Rendering user menu");
-	renderUserMenu(app);
-	renderCreateTournamentForm(app);
-}
+renderUserMenu();
+renderCreateTournamentForm();

@@ -56,11 +56,13 @@ export function readyToRender(gameId: any) {
 		gameBoard.remove();
 	}
 	const container = document.getElementById('app') as HTMLElement;
-	renderGameBoard(container);
+	renderGameBoard();
 }
 				
 
-export async function renderGameBoard(container: HTMLElement) {
+export async function renderGameBoard() {
+	const main = document.getElementById("main")!;
+	main.innerHTML = "";
 
 	if (!socket || socket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
@@ -77,7 +79,7 @@ export async function renderGameBoard(container: HTMLElement) {
 	wrapper.style.height = board.CANVAS_HEIGHT + "px";
 	wrapper.className = "relative";
 	wrapper.id = 'game-board-wrapper';
-	container.appendChild(wrapper);
+	main.appendChild(wrapper);
 	
 
 	//creating canvas

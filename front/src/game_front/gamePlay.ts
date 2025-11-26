@@ -145,10 +145,10 @@
 	}
 
 	export function toMatchMenu() {
-		const rootContainer = document.getElementById('app') as HTMLElement;
+		//const rootContainer = document.getElementById('app') as HTMLElement;
 		for (const key in keys) keys[key] = false;
 		cleanup();
-		renderCreateTournamentForm(rootContainer);
+		renderCreateTournamentForm();
 	}
 
 	export function cleanup() {
