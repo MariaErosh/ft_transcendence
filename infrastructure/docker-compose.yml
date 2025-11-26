@@ -11,12 +11,14 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: auth
-    ports:
-      - "3001:3001"
+    expose:
+      - 3001
     volumes:
       - ../back/auth-service/data/:/app/data
     env_file:
     - ../back/auth-service/.env
+    networks:
+      - internal
 
   user:
     build:
@@ -24,12 +26,14 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: user
-    ports:
-      - "3002:3002"
+    expose:
+        - 3002
     volumes:
       - ../back/user-service/data/:/app/data
     env_file:
     - ../back/user-service/.env
+    networks:
+      - internal
 
 
   game-engine:
@@ -37,9 +41,12 @@ services:
       context: ../back/game-engine
       dockerfile: Dockerfile
       target: prod
-    container_name: game
+    container_name: game-engine
     ports:
       - "3003:3003"
+    networks:
+      - internal
+
 
   match:
     build:
@@ -47,8 +54,10 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: match
-    ports:
-      - "3004:3004"
+    expose:
+      - 3004
+    networks:
+      - internal
 
 
   gateway:
@@ -64,3 +73,10 @@ services:
       - user
     env_file:
     - ../back/gateway/.env
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+    internal: false
