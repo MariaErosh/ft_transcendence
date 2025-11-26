@@ -1,6 +1,6 @@
 import { ws, connectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
-import { socket, connectGameWS } from "./gameSocket.js";
+import { connectGameWS } from "./gameSocket.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 
 interface matchPayload {
@@ -12,15 +12,17 @@ interface PlayerPayload {
 	alias: string;
 }
 
-export async function renderNewRemoteTournament(container: HTMLElement, box: HTMLElement) {
+export async function renderNewRemoteTournament() {
+		const blackBox = document.getElementById("black-box")!;
+		blackBox.innerHTML = "";
+
 	await connectWS();
 	let gameOwner = false;
-	box.innerHTML = "";
 
 	const title = document.createElement("div");
 	title.textContent = "Open Tournaments";
 	title.className = "text-white text-4xl font-sans font-semibold mb-8";
-	box.appendChild(title);
+	blackBox.appendChild(title);
 
 	// Container for list of open matches
 	const listBox = document.createElement("div");
@@ -29,14 +31,14 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 		w-3/5 h-1/3 overflow-y-auto
 		p-4 mb-8 flex flex-col gap-2
 	`;
-	box.appendChild(listBox);
+	blackBox.appendChild(listBox);
 	const createButton = document.createElement("button");
 	createButton.textContent = "+ Create a new match";
 	createButton.className = `
 		bg-white text-black font-sans font-semibold
 		text-2xl w-2/5 h-16 rounded hover:bg-gray-200 transition
 	`;
-	box.appendChild(createButton);
+	blackBox.appendChild(createButton);
 	async function refreshMatches() {
 		listBox.innerHTML = "Loading...";
 		try {
@@ -65,17 +67,17 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 
 	// Create new match flow
 	createButton.addEventListener("click", () => {
-		box.innerHTML = "";
+		blackBox.innerHTML = "";
 
 		const formTitle = document.createElement("div");
 		formTitle.textContent = "Enter the name of your new match";
 		formTitle.className = "text-white text-3xl font-sans mb-6";
-		box.appendChild(formTitle);
+		blackBox.appendChild(formTitle);
 
 		const input = document.createElement("input");
 		input.placeholder = "Match name";
 		input.className = "p-3 w-2/3 text-black border border-gray-400 rounded mb-4";
-		box.appendChild(input);
+		blackBox.appendChild(input);
 
 		const create = document.createElement("button");
 		create.textContent = "Create";
@@ -83,7 +85,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			bg-white text-black font-sans font-semibold
 			text-2xl w-1/3 h-16 rounded hover:bg-gray-200 transition
 		`;
-		box.appendChild(create);
+		blackBox.appendChild(create);
 		create.addEventListener("click", async () => {
 			const name = input.value.trim();
 			if (!name) return;
@@ -116,13 +118,14 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 	});
 
 
-	async function joinRoom(matchName: string) {
-		box.innerHTML = "";
+async function joinRoom(matchName: string) {
+
+		blackBox.innerHTML = "";
 
 		const title = document.createElement("div");
 		title.textContent = `Match: ${matchName}`;
 		title.className = "text-white text-4xl font-sans font-semibold mb-8";
-		box.appendChild(title);
+		blackBox.appendChild(title);
 
 		const playersList = document.createElement("div");
 		playersList.className = `
@@ -130,7 +133,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			w-3/5 h-1/3 overflow-y-auto
 			p-4 mb-8 flex flex-col gap-2
 		`;
-		box.appendChild(playersList);
+		blackBox.appendChild(playersList);
 
 		const startButton = document.createElement("button");
 		startButton.textContent = "START";
@@ -139,7 +142,7 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 			bg-gray-500 text-black font-sans font-semibold
 			w-1/3 h-16 text-3xl transition
 		`;
-		box.appendChild(startButton);
+		blackBox.appendChild(startButton);
 
 		startButton.addEventListener("click", () => {
 			console.log("SENDING start_match");
@@ -167,9 +170,10 @@ export async function renderNewRemoteTournament(container: HTMLElement, box: HTM
 				console.log("Ready to start the game: ", msg);
 			}
 			if (msg.type == "game_ready"){
+		
 				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
 				await connectGameWS(msg.gameId, msg.side);
-				await renderGameBoard(container);
+				await renderGameBoard();
 			}
 		})
 		function refreshPlayers() {

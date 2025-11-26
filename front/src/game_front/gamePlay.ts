@@ -3,12 +3,17 @@
 	import { draw, drawNumber, drawText } from "./draw.js";
 	import { renderCreateTournamentForm } from "../match_service/start_page.js"
 	import { socket } from "../match_service/gameSocket.js";
+	import { renderArena } from "../arena.js";
 
 
 	let frameID: number;
 	let gameActive: boolean = false;
-	let stopGame: boolean = false; 
+	let stopGame: boolean = false;
 	const keys: Record<string, boolean> = {};
+
+	export function setStop() {
+		stopGame = true;
+	}
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if (!gameActive) return;
@@ -16,7 +21,7 @@
 		e.code === "KeyW" || e.code === "KeyS" || e.code === 'Escape') e.preventDefault();
 		if (!keys[e.code]) {
 			keys[e.code] = true;
-			sendKey(e.code, true); 
+			sendKey(e.code, true);
 		}
 		if (keys['Escape'])
 			stopGame = true;
@@ -72,57 +77,47 @@
 				gameActive = false;
 
 				overlay.innerHTML = '';
-				if (message.next === -1)
-				{
-					const statBtn = document.createElement('button');
-					statBtn.textContent = "THE END - SEE RESULTS";
-					statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-					statBtn.style.marginTop = '100px';
-					statBtn.onclick = () => {
-						overlay.innerHTML = '';
-						let lines = [
-							"THIS IS A PLACEHOLDER FOR THE DISPLAY",
-							"OF THE TOURNAMENT'S RESULTS",
-						];
-						const menuBtn = document.createElement('button');
-						menuBtn.textContent = "BACK TO MENU";
-						menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-						menuBtn.style.marginTop = '200px';
-						drawText(canvas, lines);
-						menuBtn.onclick = () => {
-							toMatchMenu();
-						}
-						overlay.appendChild(menuBtn);
-					}
-					overlay.appendChild(statBtn);
+				renderArena();
+			// 	if (message.next === -1)
+			// 	{
+			// 		const statBtn = document.createElement('button');
+			// 		statBtn.textContent = "THE END - SEE RESULTS";
+			// 		statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+			// 		statBtn.style.marginTop = '100px';
+			// 		statBtn.onclick = () => {
+			// 			overlay.innerHTML = '';
+			// 			let lines = [
+			// 				"THIS IS A PLACEHOLDER FOR THE DISPLAY",
+			// 				"OF THE TOURNAMENT'S RESULTS",
+			// 			];
+			// 			const menuBtn = document.createElement('button');
+			// 			menuBtn.textContent = "BACK TO MENU";
+			// 			menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+			// 			menuBtn.style.marginTop = '200px';
+			// 			drawText(canvas, lines);
+			// 			menuBtn.onclick = () => {
+			// 				toMatchMenu();
+			// 			}
+			// 			overlay.appendChild(menuBtn);
+			// 		}
+			// 		overlay.appendChild(statBtn);
 
-				} else { 
-				const nextBtn = document.createElement('button');
-				nextBtn.textContent = 'READY FOR NEXT GAME';
-				nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-				nextBtn.style.marginTop = '200px';
-				nextBtn.onclick = () => {
-					//socket.send(JSON.stringify({ type: "ready" }));
-					//disconnectEngine()
-					startGame(overlay, canvas);
-				};
-				overlay.appendChild(nextBtn);
-			}
+			// 	} else {
+			// 	const nextBtn = document.createElement('button');
+			// 	nextBtn.textContent = 'READY FOR NEXT GAME';
+			// 	nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
+			// 	nextBtn.style.marginTop = '200px';
+			// 	nextBtn.onclick = () => {
+			// 		//socket.send(JSON.stringify({ type: "ready" }));
+			// 		//disconnectEngine()
+			// 		startGame(overlay, canvas);
+			// 	};
+			// 	overlay.appendChild(nextBtn);
+			// }
 				}
 		}
 		});
-			
-		// const readyBtn = document.createElement('button');
-		// readyBtn.textContent = 'READY';
-		// readyBtn.className = 'bg-blue-500 text-white text-2xl font-bold px-10 py-3 rounded hover:bg-blue-600 transition w-64';
-		// readyBtn.style.marginTop = '200px';
-		// readyBtn.onclick = () => {
-		// 	socket.send(JSON.stringify({ type: "ready" }));
-		// 	readyBtn.disabled = true;
-		// 	readyBtn.textContent = 'WAITING...';
-		// 	readyBtn.className = 'bg-gray-200 text-gray-400 text-2xl font-bold px-10 py-3 rounded w-64';
-		// };
-		// overlay.appendChild(readyBtn);
+
 
 		const getState = await waitForInput<GameState>("set");
 		Object.assign(gameState, getState);
@@ -136,7 +131,7 @@
 		socket.addEventListener("error", (event) => {
 			console.error("WebSocket encountered an error:", event);
 		});
-	}	
+	}
 
 	function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 		const ctx = canvas.getContext('2d');
@@ -147,10 +142,6 @@
 			keys['Escape'] = false;
 			stopGame = false;
 			cancelAnimationFrame(frameID);
-			//ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-			// const rootContainer = document.getElementById('app') as HTMLElement;
-			// cleanup();
-			// renderCreateTournamentForm(rootContainer);
 			toMatchMenu();
 			return;
 		}
@@ -158,10 +149,10 @@
 	}
 
 	export function toMatchMenu() {
-		const rootContainer = document.getElementById('app') as HTMLElement;
+		//const rootContainer = document.getElementById('app') as HTMLElement;
 		for (const key in keys) keys[key] = false;
 		cleanup();
-		renderCreateTournamentForm(rootContainer);
+		renderCreateTournamentForm();
 	}
 
 	export function cleanup() {
@@ -186,7 +177,7 @@
 
 			const intervalId = setInterval(() => {
 				ctx.clearRect(0, 0, board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
-				draw(canvas);			
+				draw(canvas);
 				drawNumber(ctx, count);
 
 				count--;

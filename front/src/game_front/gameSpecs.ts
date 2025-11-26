@@ -24,7 +24,7 @@ export interface Player { id: number, alias: string }
 export interface GameObject {
 	leftPlayer: Player;
 	rightPlayer: Player;
-	matchId: number;
+	gameId: number;
 	type: string;
 }
 
@@ -49,7 +49,7 @@ export let gameState: GameState = {
 	current: {
 		leftPlayer: { alias: 'left', id: -1 },
 		rightPlayer: { alias: 'right', id: -2 },
-		matchId: -1,
+		gameId: -1,
 		type: 'none'
 	},
 	winner: { alias: 'none', id: -1 },

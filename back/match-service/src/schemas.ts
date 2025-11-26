@@ -30,9 +30,9 @@ export const createMatchSchema = {
 export const resultSchema = {
 	body: {
 		type: 'object',
-		required: ['matchId', 'winner', 'loser'],
+		required: ['gameId', 'winner', 'loser'],
 		properties: {
-			matchId:{
+			gameId:{
 				type: 'number'
 			},
 			winner: {

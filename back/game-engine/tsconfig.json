@@ -16,6 +16,6 @@
 	"paths": {},
 	"types" : ["node", "ws", "jest"]
   },
-  "include": ["src/**/*"],        // which files to include
+  "include": ["src/**/*", "tests/sum.ts"],        // which files to include
   "exclude": ["node_modules"]     // which files to exclude
 }

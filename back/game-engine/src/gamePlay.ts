@@ -1,9 +1,9 @@
-import { board, gameState, GameObject, whichSide } from "./gameSpecs.js";
-import { playerKeys } from "./connectionHandler.js";
+import { board, GameObject, GameState, whichSide } from "./gameSpecs.js";
+import { gameStates, playerKeys } from "./connectionHandler.js";
 
 let paused = false;
 
-export function updatePos(): void | number {
+export function updatePos(gameState: GameState): void | number {
 	if (paused) return;
 
 	if (playerKeys.right.up)
@@ -23,7 +23,7 @@ export function updatePos(): void | number {
 		gameState.speed.bY *= -1;
 
 	// bounce when ball hits paddel
-	checkPaddelHit();
+	checkPaddelHit(gameState);
 
 	// score when ball hits left or right walls
 	if (gameState.ball.x - board.BALL_RADIUS / 2 <= 0 || gameState.ball.x + board.BALL_RADIUS / 2 >= board.CANVAS_WIDTH) {
@@ -41,11 +41,11 @@ export function updatePos(): void | number {
 
 			return 1;
 		}
-		serveBall();
+		serveBall(gameState);
 	}
 }
 
-function checkPaddelHit() {
+function checkPaddelHit(gameState: GameState) {
 	// Left paddle
 	if (gameState.ball.x - board.BALL_RADIUS / 2 <= gameState.leftPaddle.x + board.PADDLE_WIDTH &&
 		gameState.ball.x - board.BALL_RADIUS / 2 >= gameState.leftPaddle.x &&
@@ -85,7 +85,7 @@ function checkPaddelHit() {
 	}
 }
 
-export async function serveBall() {
+export async function serveBall(gameState: GameState) {
 	gameState.ball.x = board.CANVAS_WIDTH / 2;
 	gameState.ball.y = board.CANVAS_HEIGHT / 2;
 
@@ -109,13 +109,13 @@ function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function resetSpecs(next: GameObject | -1) {
+export function resetSpecs(gameState: GameState, next: GameObject | -1) {
 
-	if (next === -1 || next.matchId === -1) {
+	if (next === -1 || next.gameId === -1) {
 		console.log("no next game");
 		gameState.current.leftPlayer = { alias: 'left', id: -1 };
 		gameState.current.rightPlayer = { alias: 'right', id: -2 };
-		gameState.current.matchId = -1;
+		gameState.current.gameId = -1;
 		gameState.current.type = 'none';
 	} else
 		gameState.current = next;

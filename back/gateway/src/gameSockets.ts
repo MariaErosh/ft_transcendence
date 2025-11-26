@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import websocketPlugin from "@fastify/websocket";
-import { WebSocket } from "ws";
+//import { WebSocket } from "ws";
+import WebSocket from 'ws';
 import { PlayerPayload } from "./management_sockets";
 
 
@@ -11,6 +12,7 @@ const gameSideConnections = new Map<
     engineWs: WebSocket;
     frontendWs: Set<WebSocket>;           
     userId: number;
+    pendingMessages: string[];
   }>
 >();
 
@@ -23,12 +25,13 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		if (isNaN(gameId) || !query.token) {
 		  return frontendWs.close(1008, "Invalid params");
 		}
-	  
+
 		let player: PlayerPayload;
 		try {
-		  player = await req.jwtVerify<PlayerPayload>();
+		player = server.jwt.verify<PlayerPayload>(query.token);
 		} catch {
-		  return frontendWs.close(1008, "Invalid token");
+		console.log("Returning from registerGameWebsocket: token");
+		return frontendWs.close(1008, "Invalid token");
 		}
 
 	  //CONSDER checking in DB instead of passing as a query
@@ -44,24 +47,40 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		const sidesMap = gameSideConnections.get(gameId)!;
 	  
 		let sideConn = sidesMap.get(side);
-	  
+          
+
 		if (!sideConn) {
 	  
-		  const engineWs = new WebSocket(
+		console.log("Gateway attempting to connect socket on ", `ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+                `?gameId=${gameId}&side=${side}&player=${player.username}`);
+
+		const engineWs = new WebSocket(
 			`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
 			`?gameId=${gameId}&side=${side}&player=${player.username}`
 		  );
 	  
+		// store messages that arrive before sockets are all fully open
+		const pendingMessages: string[] = [];
+		engineWs.on("open", () => {
+			console.log("Engine WS open");
+			pendingMessages.forEach(msg => 
+				engineWs.send(typeof msg === "string" ? msg: JSON.stringify(msg)));
+			pendingMessages.length = 0;
+		});
+
 		  sideConn = {
 			engineWs,
 			frontendWs: new Set(),
 			userId: player.sub,
+			pendingMessages,
 		  };
 		  sidesMap.set(side, sideConn);
 	  
 		  engineWs.on("message", (data) => {
+			const str = (typeof data === "string") ? data : data.toString();
+			//console.log("gateway socket sending message", data);
 			sideConn!.frontendWs.forEach(ws => {
-			  if (ws.readyState === WebSocket.OPEN) ws.send(data);
+			  if (ws.readyState === WebSocket.OPEN) ws.send(str);
 			});
 		  });
 	  
@@ -77,8 +96,11 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		sideConn.frontendWs.add(frontendWs);
 	  
 		frontendWs.on("message", (msg: Buffer) => {
+			console.log("gateway socket receiving message", msg);
 		  if (sideConn!.engineWs.readyState === WebSocket.OPEN) {
 			sideConn!.engineWs.send(msg);
+		  } else {
+			sideConn!.pendingMessages.push(msg.toString());
 		  }
 		});
 	  

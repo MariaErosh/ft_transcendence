@@ -9,7 +9,7 @@ COPY tsconfig.json tailwind.config.js ./
 COPY src ./src
 COPY styles ./styles
 COPY index.html ./
-COPY favicon.ico /usr/share/nginx/html/favicon.ico
+COPY favicon.ico ./
 
 RUN npm run build
 
@@ -19,6 +19,7 @@ FROM nginx:alpine
 
 COPY --from=build /app/index.html /usr/share/nginx/html/index.html
 COPY --from=build /app/dist /usr/share/nginx/html/dist
+COPY --from=build /app/favicon.ico /usr/share/nginx/html/favicon.ico
 
 EXPOSE 80
 

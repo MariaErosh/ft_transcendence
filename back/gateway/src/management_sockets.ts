@@ -105,12 +105,14 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 
 					for (const game of games) {
+						console.log("game:", game);
 						const leftUserId = game.left_player_id;   // number (from DB)
 						const rightUserId = game.right_player_id; // number
-
+						console.log("left user id: ", leftUserId, ", right user id: ", rightUserId, ", userId: ", userId);
 						// Send to left player
 						userSockets.get(leftUserId)?.forEach(ws => {
 							if (ws.readyState === WebSocket.OPEN) {
+								console.log("gateway sending game ready to left player");
 								ws.send(JSON.stringify({
 									type: "game_ready",
 									gameId: game.id,
@@ -124,6 +126,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						// Send to right player
 						userSockets.get(rightUserId)?.forEach(ws => {
 							if (ws.readyState === WebSocket.OPEN) {
+								console.log("gateway sending game ready to right player");
 								ws.send(JSON.stringify({
 									type: "game_ready",
 									gameId: game.id,

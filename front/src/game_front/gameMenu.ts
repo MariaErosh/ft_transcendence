@@ -2,56 +2,30 @@ import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
 import { disconnectGameWS, socket } from "../match_service/gameSocket.js";
 
-// // export let socket: WebSocket;
+// // export let engineSocket: WebSocket;
+export let defGameId: number = 111;
+export let defToken: string = 'token';
 
-// export function setupSocket(): Promise<void> {
-// 	return new Promise((resolve, reject) => {
-// 		// if (socket && socket.readyState === WebSocket.OPEN)
-// 		// 	return resolve();
+export function readyToRender(gameId: any) {
+	const matchMenu = document.getElementById("match-menu");
+	if (matchMenu) matchMenu.innerHTML = '';
+	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
+	if (gameBoard) {
+		gameBoard.remove();
+	}
+	const container = document.getElementById('app') as HTMLElement;
+	renderGameBoard();
+}
 
-// 	// socket = new WebSocket("ws://localhost:3003/ws");
-// 	socket!.addEventListener("open", () => {
-// 			console.log("Game engine socket open");
-// 			resolve();
-// 		});
-
-// 		socket!.addEventListener("message", (event) => {
-// 			const message = JSON.parse(event.data);
-// 			if (message.type === "start") {
-// 				console.log("received start message from backend: ", message.data);
-// 				const matchMenu = document.getElementById("match-menu");
-// 				if (matchMenu) matchMenu.innerHTML = '';
-// 				const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-// 				if (gameBoard) {
-// 					gameBoard.remove();
-// 				}
-// 				const container = document.getElementById('app') as HTMLElement;
-// 				renderGameBoard(container);//PASS GAMEID AND TOCKEN HERE
-// 				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-// 				// if (gameBoard) {
-// 				// 	const overlay = document.getElementById('overlay') as HTMLElement;
-// 				// 	const canvas = document.getElementById('game-board') as HTMLCanvasElement;
-// 				// 	startGame(overlay, canvas);
-// 				// } else {
-// 				// const container = document.getElementById('app') as HTMLElement;
-// 				// renderGameBoard(container);
-// 				// }
-// 			}
-// 		});
-
-// 		socket.addEventListener("error", (err) => {
-// 			console.error("Socket connection error:", err);
-// 			reject(err);
-// 		});
-// 	});
-// }
-
-export async function renderGameBoard(container: HTMLElement) {
+export async function renderGameBoard() {
+	const main = document.getElementById("main")!;
+	main.innerHTML = "";
+	history.pushState({ view:"game"}, "", "game");
 
 	if (!socket || socket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
 	  }
-	// await setupSocket();
+	// await setupEngineSocket(gameId, defToken);
 	console.log("waiting for board constants");
 	const getConsts = await waitForInput<BoardConstants>("consts");
 	Object.assign(board, getConsts);
@@ -63,7 +37,7 @@ export async function renderGameBoard(container: HTMLElement) {
 	wrapper.style.height = board.CANVAS_HEIGHT + "px";
 	wrapper.className = "relative";
 	wrapper.id = 'game-board-wrapper';
-	container.appendChild(wrapper);
+	main.appendChild(wrapper);
 	
 
 	//creating canvas
@@ -91,17 +65,27 @@ export async function renderGameBoard(container: HTMLElement) {
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
 
-	if (!socket || socket.readyState !== WebSocket.OPEN) {
-		throw new Error("Game socket not connected");
+	function sendRequest() {
+		socket?.send(JSON.stringify({ type: expectedType }));
+	}
+	if (socket?.readyState !== WebSocket.OPEN) {
+		socket?.addEventListener("open", sendRequest, {once: true});
+	  } else {
+		sendRequest();
 	  }
-		socket.send(JSON.stringify({ type: expectedType }));
-		socket.addEventListener("message", (event) => {
-			const message = JSON.parse(event.data);
-			if (message.type === expectedType) {
-				console.log('receiving input with type ', expectedType);
-				resolve(message.data as T);
-			}
-		}, { once: true }); // makes sure listener only runs once
+	socket?.addEventListener("message", async (event) => {
+		let rawData: string;
+		if (event.data instanceof Blob) {
+			rawData = await event.data.text();
+		} else {
+			rawData = event.data.toString();
+		}
+		const message = JSON.parse(rawData);
+		if (message.type === expectedType) {
+			console.log('receiving input with type ', expectedType);
+			resolve(message.data as T);
+		}
+	}, { once: true }); // makes sure listener only runs once
 	});
 }
 

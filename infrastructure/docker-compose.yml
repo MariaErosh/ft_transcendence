@@ -32,7 +32,7 @@ services:
     - ../back/user-service/.env
 
 
-  game-engine:
+  game:
     build:
       context: ../back/game-engine
       dockerfile: Dockerfile
