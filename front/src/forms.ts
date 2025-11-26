@@ -1,4 +1,6 @@
 import { login, verify2FA, register } from "./api.js";
+import { renderUserMenu } from "./ui.js";
+import { renderCreateTournamentForm } from "./match_service.js"
 
 export function renderLogin(container: HTMLElement) {
 	container.innerHTML = "";
@@ -32,6 +34,14 @@ export function renderLogin(container: HTMLElement) {
 	msg.className = "text-red-500 text-sm";
 	form.appendChild(msg);
 
+	const signupLink = document.createElement("p");
+	signupLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
+	signupLink.textContent = "Don't have an account yet? Sign up here.";
+	signupLink.addEventListener("click", () => {
+		renderRegister(container);
+	});
+	form.appendChild(signupLink);
+
 	form.addEventListener("submit", async (e) => {
 		e.preventDefault();
 		const response = await login(username.value, password.value);
@@ -41,6 +51,10 @@ export function renderLogin(container: HTMLElement) {
 		} else if (response.accessToken) {
 		msg.textContent = "Login successful!";
 		console.log(response);
+		localStorage.setItem("username", username.value);
+		container.innerHTML = '';
+		renderUserMenu(container);
+		renderCreateTournamentForm(container);
 		} else {
 		msg.textContent = response.error || "Login failed";
 		}
@@ -80,6 +94,14 @@ export function renderRegister(container: HTMLElement) {
 	const msg = document.createElement("div");
 	msg.className = "text-red-500 text-sm";
 	form.appendChild(msg);
+
+	const loginLink = document.createElement("p");
+	loginLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
+	loginLink.textContent = "Already have an account? Login here.";
+	loginLink.addEventListener("click", () => {
+		renderLogin(container);
+	});
+	form.appendChild(loginLink);
 
 	form.addEventListener("submit", async (e) => {
 		e.preventDefault();

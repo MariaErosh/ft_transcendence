@@ -1,7 +1,6 @@
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
-// import { renderGameBoard } from "./game_purefront/gameMenu.js";
 import { renderGameBoard } from "./game_front/gameMenu.js";
 
 const app = document.getElementById("app");
