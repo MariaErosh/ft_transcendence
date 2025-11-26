@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./management_sockets";
 import { registerGameWebSocket } from "./gameSockets";
+import { registerChatWebSocket } from "./chatSockets";
 
 
 
@@ -17,6 +18,7 @@ const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
 const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
+const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3005";
 const onlineUsers = new Map<number, number>();
 
 function markUserOnline(userId: number) {
@@ -40,11 +42,13 @@ async function buildServer() {
 	//websocket registration
 	await registerGatewayWebSocket(server);
 	await registerGameWebSocket(server);
+	await registerChatWebSocket(server);
 
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
+		"/chat",
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -89,6 +93,13 @@ async function buildServer() {
 		upstream: GENGINE_URL,
 		prefix: "/game",
 		rewritePrefix: "/game",
+		http2: false,
+	});
+
+	await server.register(proxy, {
+		upstream: CHAT_URL,
+		prefix: "/chat",
+		rewritePrefix: "/chat",
 		http2: false,
 	});
 
