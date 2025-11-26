@@ -11,6 +11,10 @@
 	let stopGame: boolean = false;
 	const keys: Record<string, boolean> = {};
 
+	export function setStop() {
+		stopGame = true;
+	}
+
 	function handleKeyDown(e: KeyboardEvent) {
 		if (!gameActive) return;
 		if (e.code === "ArrowUp" || e.code === "ArrowDown" ||

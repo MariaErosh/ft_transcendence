@@ -9,6 +9,7 @@ export function renderCreateTournamentForm() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 	console.log("Rendering match making menu");
+	history.pushState({ view:"main"}, "", "");
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null;
 	// if (wrapper) {
@@ -70,10 +71,12 @@ export function renderCreateTournamentForm() {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			remoteButton.addEventListener("click", () => {
-				if (localStorage.getItem("refreshToken"))
+				if (localStorage.getItem("refreshToken")) {
 					renderNewRemoteTournament();
-				else
+					history.pushState({ view:"remote"}, "", "remote");
+				} else {
 					msg.textContent = "You need to be logged in to play remote";
+				}
 			});
 			blackBox!.appendChild(remoteButton);
 
@@ -87,6 +90,7 @@ export function renderCreateTournamentForm() {
 			hover:bg-gray-200 transition`;
 			consoleButton.addEventListener("click", () => {
 				renderNewConsoleTournament();
+				history.pushState({ view:"console"}, "", "console");
 			})
 			//box.classList.add("flex-col", "gap-6");
 			blackBox!.appendChild(consoleButton);

@@ -27,6 +27,7 @@ export function renderUserMenu() {
     loginBtn.textContent = "Login";
     loginBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-28 text-center";
     loginBtn.addEventListener("click", () => {
+      history.pushState({ view:"login"}, "", "login");
       renderLogin();
     });
     menu.appendChild(loginBtn);
@@ -52,6 +53,7 @@ export function renderUserMenu() {
   signupBtn.textContent = "Sign Up";
   signupBtn.className = "bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-28 text-center";
   signupBtn.addEventListener("click", () => {
+    history.pushState({ view:"signup"}, "", "signup");
     renderRegister();
   });
   menu.appendChild(signupBtn);

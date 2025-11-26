@@ -39,6 +39,7 @@ export function renderLogin() {
 	signupLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	signupLink.textContent = "Don't have an account yet? Sign up here.";
 	signupLink.addEventListener("click", () => {
+		history.pushState({ view:"signup"}, "", "signup");
 		renderRegister();
 	});
 	form.appendChild(signupLink);
@@ -55,6 +56,7 @@ export function renderLogin() {
 			//container.innerHTML = '';
 			localStorage.setItem("username", username.value);
 			localStorage.setItem("refreshToken", response.refreshToken);
+			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
 		} else {
@@ -101,6 +103,7 @@ export function renderRegister() {
 	loginLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	loginLink.textContent = "Already have an account? Login here.";
 	loginLink.addEventListener("click", () => {
+		history.pushState({ view:"login"}, "", "login");
 		renderLogin();
 	});
 	form.appendChild(loginLink);

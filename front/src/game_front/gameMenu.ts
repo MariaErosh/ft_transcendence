@@ -6,48 +6,6 @@ import { disconnectGameWS, socket } from "../match_service/gameSocket.js";
 export let defGameId: number = 111;
 export let defToken: string = 'token';
 
-// export function setupSocket(): Promise<void> {
-// 	return new Promise((resolve, reject) => {
-// 		// if (socket && socket.readyState === WebSocket.OPEN)
-// 		// 	return resolve();
-
-// 	// socket = new WebSocket("ws://localhost:3003/ws");
-// 	socket!.addEventListener("open", () => {
-// 			console.log("Game engine socket open");
-// 			resolve();
-// 		});
-
-// 		socket!.addEventListener("message", (event) => {
-// 			const message = JSON.parse(event.data);
-// 			if (message.type === "start") {
-// 				console.log("received start message from backend: ", message.data);
-// 				const matchMenu = document.getElementById("match-menu");
-// 				if (matchMenu) matchMenu.innerHTML = '';
-// 				const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-// 				if (gameBoard) {
-// 					gameBoard.remove();
-// 				}
-// 				const container = document.getElementById('app') as HTMLElement;
-// 				renderGameBoard(container);//PASS GAMEID AND TOCKEN HERE
-// 				// const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-// 				// if (gameBoard) {
-// 				// 	const overlay = document.getElementById('overlay') as HTMLElement;
-// 				// 	const canvas = document.getElementById('game-board') as HTMLCanvasElement;
-// 				// 	startGame(overlay, canvas);
-// 				// } else {
-// 				// const container = document.getElementById('app') as HTMLElement;
-// 				// renderGameBoard(container);
-// 				// }
-// 			}
-// 		});
-
-// 		socket.addEventListener("error", (err) => {
-// 			console.error("Socket connection error:", err);
-// 			reject(err);
-// 		});
-// 	});
-// }
-
 export function readyToRender(gameId: any) {
 	const matchMenu = document.getElementById("match-menu");
 	if (matchMenu) matchMenu.innerHTML = '';
@@ -58,11 +16,11 @@ export function readyToRender(gameId: any) {
 	const container = document.getElementById('app') as HTMLElement;
 	renderGameBoard();
 }
-				
 
 export async function renderGameBoard() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
+	history.pushState({ view:"game"}, "", "game");
 
 	if (!socket || socket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
