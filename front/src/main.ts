@@ -17,7 +17,6 @@ renderCreateTournamentForm();
 
 
 window.addEventListener("popstate", (event) => {
-	setStop();
 	const state = event.state;
 	if (!state || !state.view) {
 		renderCreateTournamentForm();
@@ -41,10 +40,12 @@ window.addEventListener("popstate", (event) => {
 			renderGameBoard();
 			break;
 		case "main":
+			setStop();
 			renderUserMenu();
 			renderCreateTournamentForm();
 			break;
 		default: 
+			setStop();
 			renderUserMenu();
 			renderCreateTournamentForm();
 	}
