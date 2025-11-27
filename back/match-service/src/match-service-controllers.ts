@@ -93,11 +93,20 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 	})
 
 	fastify.get('/match/game', async (request, reply) => {
-		const gameId = request.query as { gameId: string };
+		const { gameId } = request.query as { gameId: string };
 		const gameIdN = Number(gameId);
 		if (isNaN(gameIdN)) return reply.status(400).send({ error: "Incorrect gameId" });;
 		const game = await matchService.getGameById(gameIdN);
 		if (!game) return reply.status(400).send({ error: "Game not found" });;
+		
+		if (!game.left_player_alias || !game.right_player_alias) {
+			return reply.status(500).send({ 
+				error: "Incomplete game data on server", 
+				gameId: gameIdN 
+			});
+		}
+
+		console.log("fetched game:", game);
 		let payload: GamePayload = {
 			type: game.type,
 			gameId: game.id,
