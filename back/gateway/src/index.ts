@@ -5,7 +5,7 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket } from "./management_sockets";
+import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
 
 
@@ -107,6 +107,10 @@ async function buildServer() {
 		await notifyAboutNewGame(res.games, res.matchName);
 	})
 	
+	server.post("/end_match", async (req, response) => {
+		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
+		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winerId);
+	})
 	return server;
 }
 

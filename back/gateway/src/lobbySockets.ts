@@ -63,8 +63,28 @@ export async function notifyAboutNewGame(games: any[], matchName: string) {
 		}
 	}
 }
-	// TO CONSIDER: also broadcast a generic "match_started"
 
+export async function notifyEndMatch (matchName: string, matchId: number, winnerAlias: string, winnerId:number) {
+	const players = matchPlayers.get(matchName);
+	if (!players || players.size === 0) return new Error("no sockets for this match");
+	for (const player of players) {
+		const sockets = userSockets.get(player);
+		if (sockets) {
+			sockets.forEach(ws => {
+				if (ws.readyState === WebSocket.OPEN) {
+					console.log(`Sending end of match to player (userId: ${player})`);
+					ws.send(JSON.stringify({
+						type: "end_match",
+						matchName: matchName,
+						winer: winnerAlias
+					}));
+				}
+			});
+		} else {
+			console.warn(`Player ${player} has no active sockets`);
+		}
+	}
+}
 
 export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
