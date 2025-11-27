@@ -4,113 +4,89 @@ import websocketPlugin from "@fastify/websocket";
 import WebSocket from 'ws';
 import { PlayerPayload } from "./management_sockets";
 
-
-// Map: gameId → side ("left" | "right") → connection info
-const gameSideConnections = new Map<
-  number,                                 // gameId
-  Map<"left" | "right", {                 // side
-    engineWs: WebSocket;
-    frontendWs: Set<WebSocket>;           
-    userId: number;
-    pendingMessages: string[];
-  }>
+const gameConnections = new Map<
+	number,                                 // playerId
+	{
+		engineWs: WebSocket;
+		frontendWs: Set<WebSocket>;
+		pendingMessages: string[];
+	}
 >();
 
 export async function registerGameWebSocket(server: FastifyInstance) {
 	server.get("/game/ws", { websocket: true }, async (connection, req) => {
 		const frontendWs = connection;
-		const query = req.query as { gameId?: string; token?: string; side?: string };
-		const gameId = Number(query.gameId);
-	
-		if (isNaN(gameId) || !query.token) {
-		  return frontendWs.close(1008, "Invalid params");
+		const query = req.query as { token?: string; };
+
+		if (!query.token) {
+			return frontendWs.close(1008, "Invalid params");
 		}
 
 		let player: PlayerPayload;
 		try {
-		player = server.jwt.verify<PlayerPayload>(query.token);
+			player = server.jwt.verify<PlayerPayload>(query.token);
 		} catch {
-		console.log("Returning from registerGameWebsocket: token");
-		return frontendWs.close(1008, "Invalid token");
+			console.log("Returning from registerGameWebsocket: token");
+			return frontendWs.close(1008, "Invalid token");
 		}
 
-	  //CONSDER checking in DB instead of passing as a query
-		const side = query.side as "left" | "right";
-		if (!side || !["left", "right"].includes(side)) {
-		  return frontendWs.close(1008, "Not in this game");
+		if (!gameConnections.has(player.sub)) {
+			gameConnections.set(player.sub, { engineWs: null as any, frontendWs: new Set(), pendingMessages: [] });
 		}
-		
-	  
-		if (!gameSideConnections.has(gameId)) {
-		  gameSideConnections.set(gameId, new Map());
-		}
-		const sidesMap = gameSideConnections.get(gameId)!;
-	  
-		let sideConn = sidesMap.get(side);
-          
+		const playerSockets = gameConnections.get(player.sub)!;
 
-		if (!sideConn) {
-	  
-		console.log("Gateway attempting to connect socket on ", `ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
-                `?gameId=${gameId}&side=${side}&player=${player.username}`);
+		playerSockets.frontendWs.add(frontendWs);
 
-		const engineWs = new WebSocket(
-			`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
-			`?gameId=${gameId}&side=${side}&player=${player.username}`
-		  );
-	  
-		// store messages that arrive before sockets are all fully open
-		const pendingMessages: string[] = [];
-		engineWs.on("open", () => {
-			console.log("Engine WS open");
-			pendingMessages.forEach(msg => 
-				engineWs.send(typeof msg === "string" ? msg: JSON.stringify(msg)));
-			pendingMessages.length = 0;
-		});
+		if (!playerSockets.engineWs) {
+			console.log("Gateway attempting to connect socket on ", `ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+				`?player=${player.username}`);
 
-		  sideConn = {
-			engineWs,
-			frontendWs: new Set(),
-			userId: player.sub,
-			pendingMessages,
-		  };
-		  sidesMap.set(side, sideConn);
-	  
-		  engineWs.on("message", (data) => {
-			const str = (typeof data === "string") ? data : data.toString();
-			//console.log("gateway socket sending message", data);
-			sideConn!.frontendWs.forEach(ws => {
-			  if (ws.readyState === WebSocket.OPEN) ws.send(str);
+			const engineWs = new WebSocket(
+				`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+				`?player=${player.username}`
+			);
+
+			playerSockets.engineWs = engineWs;
+
+			// store messages that arrive before sockets are all fully open
+			const pendingMessages: string[] = [];
+			engineWs.on("open", () => {
+				console.log("Engine WS open");
+				pendingMessages.forEach(msg =>
+					engineWs.send(typeof msg === "string" ? msg : JSON.stringify(msg)));
+				pendingMessages.length = 0;
 			});
-		  });
-	  
-		  engineWs.on("close", () => {
-			sideConn!.frontendWs.forEach(ws => ws.close());
-			sidesMap.delete(side);
-			if (sidesMap.size === 0) gameSideConnections.delete(gameId);
-		  });
-	  
-		  engineWs.on("error", console.error);
+
+			engineWs.on("message", (data) => {
+				const str = (typeof data === "string") ? data : data.toString();
+				playerSockets.frontendWs.forEach(ws => {
+					if (ws.readyState === WebSocket.OPEN) ws.send(str);
+				});
+			});
+
+			engineWs.on("close", () => {
+				playerSockets.frontendWs.forEach(ws => ws.close());
+				gameConnections.delete(player.sub);
+			});
+
+			engineWs.on("error", console.error);
 		}
-	  
-		sideConn.frontendWs.add(frontendWs);
-	  
+
 		frontendWs.on("message", (msg: Buffer) => {
 			console.log("gateway socket receiving message", msg);
-		  if (sideConn!.engineWs.readyState === WebSocket.OPEN) {
-			sideConn!.engineWs.send(msg);
-		  } else {
-			sideConn!.pendingMessages.push(msg.toString());
-		  }
+			if (playerSockets.engineWs.readyState === WebSocket.OPEN) {
+				playerSockets.engineWs.send(msg);
+			} else {
+				playerSockets.pendingMessages.push(msg.toString());
+			}
 		});
-	  
+
 		frontendWs.on("close", () => {
-		  sideConn!.frontendWs.delete(frontendWs);
-		  if (sideConn!.frontendWs.size === 0) {
-			sideConn!.engineWs.close();
-			sidesMap.delete(side);
-			if (sidesMap.size === 0) gameSideConnections.delete(gameId);
-		  }
+			playerSockets.frontendWs.delete(frontendWs);
+			if (playerSockets.frontendWs.size === 0) {
+				playerSockets.engineWs.close();
+				gameConnections.delete(player.sub);
+			}
 		});
-	  });
-	}
+	});
+}

@@ -2,7 +2,7 @@
 	import { waitForInput, disconnectEngine} from "./gameMenu.js"
 	import { draw, drawNumber, drawText } from "./draw.js";
 	import { renderCreateTournamentForm } from "../match_service/start_page.js"
-	import { socket } from "../match_service/gameSocket.js";
+	import { gameSocket } from "../match_service/gameSocket.js";
 	import { renderArena } from "../arena.js";
 
 
@@ -34,20 +34,20 @@
 	}
 
 	function sendKey(code: string, pressed: boolean) {
-		if (!socket) {
+		if (!gameSocket) {
 			//console.warn("Socket not initialized yet");
 			return;
 		}
 
-		if (socket.readyState === WebSocket.OPEN) {
-			socket.send(JSON.stringify({ type: "input", data: { code, pressed }}));
+		if (gameSocket.readyState === WebSocket.OPEN) {
+			gameSocket.send(JSON.stringify({ type: "input", data: { code, pressed }}));
 		}
 	}
 
 
 	export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 
-		if (!socket || socket.readyState !== WebSocket.OPEN) {
+		if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
 			throw new Error("Game socket not connected");
 		}
 		gameActive = true;
@@ -58,7 +58,7 @@
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('keyup', handleKeyUp);
 
-		socket.addEventListener("message", (event) => {
+		gameSocket.addEventListener("message", (event) => {
 		const message = JSON.parse(event.data);
 		if (message.type === "go") {
 			loop(overlay, canvas);
@@ -125,10 +125,10 @@
 		draw(canvas);
 
 		startCountdown(3, canvas, () => {
-			socket!.send(JSON.stringify({ type: "please serve" }));
+			gameSocket!.send(JSON.stringify({ type: "please serve" }));
 		});
 
-		socket.addEventListener("error", (event) => {
+		gameSocket.addEventListener("error", (event) => {
 			console.error("WebSocket encountered an error:", event);
 		});
 	}

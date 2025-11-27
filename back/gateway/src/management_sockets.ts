@@ -141,6 +141,20 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 					for (const id of playersId) {
 						if (userInfo.get(id) !== undefined)
 							players.push({ id: id, alias: userInfo.get(id)! });
+
+						const userSocket = userSockets.get(id);
+						if (userSocket) {
+							userSocket.forEach(ws => {
+								if (ws.readyState === WebSocket.OPEN) {
+									console.log(`Sending start_game to player (userId: ${id})`);
+									ws.send(JSON.stringify({
+										type: "start_game",
+									}));
+								}
+							});
+						} else {
+							console.warn(`Right player ${id} has no active sockets`);
+						}
 					}
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
 					const result = await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {

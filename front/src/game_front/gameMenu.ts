@@ -1,6 +1,6 @@
 import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants } from "./gameSpecs.js";
-import { disconnectGameWS, socket } from "../match_service/gameSocket.js";
+import { disconnectGameWS, gameSocket } from "../match_service/gameSocket.js";
 
 // // export let engineSocket: WebSocket;
 export let defGameId: number = 111;
@@ -22,7 +22,7 @@ export async function renderGameBoard() {
 	main.innerHTML = "";
 	history.pushState({ view:"game"}, "", "game");
 
-	if (!socket || socket.readyState !== WebSocket.OPEN) {
+	if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
 	  }
 	// await setupEngineSocket(gameId, defToken);
@@ -66,14 +66,14 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
 
 	function sendRequest() {
-		socket?.send(JSON.stringify({ type: expectedType }));
+		gameSocket?.send(JSON.stringify({ type: expectedType }));
 	}
-	if (socket?.readyState !== WebSocket.OPEN) {
-		socket?.addEventListener("open", sendRequest, {once: true});
+	if (gameSocket?.readyState !== WebSocket.OPEN) {
+		gameSocket?.addEventListener("open", sendRequest, {once: true});
 	  } else {
 		sendRequest();
 	  }
-	socket?.addEventListener("message", async (event) => {
+	gameSocket?.addEventListener("message", async (event) => {
 		let rawData: string;
 		if (event.data instanceof Blob) {
 			rawData = await event.data.text();

@@ -19,17 +19,7 @@ const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
 const onlineUsers = new Map<number, number>();
 
-function markUserOnline(userId: number) {
-	onlineUsers.set(userId, Date.now());
-}
 
-function getOnlineUsers(): number[] {
-	const cutoff = Date.now() - 120_000; // 2 minutes timeout
-	for (const [id, lastSeen] of onlineUsers.entries()) {
-		if (lastSeen < cutoff) onlineUsers.delete(id);
-	}
-	return [...onlineUsers.keys()];
-}
 
 async function buildServer() {
 	const server = Fastify({ logger: true });
@@ -58,7 +48,6 @@ async function buildServer() {
 				(request.headers as any)['x-username'] = String((request.user as any).username ?? "");
 				(request.headers as any)['x-user-service'] = String((request.user as any).service ?? "user");
 				(request.headers as any)['x-gateway-secret'] = GATEWAY_SECRET;
-				markUserOnline(userId);
 			} catch (err) {
 				reply.status(401).send({ error: "Unauthorized" });
 				throw err;
