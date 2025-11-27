@@ -1,9 +1,8 @@
 import { socket } from "./match_service/gameSocket.js";
+import { draw, drawText } from "./game_front/draw.js"
 
 
-export function renderArena() {
-	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-	if (gameBoard) {
-		gameBoard.remove();
-	}
+export function renderArena(winner: string) {
+	const main = document.getElementById("main") as HTMLElement;
+	main.innerHTML = "";
 }

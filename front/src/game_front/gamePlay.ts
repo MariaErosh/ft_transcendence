@@ -71,13 +71,14 @@
 			if (message.type === "win") {
 				draw(canvas);
 				cancelAnimationFrame(frameID);
-				overlay.style = 'flex';
-				const winner = ["THE WINNER IS ", gameState.winner.alias];
-				drawText(canvas, winner);
+				//overlay.style = 'flex';
+				//const winner = ["THE WINNER IS ", gameState.winner.alias];
+				//drawText(canvas, winner);
 				gameActive = false;
+				//overlay.innerHTML = '';
+				renderArena(gameState.winner.alias);
 
-				overlay.innerHTML = '';
-				renderArena();
+
 			// 	if (message.next === -1)
 			// 	{
 			// 		const statBtn = document.createElement('button');
