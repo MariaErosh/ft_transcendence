@@ -148,7 +148,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 								if (ws.readyState === WebSocket.OPEN) {
 									console.log(`Sending start_game to player (userId: ${id})`);
 									ws.send(JSON.stringify({
-										type: "start_game",
+										type: "start_match",
 									}));
 								}
 							});
