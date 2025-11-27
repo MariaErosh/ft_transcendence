@@ -1,33 +1,49 @@
 import { refreshAccessToken } from "../api.js";
 
-export let socket: WebSocket | null = null;
+export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
 let manualClose = false;
 
-export async function connectGameWS(gameId: number, side: string): Promise <void> {
+export async function connectGameWS(): Promise <void> {
+  if (gameSocket && gameSocket.readyState === WebSocket.OPEN)
+    return;
+  if (gameSocket && gameSocket.readyState === WebSocket.CONNECTING) {
+    console.log("Socket is connecting, waiting...");
+    return new Promise((resolve) => {
+      const checkOpen = () => {
+        if (gameSocket!.readyState === WebSocket.OPEN) {
+          resolve();
+        } else {
+          setTimeout(checkOpen, 100);
+        }
+      };
+      checkOpen();
+    });
+  }
+
   return new Promise (async (resolve, reject)=>{
     let token = localStorage.getItem("accessToken");
 
     if (!token && !(await refreshAccessToken())) return reject;
   
     token = localStorage.getItem("accessToken");
-    socket = new WebSocket(`ws://localhost:3000/game/ws?token=${token}&gameId=${gameId}&side=${side}`);
+    gameSocket = new WebSocket(`ws://localhost:3000/game/ws?token=${token}`);
   
-    socket.onopen = () => {
+    gameSocket.onopen = () => {
       console.log("gameWs connected");
       reconnecting = false;
       resolve()
     };
   
-    socket.addEventListener("message", async (ev) => {
+    gameSocket.addEventListener("message", async (ev) => {
       const msg = JSON.parse(ev.data);
     
       if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
-        if (await refreshAccessToken()) reconnectGameWs(gameId, side);
+        if (await refreshAccessToken()) reconnectGameWs();
       }
     });
   
-    socket.onclose = () => {
+    gameSocket.onclose = () => {
       console.warn("gameWs closed");
   
       if (manualClose) {
@@ -40,15 +56,15 @@ export async function connectGameWS(gameId: number, side: string): Promise <void
 }
 
 export function disconnectGameWS() {
-  if (!socket) return;
+  if (!gameSocket) return;
   manualClose = true;
-  socket.close();
+  gameSocket.close();
 }
 
-async function reconnectGameWs(gameId:number, side:string) {
-  if (socket) {
+async function reconnectGameWs() {
+  if (gameSocket) {
     manualClose = true;
-    socket.close();
+    gameSocket.close();
   }
-  await connectGameWS(gameId, side);
+  await connectGameWS();
 }

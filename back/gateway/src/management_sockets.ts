@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import websocketPlugin from "@fastify/websocket";
 import { WebSocket } from "ws";
 import dotenv from "dotenv";
+
 export interface PlayerPayload {
 	sub: number;
 	username: string;
@@ -9,6 +10,8 @@ export interface PlayerPayload {
 
 const matchPlayers = new Map<string, Set<number>>();
 const userInfo = new Map<number, string>();
+const userSockets = new Map<number, Set<WebSocket>>();
+
 export function getOpenMatches() { return Array.from(matchPlayers.keys()) }
 export function getMatchPlayers(matchName: string) {
 	const ids = matchPlayers.get(matchName);
@@ -16,14 +19,60 @@ export function getMatchPlayers(matchName: string) {
 	return [...ids].map(id => (userInfo.get(id) ?? `User${id}`));
 }
 
+export async function notifyAboutNewGame(games: any[], matchName: string) {
+	for (const game of games) {
+		console.log("game:", game);
+		const leftUserId = game.left_player_id;
+		const rightUserId = game.right_player_id;
+
+		const leftSockets = userSockets.get(leftUserId);
+		if (leftSockets) {
+			leftSockets.forEach(ws => {
+				if (ws.readyState === WebSocket.OPEN) {
+					console.log(`Sending game_ready to left player (userId: ${leftUserId})`);
+					ws.send(JSON.stringify({
+						type: "game_ready",
+						gameId: game.id,
+						matchName: matchName,
+						side: "left",
+						opponent: game.right_player_alias
+					}));
+				}
+			});
+		} else {
+			console.warn(`Left player ${leftUserId} has no active sockets`);
+		}
+
+		// Send to right player
+		const rightSockets = userSockets.get(rightUserId);
+		if (rightSockets) {
+			rightSockets.forEach(ws => {
+				if (ws.readyState === WebSocket.OPEN) {
+					console.log(`Sending game_ready to right player (userId: ${rightUserId})`);
+					ws.send(JSON.stringify({
+						type: "game_ready",
+						gameId: game.id,
+						matchName: matchName,
+						side: "right",
+						opponent: game.left_player_alias
+					}));
+				}
+			});
+		} else {
+			console.warn(`Right player ${rightUserId} has no active sockets`);
+		}
+	}
+}
+	// TO CONSIDER: also broadcast a generic "match_started"
+
+
 export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
 	console.log("websocket registered on gateway");
 
-	const userSockets = new Map<number, Set<WebSocket>>();
+
 
 	server.get("/ws", { websocket: true }, (socket, req) => {
-
 
 		const token = (req.query as any).token;
 		if (!token) {
@@ -92,6 +141,20 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 					for (const id of playersId) {
 						if (userInfo.get(id) !== undefined)
 							players.push({ id: id, alias: userInfo.get(id)! });
+
+						const userSocket = userSockets.get(id);
+						if (userSocket) {
+							userSocket.forEach(ws => {
+								if (ws.readyState === WebSocket.OPEN) {
+									console.log(`Sending start_game to player (userId: ${id})`);
+									ws.send(JSON.stringify({
+										type: "start_match",
+									}));
+								}
+							});
+						} else {
+							console.warn(`Right player ${id} has no active sockets`);
+						}
 					}
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
 					const result = await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
@@ -102,42 +165,8 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 					const { matchId, games } = await result.json();
 					console.log(`Match ${matchId} created with ${games.length} game(s)`);
-
-
-					for (const game of games) {
-						console.log("game:", game);
-						const leftUserId = game.left_player_id;   // number (from DB)
-						const rightUserId = game.right_player_id; // number
-						console.log("left user id: ", leftUserId, ", right user id: ", rightUserId, ", userId: ", userId);
-						// Send to left player
-						userSockets.get(leftUserId)?.forEach(ws => {
-							if (ws.readyState === WebSocket.OPEN) {
-								console.log("gateway sending game ready to left player");
-								ws.send(JSON.stringify({
-									type: "game_ready",
-									gameId: game.id,
-									matchNam: data.name,
-									side: "left",
-									opponent: game.right_player_alias
-								}));
-							}
-						});
-
-						// Send to right player
-						userSockets.get(rightUserId)?.forEach(ws => {
-							if (ws.readyState === WebSocket.OPEN) {
-								console.log("gateway sending game ready to right player");
-								ws.send(JSON.stringify({
-									type: "game_ready",
-									gameId: game.id,
-									matchName: data.name,
-									side: "right",
-									opponent: game.left_player_alias
-								}));
-							}
-						});
-					}
-					// TO CONSIDER: also broadcast a generic "match_started"
+					
+					await notifyAboutNewGame(games, data.name);
 				}
 
 			} catch (err) {
