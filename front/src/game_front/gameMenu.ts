@@ -1,5 +1,5 @@
 import { startGame, cleanup } from "./gamePlay.js";
-import { board, BoardConstants } from "./gameSpecs.js";
+import { board, BoardConstants, gameState, GameState } from "./gameSpecs.js";
 import { disconnectGameWS, gameSocket } from "../match_service/gameSocket.js";
 
 // // export let engineSocket: WebSocket;
@@ -27,39 +27,46 @@ export async function renderGameBoard() {
 	  }
 	// await setupEngineSocket(gameId, defToken);
 	console.log("waiting for board constants");
-	const getConsts = await waitForInput<BoardConstants>("consts");
-	Object.assign(board, getConsts);
 	
-	console.log("Received board constants:", board);
-	// create wrapper for canvas + menu overlay
-	const wrapper = document.createElement('div');
-	wrapper.style.width = board.CANVAS_WIDTH + "px";
-	wrapper.style.height = board.CANVAS_HEIGHT + "px";
-	wrapper.className = "relative";
-	wrapper.id = 'game-board-wrapper';
-	main.appendChild(wrapper);
+	function getReady(event: MessageEvent) {
+	//gameSocket.addEventListener("message", function getReady(event) => {
+		const message = JSON.parse(event.data);
+		if (message.type === "ready") {
+			Object.assign(board, message.data.board);
+			Object.assign(gameState, message.data.gameState);
 	
+			gameSocket?.removeEventListener("message", getReady);
 
-	//creating canvas
-	const canvas = document.createElement('canvas');
-	canvas.id = 'game-board';
-	canvas.width = board.CANVAS_WIDTH;
-	canvas.height =  board.CANVAS_HEIGHT;
-	canvas.className = 'rounded';
-	//canvas.style.display = "block"; // prevents inline canvas from collapsing
-	canvas.style.backgroundColor = 'black';
-	wrapper.appendChild(canvas);
+			const wrapper = document.createElement('div');
+			wrapper.style.width = board.CANVAS_WIDTH + "px";
+			wrapper.style.height = board.CANVAS_HEIGHT + "px";
+			wrapper.className = "relative";
+			wrapper.id = 'game-board-wrapper';
+			main.appendChild(wrapper);
+			
 
-	const overlay = document.createElement('div');
-	overlay.style.position = 'absolute';
-	overlay.style.inset = '0';
-	overlay.className = 'absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded';
-	overlay.style.display = "none";
-	overlay.id = 'overlay';
-	wrapper.appendChild(overlay);
+			//creating canvas
+			const canvas = document.createElement('canvas');
+			canvas.id = 'game-board';
+			canvas.width = board.CANVAS_WIDTH;
+			canvas.height =  board.CANVAS_HEIGHT;
+			canvas.className = 'rounded';
+			//canvas.style.display = "block"; // prevents inline canvas from collapsing
+			canvas.style.backgroundColor = 'black';
+			wrapper.appendChild(canvas);
 
-	startGame(overlay, canvas);
+			const overlay = document.createElement('div');
+			overlay.style.position = 'absolute';
+			overlay.style.inset = '0';
+			overlay.className = 'absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded';
+			overlay.style.display = "none";
+			overlay.id = 'overlay';
+			wrapper.appendChild(overlay);
 
+			startGame(overlay, canvas);
+		}
+	}
+	gameSocket?.addEventListener("message", getReady);
 }
 
 export function waitForInput<T>(expectedType: string): Promise<T> {

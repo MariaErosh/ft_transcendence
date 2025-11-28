@@ -58,6 +58,12 @@
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('keyup', handleKeyUp);
 
+		draw(canvas);
+
+		startCountdown(3, canvas, () => {
+			gameSocket!.send(JSON.stringify({ type: "please serve" }));
+		});
+
 		gameSocket.addEventListener("message", (event) => {
 		const message = JSON.parse(event.data);
 		if (message.type === "go") {
@@ -77,56 +83,8 @@
 				gameActive = false;
 				//overlay.innerHTML = '';
 				renderArena();
-
-
-			// 	if (message.next === -1)
-			// 	{
-			// 		const statBtn = document.createElement('button');
-			// 		statBtn.textContent = "THE END - SEE RESULTS";
-			// 		statBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-			// 		statBtn.style.marginTop = '100px';
-			// 		statBtn.onclick = () => {
-			// 			overlay.innerHTML = '';
-			// 			let lines = [
-			// 				"THIS IS A PLACEHOLDER FOR THE DISPLAY",
-			// 				"OF THE TOURNAMENT'S RESULTS",
-			// 			];
-			// 			const menuBtn = document.createElement('button');
-			// 			menuBtn.textContent = "BACK TO MENU";
-			// 			menuBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-			// 			menuBtn.style.marginTop = '200px';
-			// 			drawText(canvas, lines);
-			// 			menuBtn.onclick = () => {
-			// 				toMatchMenu();
-			// 			}
-			// 			overlay.appendChild(menuBtn);
-			// 		}
-			// 		overlay.appendChild(statBtn);
-
-			// 	} else {
-			// 	const nextBtn = document.createElement('button');
-			// 	nextBtn.textContent = 'READY FOR NEXT GAME';
-			// 	nextBtn.className = 'bg-white-500 text-black text-2xl font-bold px-10 py-3 hover:bg-grey-600 transition w-64';
-			// 	nextBtn.style.marginTop = '200px';
-			// 	nextBtn.onclick = () => {
-			// 		//socket.send(JSON.stringify({ type: "ready" }));
-			// 		//disconnectEngine()
-			// 		startGame(overlay, canvas);
-			// 	};
-			// 	overlay.appendChild(nextBtn);
-			// }
 				}
 		}
-		});
-
-
-		const getState = await waitForInput<GameState>("set");
-		Object.assign(gameState, getState);
-		//overlay.style.display = 'none';
-		draw(canvas);
-
-		startCountdown(3, canvas, () => {
-			gameSocket!.send(JSON.stringify({ type: "please serve" }));
 		});
 
 		gameSocket.addEventListener("error", (event) => {
@@ -148,6 +106,20 @@
 		}
 		frameID = requestAnimationFrame(() => loop(overlay, canvas));
 	}
+
+function waitForState(): Promise<GameState> {
+	return new Promise(resolve => {
+		const onMessage = (event: MessageEvent) => {
+			const data = JSON.parse(event.data);
+
+			if (data === "set") {
+				gameSocket?.removeEventListener("message", onMessage);
+				resolve(data.state);
+			}
+		};
+		gameSocket?.addEventListener("message", onMessage);
+	});
+}
 
 	export function toMatchMenu() {
 		//const rootContainer = document.getElementById('app') as HTMLElement;

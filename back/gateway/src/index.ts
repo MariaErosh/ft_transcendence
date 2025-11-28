@@ -17,7 +17,6 @@ const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
 const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
-const onlineUsers = new Map<number, number>();
 
 
 

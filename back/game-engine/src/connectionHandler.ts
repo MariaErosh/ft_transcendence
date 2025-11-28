@@ -1,4 +1,4 @@
-import { WebSocket as WS, RawData } from "ws";
+import { RawData } from "ws";
 import { serveBall, resetSpecs, updatePos } from "./gamePlay.js";
 import { board, GameObject, GameState, PlayerSocket } from "./gameSpecs.js";
 import Fastify from "fastify";
@@ -42,7 +42,7 @@ function broadcast(gameId: number, payload: object) {
 		player.ws.send(message);
 }
 
-server.get("/ws", { websocket: true }, async (ws: WS, req: FastifyRequest) => {
+server.get("/ws", { websocket: true }, async (ws, req) => {
 	const { player } = req.query as { player: string };
 	console.log("inside game socket");
 	if (!player) {
@@ -92,8 +92,11 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	console.log('Parsed message: ', message, 'received from player ', player.alias);
 	//let gameState = gameStates.get(gameId) as GameState;
 
+	if (message.type === "consts")
+		player.ws.send(JSON.stringify({ type: "consts", data: board }));
+	
 	if (message.type === "new_game") {
-		const newGameId = message.gameId;
+		const newGameId = Number(message.gameId);
 		const oldGameId = player.gameId;
 
 		if (oldGameId && gameSockets.has(oldGameId))
@@ -104,14 +107,17 @@ async function handleMessage(player: PlayerSocket, message: any) {
 			gameSockets.set(newGameId, new Set());
 		gameSockets.get(newGameId)!.add(player);
 
-	console.log(`Client connected for game ${newGameId}, player ${player}`);
+	console.log(`Client connected for game ${newGameId}, player ${player.alias}`);
 	if (!gameStates.get(newGameId)) {
-		let next = games.get(newGameId);
-		if (!next) {
-			next = await loadGameData(newGameId); 
+		let next = await loadGameData(newGameId); 
 		gameStates.set(newGameId, new GameState(next));
-		return;
 	}
+	const gameState = gameStates.get(newGameId);
+	console.log("game State: ", gameState);
+
+	player.ws.send(JSON.stringify({ type: "ready", data: { board, gameState }}));
+	return;
+}
 
 	if (!player.gameId) {
 		console.warn("Received later message before new_game message");
@@ -119,12 +125,11 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	}
 	const gameId = player.gameId;
 	let gameState = gameStates.get(gameId)!;
-	if (message.type === "set") {
-		console.log('Client is ready, starting game');
-		player.ws.send(JSON.stringify({ type: "set", data: gameState }));
-	}
-	if (message.type === "consts")
-		player.ws.send(JSON.stringify({ type: "consts", data: board }));
+	// if (message.type === "set") {
+	// 	console.log('Client is ready, starting game');
+	// 	player.ws.send(JSON.stringify({ type: "set", data: gameState }));
+	// }
+	
 	if (message.type === "please serve") {
 		deleteInterval(gameId);
 		console.log("serving ball");
@@ -150,26 +155,32 @@ async function handleMessage(player: PlayerSocket, message: any) {
 			}
 			broadcast(gameId, { type: "state", data: gameState });
 			}, 1000 / 60);
-			gameIntervals.set(gameId, interval);
-		}
-		if (message.type === "input") {
-			handleInput(gameId, player, message.data.code, message.data.pressed);
-		}
+		gameIntervals.set(gameId, interval);
+	}
+
+	if (message.type === "input") {
+		handleInput(gameId, player, message.data.code, message.data.pressed);
 	}
 }
 
 async function loadGameData(gameId: number) {
 	let game = games.get(gameId);
 	if (game) return game;
+	console.log("backend requesting game via GET");
+
 	let data = await fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
-		method: "GET",
-		headers: { "Content-Type": "application/json" },
+	method: "GET",
+	headers: { "Content-Type": "application/json" },
 	});
 	let gameData = await data.json();
+	console.log("gameData fetched:", gameData);
+	
+	if (!gameData.leftPlayer?.alias || !gameData.rightPlayer?.alias || !gameData.leftPlayer?.id || !gameData.rightPlayer?.id || !gameData.gameId || !gameData.type)
+		throw new Error("Incomplete game data");
 	game = {
 		leftPlayer: { alias: gameData.leftPlayer.alias, id: gameData.leftPlayer.id },
 		rightPlayer: { alias: gameData.rightPlayer.alias, id: gameData.rightPlayer.id },
-		gameId: gameData.id,
+		gameId: gameData.gameId,
 		type: gameData.type
 	} as GameObject;
 	games.set(gameId, game);
@@ -182,6 +193,7 @@ async function sendResult(gameState: GameState) {
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
 	});
+	console.log("sending result for game id ", gameState.current.gameId, "winner: ", gameState.winner, ", loser: ", gameState.loser);
 	if (!response.ok)
 		console.error("failed to record results");
 }
