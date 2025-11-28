@@ -3,7 +3,6 @@
 	import { draw, drawNumber, drawText } from "./draw.js";
 	import { renderCreateTournamentForm } from "../match_service/start_page.js"
 	import { gameSocket } from "../match_service/gameSocket.js";
-	import { gameSocket } from "../match_service/gameSocket.js";
 	import { renderArena } from "../arena.js";
 
 
