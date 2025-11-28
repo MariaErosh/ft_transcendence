@@ -19,6 +19,14 @@ export function getMatchPlayers(matchName: string) {
 	return [...ids].map(id => (userInfo.get(id) ?? `User${id}`));
 }
 
+function playerInAnotherMatch(playerId: number, currentMatch: string): boolean {
+    for (const [matchName, players] of matchPlayers) {
+        if (matchName === currentMatch) continue;
+        if (players.has(playerId)) return true;
+    }
+    return false;
+}
+
 export async function notifyAboutNewGame(games: any[], matchName: string) {
 	for (const game of games) {
 		console.log("game:", game);
@@ -84,13 +92,12 @@ export async function notifyEndMatch (matchName: string, matchId: number, winner
 			console.warn(`Player ${player} has no active sockets`);
 		}
 	}
+	matchPlayers.delete(matchName);
 }
 
 export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
 	console.log("websocket registered on gateway");
-
-
 
 	server.get("/ws", { websocket: true }, (socket, req) => {
 
@@ -126,6 +133,10 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 				if (data.type === "join_match") {
 					const matchName = data.name;
+					if (playerInAnotherMatch(userId, matchName)){
+						console.log(`User ${userId} has already joined another match`);
+						return;
+					}
 					if (!matchPlayers.has(matchName)) matchPlayers.set(matchName, new Set());
 					matchPlayers.get(matchName)!.add(userId);
 
