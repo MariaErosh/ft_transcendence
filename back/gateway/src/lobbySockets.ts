@@ -169,6 +169,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 									console.log(`Sending start_game to player (userId: ${id})`);
 									ws.send(JSON.stringify({
 										type: "start_match",
+										matchName: data.name
 									}));
 								}
 							});
