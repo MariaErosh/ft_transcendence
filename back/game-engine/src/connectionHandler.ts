@@ -167,29 +167,20 @@ async function loadGameData(gameId: number) {
 	let game = games.get(gameId);
 	if (game) return game;
 	console.log("backend requesting game via GET");
-	
-	let attempts = 0;
-	let gameData: any;
-	while (attempts < 5) {
-		let data = await fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
-		method: "GET",
-		headers: { "Content-Type": "application/json" },
+
+	let data = await fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
+	method: "GET",
+	headers: { "Content-Type": "application/json" },
 	});
-	gameData = await data.json();
+	let gameData = await data.json();
 	console.log("gameData fetched:", gameData);
-	if (gameData.leftPlayer?.alias && gameData.rightPlayer?.alias && gameData.gameId)
-		break;
-	attempts++;
-	console.warn(`Incomplete game data, retrying (${attempts})`);
-	await new Promise(r => setTimeout(r, 200)); // small delay before retry
-	}
 	
-	if (!gameData.leftPlayer?.alias || !gameData.rightPlayer?.alias)
+	if (!gameData.leftPlayer?.alias || !gameData.rightPlayer?.alias || !gameData.leftPlayer?.id || !gameData.rightPlayer?.id || !gameData.gameId || !gameData.type)
 		throw new Error("Incomplete game data");
 	game = {
 		leftPlayer: { alias: gameData.leftPlayer.alias, id: gameData.leftPlayer.id },
 		rightPlayer: { alias: gameData.rightPlayer.alias, id: gameData.rightPlayer.id },
-		gameId: gameData.id,
+		gameId: gameData.gameId,
 		type: gameData.type
 	} as GameObject;
 	games.set(gameId, game);
@@ -202,6 +193,7 @@ async function sendResult(gameState: GameState) {
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
 	});
+	console.log("sending result for game id ", gameState.current.gameId, "winner: ", gameState.winner, ", loser: ", gameState.loser);
 	if (!response.ok)
 		console.error("failed to record results");
 }
