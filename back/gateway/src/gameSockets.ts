@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import websocketPlugin from "@fastify/websocket";
 //import { WebSocket } from "ws";
 import WebSocket from 'ws';
-import { PlayerPayload } from "./management_sockets";
+import { PlayerPayload } from "./lobbySockets";
 
 const gameConnections = new Map<
 	number,                                 // playerId
