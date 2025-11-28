@@ -1,6 +1,6 @@
 import { refreshAccessToken } from "../api.js";
 
-export let ws: WebSocket | null = null;
+export let lobbySocket: WebSocket | null = null;
 let reconnecting = false;
 let manualClose = false;
 
@@ -11,15 +11,15 @@ export async function connectWS(): Promise<void> {
     if (!token && !(await refreshAccessToken())) return reject;
 
     token = localStorage.getItem("accessToken");
-    ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+    lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
-    ws.onopen = () => {
+    lobbySocket.onopen = () => {
       console.log("WS connected");
       reconnecting = false;
       resolve();
     };
 
-    ws.addEventListener("message", async (ev) => {
+    lobbySocket.addEventListener("message", async (ev) => {
       const msg = JSON.parse(ev.data);
 
       if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
@@ -27,7 +27,7 @@ export async function connectWS(): Promise<void> {
       }
     });
 
-    ws.onclose = () => {
+    lobbySocket.onclose = () => {
       console.warn("WS closed");
 
       if (manualClose) {
@@ -46,15 +46,15 @@ export async function connectWS(): Promise<void> {
 }
 
 export function disconnectWS() {
-  if (!ws) return;
+  if (!lobbySocket) return;
   manualClose = true;
-  ws.close();
+  lobbySocket.close();
 }
 
 async function reconnectWS() {
-  if (ws) {
+  if (lobbySocket) {
     manualClose = true;
-    ws.close();
+    lobbySocket.close();
   }
   await connectWS();
 }

@@ -1,7 +1,8 @@
-import { ws, connectWS } from "./lobbySocket.js";
+import { lobbySocket, connectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
-import { connectGameWS } from "./gameSocket.js";
+import { connectGameWS, gameSocket } from "./gameSocket.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
+import { renderArena } from "../arena.js";
 
 interface matchPayload {
 	id: number;
@@ -102,7 +103,7 @@ export async function renderNewRemoteTournament() {
 					alert("A match with this name already exists. Choose a different name.");
 					return;
 				}
-				ws?.send(JSON.stringify({
+				lobbySocket?.send(JSON.stringify({
 					type: "new_match",
 					name: name,
 				}))
@@ -146,7 +147,7 @@ async function joinRoom(matchName: string) {
 
 		startButton.addEventListener("click", () => {
 			console.log("SENDING start_match");
-			ws?.send(JSON.stringify({
+			lobbySocket?.send(JSON.stringify({
 				type: "start_match",
 				name: matchName
 			}))
@@ -156,7 +157,7 @@ async function joinRoom(matchName: string) {
 		console.log("Players from gateway: ", players);
 		refreshPlayers();
 
-		ws?.addEventListener("message", async (ev) => {
+		lobbySocket?.addEventListener("message", async (ev) => {
 			const msg = JSON.parse(ev.data);
 			console.log ("Message: ", msg);
 
@@ -166,14 +167,23 @@ async function joinRoom(matchName: string) {
 					refreshPlayers();
 				}
 			}
-			if (msg.type === "start_game" && msg.matchName === matchName) {
-				console.log("Ready to start the game: ", msg);
+			if (msg.type === "start_match" && msg.matchName === matchName) {
+				renderArena();
+				await connectGameWS();
+				console.log("Ready to start the match: ", msg);
 			}
 			if (msg.type == "game_ready"){
-		
 				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
-				await connectGameWS(msg.gameId, msg.side);
+				await connectGameWS();
+				gameSocket?.send(JSON.stringify({
+					type:"new_game",
+					gameId:msg.gameId
+				}))
 				await renderGameBoard();
+			}
+			if (msg.type == "end_match"){
+				console.log(`End of the tournament "${msg.matchName}, winner: ${msg.winner}`);
+				renderArena();
 			}
 		})
 		function refreshPlayers() {
@@ -196,7 +206,7 @@ async function joinRoom(matchName: string) {
 			}
 		}
 
-		ws?.send(JSON.stringify({
+		lobbySocket?.send(JSON.stringify({
 			type: "join_match",
 			name: matchName,
 		}))

@@ -88,12 +88,12 @@ server.get("/ws", { websocket: true }, async (ws: WS, req: FastifyRequest) => {
 await server.listen({ port: PORT, host: "0.0.0.0" });
 console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
 
-function handleMessage(player: PlayerSocket, message: any) {
+async function handleMessage(player: PlayerSocket, message: any) {
 	console.log('Parsed message: ', message, 'received from player ', player.alias);
 	//let gameState = gameStates.get(gameId) as GameState;
 
 	if (message.type === "new_game") {
-		const newGameId = message.data.gameId;
+		const newGameId = message.gameId;
 		const oldGameId = player.gameId;
 
 		if (oldGameId && gameSockets.has(oldGameId))
@@ -109,8 +109,7 @@ function handleMessage(player: PlayerSocket, message: any) {
 		let next = games.get(newGameId);
 		if (!next) {
 			next = await loadGameData(newGameId); 
-		if (!gameStates.has(newGameId))
-			gameStates.set(newGameId, new GameState(next));
+		gameStates.set(newGameId, new GameState(next));
 		return;
 	}
 
@@ -162,14 +161,14 @@ function handleMessage(player: PlayerSocket, message: any) {
 async function loadGameData(gameId: number) {
 	let game = games.get(gameId);
 	if (game) return game;
-	let data = await server.fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
+	let data = await fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
 		method: "GET",
 		headers: { "Content-Type": "application/json" },
 	});
 	let gameData = await data.json();
 	game = {
-		leftPlayer: { alias: gameData.left_player_alias, id: gameData.left_player_id },
-		rightPlayer: { alias: gameData.right_player_alias, id: gameData.right_player_id },
+		leftPlayer: { alias: gameData.leftPlayer.alias, id: gameData.leftPlayer.id },
+		rightPlayer: { alias: gameData.rightPlayer.alias, id: gameData.rightPlayer.id },
 		gameId: gameData.id,
 		type: gameData.type
 	} as GameObject;

@@ -74,7 +74,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		for (const player of match.players) {
 			await matchService.addPlayer(player, matchId);
 		}
-		const games = await matchService.createNewRound(matchId);
+		const games = await matchService.createNewRound(matchId, match.name!);
 		//ADD ERROR CHECKING
 		return { matchId: matchId, games: games };
 	})
@@ -82,18 +82,18 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 	fastify.post<{
 		Body: resultPayload
 	}>('/match/result', { schema: resultSchema }, async (request, reply) => {
-		console.log("Match service received a post request at /match/remote/result");
+		console.log("Match service received a post request at /match/result");
 		const gameResult = request.body;
 		await matchService.recordGameResults(gameResult.gameId, gameResult.loser.alias, gameResult.winner.alias);
 		const match = await matchService.getMatchById(gameResult.gameId);
 		const gamesLeft = await matchService.checkGamesLeft(match.id, match.round);
 		if (gamesLeft === 0){
-			await matchService.createNewRound(match.id);
+			await matchService.createNewRound(match.id, match.name);
 		}
 	})
 
 	fastify.get('/match/game', async (request, reply) => {
-		const gameId = request.query as { gameId: string };
+		const { gameId } = request.query as { gameId: string };
 		const gameIdN = Number(gameId);
 		if (isNaN(gameIdN)) return reply.status(400).send({ error: "Incorrect gameId" });;
 		const game = await matchService.getGameById(gameIdN);
