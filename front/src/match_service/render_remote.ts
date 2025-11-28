@@ -156,6 +156,7 @@ async function joinRoom(matchName: string) {
 		let players: string[] = await getMatchPlayers(matchName) || [];
 		console.log("Players from gateway: ", players);
 		refreshPlayers();
+		await connectGameWS();
 
 		lobbySocket?.addEventListener("message", async (ev) => {
 			const msg = JSON.parse(ev.data);
@@ -169,12 +170,11 @@ async function joinRoom(matchName: string) {
 			}
 			if (msg.type === "start_match" && msg.matchName === matchName) {
 				renderArena();
-				await connectGameWS();
 				console.log("Ready to start the match: ", msg);
 			}
 			if (msg.type == "game_ready"){
 				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
-				await connectGameWS();
+				// await connectGameWS();
 				gameSocket?.send(JSON.stringify({
 					type:"new_game",
 					gameId:msg.gameId

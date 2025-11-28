@@ -177,18 +177,12 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						}
 					}
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
-					const result = await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
+					await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
 						method: "POST",
 						headers: { "Content-Type": "application/json", "x-gateway-secret": `${process.env.GATEWAY_SECRET}`, },
 						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE" })
 					});
-
-					const { matchId, games } = await result.json();
-					console.log(`Match ${matchId} created with ${games.length} game(s)`);
-					
-					await notifyAboutNewGame(games, data.name);
 				}
-
 			} catch (err) {
 				console.error("Failed to parse socket message", err);
 			}
