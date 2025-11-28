@@ -79,18 +79,24 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		return { matchId: matchId, games: games };
 	})
 
-	fastify.post<{
-		Body: resultPayload
-	}>('/match/result', { schema: resultSchema }, async (request, reply) => {
-		console.log("Match service received a post request at /match/result");
-		const gameResult = request.body;
-		await matchService.recordGameResults(gameResult.gameId, gameResult.loser.alias, gameResult.winner.alias);
-		const match = await matchService.getMatchById(gameResult.gameId);
+	fastify.post<{ Body: resultPayload }>('/match/result', { schema: resultSchema }, async (request, reply) => {
+		console.log("Match service received a post request at /match/result, body: ", request.body);
+		const { gameId, winner, loser } = request.body;
+		const game = await matchService.getGameById(gameId);
+		if (!game) {
+			reply.code(400).send({ error: "Game not found" });
+			return;
+		}
+		const matchId = game.match_id;
+		await matchService.recordGameResults(gameId, loser.alias, winner.alias);	
+		const match = await matchService.getMatchById(matchId);
 		const gamesLeft = await matchService.checkGamesLeft(match.id, match.round);
-		if (gamesLeft === 0){
+		if (gamesLeft === 0) {
 			await matchService.createNewRound(match.id, match.name);
 		}
-	})
+		reply.send({ ok: true });
+	});
+	
 
 	fastify.get('/match/game', async (request, reply) => {
 		const { gameId } = request.query as { gameId: string };

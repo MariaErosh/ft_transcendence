@@ -76,7 +76,7 @@ export async function notifyEndMatch (matchName: string, matchId: number, winner
 					ws.send(JSON.stringify({
 						type: "end_match",
 						matchName: matchName,
-						winer: winnerAlias
+						winner: winnerAlias
 					}));
 				}
 			});
