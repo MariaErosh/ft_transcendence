@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Chat WS Tester</title>
+    <style>
+        body { font: 14px sans-serif; margin: 20px; }
+        #log { height: 240px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Chat Service Tester</h1>
+
+    <label>Gateway WS URL:
+        <input id="wsUrl" value="ws://localhost:3000/ws/chat" size="40" />
+    </label>
+    <br />
+    <label>JWT Token:
+        <input id="token" size="60" />
+    </label>
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+
+    <h3>Send Payload</h3>
+    <textarea id="payload" rows="4" cols="60">
+{"type":"ping"}
+    </textarea>
+    <br />
+    <button id="sendBtn" disabled>Send</button>
+
+    <h3>Log</h3>
+    <div id="log"></div>
+
+    <script>
+        let socket = null;
+        const log = (msg) => {
+            const div = document.createElement("div");
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById("log").prepend(div);
+        };
+
+        document.getElementById("connectBtn").onclick = () => {
+            const url = document.getElementById("wsUrl").value;
+            const token = document.getElementById("token").value;
+            if (!token) return alert("Token required");
+            socket = new WebSocket(`${url}?token=${encodeURIComponent(token)}`);
+
+            socket.onopen = () => {
+                log("Connected");
+                document.getElementById("sendBtn").disabled = false;
+                document.getElementById("disconnectBtn").disabled = false;
+            };
+            socket.onmessage = (evt) => log(`← ${evt.data}`);
+            socket.onclose = () => {
+                log("Disconnected");
+                document.getElementById("sendBtn").disabled = true;
+                document.getElementById("disconnectBtn").disabled = true;
+            };
+            socket.onerror = (err) => log(`Error: ${err.message ?? err}`);
+        };
+
+        document.getElementById("disconnectBtn").onclick = () => socket?.close();
+        document.getElementById("sendBtn").onclick = () => {
+            try {
+                const text = document.getElementById("payload").value.trim();
+                socket.send(text);
+                log(`→ ${text}`);
+            } catch (e) {
+                alert("Failed to send: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>

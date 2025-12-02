@@ -85,7 +85,7 @@ async function start() {
         try {
         // Verify JWT token
         const decoded = app.jwt.verify(token) as any;
-        const userId = decoded.id;
+        const userId = decoded.sub; // JWT uses 'sub' (subject) for user ID
         const username = decoded.username;
 
         app.log.info(`WebSocket connected: ${username} (id: ${userId})`);
@@ -116,6 +116,7 @@ async function start() {
         socket.on('message', (data: Buffer) => {
             try {
             const message = JSON.parse(data.toString());
+            app.log.info({ username, message }, 'Received message from client');
 
             if (message.content && message.content.trim()) {
                 const content = message.content.trim();
@@ -135,6 +136,7 @@ async function start() {
                         })
                     );
                     } else {
+                    app.log.info({ username, content }, 'Message saved, broadcasting to clients');
                     // Broadcast message to ALL connected clients (including sender)
                     broadcastMessage({
                         type: 'message',

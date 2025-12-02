@@ -36,6 +36,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 		try {
 			player = server.jwt.verify<PlayerPayload>(token);
+			console.log("Token verified", player);
 		} catch (err) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
 			console.log("COULDN'T PARSE TOKEN");

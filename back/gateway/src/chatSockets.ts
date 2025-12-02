@@ -1,25 +1,23 @@
 import { FastifyInstance } from "fastify";
-import websocketPlugin from "@fastify/websocket";
 import { WebSocket } from "ws";
+import "@fastify/websocket";
 
 /**
  * Register Chat WebSocket Proxy
- * 
+ *
  * This creates a simple bidirectional tunnel between:
  * - Frontend: ws://localhost:3000/ws/chat?token=xxx
  * - Chat Service: ws://chat:3005/ws?token=xxx
- * 
+ *
  * The gateway just forwards messages both ways without processing them.
  * The chat service handles all authentication and message logic.
  */
 export async function registerChatWebSocket(server: FastifyInstance) {
-	await server.register(websocketPlugin);
-
 	const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3005";
 
-	server.get("/ws/chat", { websocket: true }, (socket, request) => {
+	server.get("/ws/chat", { websocket: true }, (socket, request) => { // hacerla mas clara de leer, arreglar chat/ws
 		const token = (request.query as any).token;
-		
+
 		if (!token) {
 			socket.send(JSON.stringify({ type: "error", message: "No token provided" }));
 			socket.close();
@@ -52,7 +50,7 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 			console.log("Chat WebSocket: Frontend disconnected, closing chat service connection");
 			chatSocket.close();
 		});
-		
+
 		chatSocket.on("close", () => {
 			console.log("Chat WebSocket: Chat service disconnected, closing frontend connection");
 			socket.close();
