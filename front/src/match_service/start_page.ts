@@ -1,6 +1,8 @@
 // import { setupSocket } from "../game_front/gameMenu.js";
 import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
+import { lobbySocket, connectWS } from "./lobbySocket.js";
+
 
 
 // setupSocket().catch(err => console.error("Failed to setup socket:", err));
@@ -70,11 +72,12 @@ export function renderCreateTournamentForm() {
 			w-1/2 h-1/4
 			text-4xl
 			hover:bg-gray-200 transition`;
-			remoteButton.addEventListener("click", () => {
-				if (localStorage.getItem("refreshToken")) {
+			remoteButton.addEventListener("click", async () => {
+				try {
+					await connectWS();
 					renderNewRemoteTournament();
 					history.pushState({ view:"remote"}, "", "remote");
-				} else {
+				} catch (err) {
 					msg.textContent = "You need to be logged in to play remote";
 				}
 			});
