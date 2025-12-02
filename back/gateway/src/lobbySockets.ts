@@ -20,11 +20,39 @@ export function getMatchPlayers(matchName: string) {
 }
 
 function playerInAnotherMatch(playerId: number, currentMatch: string): boolean {
-    for (const [matchName, players] of matchPlayers) {
-        if (matchName === currentMatch) continue;
-        if (players.has(playerId)) return true;
-    }
-    return false;
+	for (const [matchName, players] of matchPlayers) {
+		if (matchName === currentMatch) continue;
+		if (players.has(playerId)) return true;
+	}
+	return false;
+}
+
+export async function notifyAboutNewConsoleGame(game: any, matchName: string) {
+	console.log("game:", game);
+	const players = matchPlayers.get(matchName);
+	if (players) {
+		players.forEach(id => {
+			const sockets = userSockets.get(id);
+			if (sockets) {
+				sockets.forEach(ws => {
+					if (ws.readyState === WebSocket.OPEN) {
+						console.log(`Sending game_ready to console lobby socket player (userId: ${id})`);
+						ws.send(JSON.stringify({
+							type: "game_ready",
+							gameId: game.id,
+							matchName: matchName,
+							side: "both",
+							rightp_player: game.right_player_alias,
+							left_player: game.left_player_alias
+						}));
+					}
+				});
+			} else {
+				console.warn(`Player ${id} has no active sockets`);
+			}
+
+		})
+	}
 }
 
 export async function notifyAboutNewGame(games: any[], matchName: string) {
@@ -72,7 +100,7 @@ export async function notifyAboutNewGame(games: any[], matchName: string) {
 	}
 }
 
-export async function notifyEndMatch (matchName: string, matchId: number, winnerAlias: string, winnerId:number) {
+export async function notifyEndMatch(matchName: string, matchId: number, winnerAlias: string, winnerId: number) {
 	const players = matchPlayers.get(matchName);
 	if (!players || players.size === 0) return new Error("no sockets for this match");
 	for (const player of players) {
@@ -133,7 +161,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 				if (data.type === "join_match") {
 					const matchName = data.name;
-					if (playerInAnotherMatch(userId, matchName)){
+					if (playerInAnotherMatch(userId, matchName)) {
 						console.log(`User ${userId} has already joined another match`);
 						return;
 					}
@@ -189,10 +217,10 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						}
 					}
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
-					await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
+					await fetch(`${MATCH_SERVICE_DIRECT}/match/new`, {
 						method: "POST",
 						headers: { "Content-Type": "application/json", "x-gateway-secret": `${process.env.GATEWAY_SECRET}`, },
-						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE" })
+						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE", owner: null })
 					});
 				}
 			} catch (err) {

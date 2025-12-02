@@ -1,6 +1,34 @@
-import { createConsoleMatch, sendGameToGameEngine } from "../api.js";
+import { createConsoleMatch, login, register, sendGameToGameEngine } from "../api.js";
+import { renderArena } from "../arena.js";
+import { renderGameBoard } from "../game_front/gameMenu.js";
+import { connectGameWS, gameSocket } from "./gameSocket.js";
+import { connectWS, lobbySocket } from "./lobbySocket.js";
 
-export function renderNewConsoleTournament() {
+
+function generateRandomCredentials() {
+	const random = Math.random().toString(36).slice(2, 10); // 8 chars
+	const username = "temp_" + random;
+	const password = "pw_" + random + Math.random().toString(36).slice(2, 6);
+	const matchName = "match_" + random;
+	return { username, password, matchName };
+}
+
+async function createTempUser(){
+	const {username, password, matchName} = generateRandomCredentials();
+	try {
+		await register(username, password);
+	}
+	catch (err){
+		console.log("Didn't register temp user: ", err);
+	}
+	await login(username, password);
+	return {username, password, matchName}
+}
+
+export async function renderNewConsoleTournament() {
+
+	const {username, password, matchName} = await createTempUser();
+	await connectWS();
 	const blackBox = document.getElementById("black-box")!;
 	blackBox.innerHTML = "";
 
@@ -48,17 +76,34 @@ export function renderNewConsoleTournament() {
 		transition
 	`;
 	blackBox.appendChild(startButton);
+	await connectGameWS();
 
 	//--LOGIC--
+	lobbySocket?.addEventListener("message", async (ev) => {
+				const msg = JSON.parse(ev.data);
+				console.log ("Message: ", msg);
+				if (msg.type === "game_ready"){
+					console.log(`Game ready, game id: ${msg.gameId}`)
+					gameSocket?.send(JSON.stringify({
+						type:"new_game",
+						gameId:msg.gameId
+					}))
+					await renderGameBoard();
+				}
+				if (msg.type == "end_match"){
+					console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
+					renderArena();
+				}
+			})
 	const players: string[] = [];
 	startButton.addEventListener('click', async () => {
 		try {
-			const newGame = await createConsoleMatch(players);
-			await sendGameToGameEngine(newGame);
+			lobbySocket?.send(JSON.stringify({
+				type: "join_match",
+				name: matchName
+			}))
+			await createConsoleMatch(players, matchName, username);
 			blackBox.innerHTML = "";
-			// const parent = box.parentElement;
-			// if (!parent) throw new Error("Black box has no parent");
-			// renderGameBoard(container);
 		} catch (error) {
 			console.error("Failed to create match:", error);
 			blackBox.innerHTML = "";

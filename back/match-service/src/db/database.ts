@@ -28,7 +28,8 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 				status TEXT NOT NULL,
 				type TEXT NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-				round INTEGER
+				round INTEGER,
+				owner TEXT
 			);
 			CREATE TABLE IF NOT EXISTS players (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +41,7 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 			);
 			CREATE TABLE IF NOT EXISTS games (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
-					left_player_id INTEGER NOT NULL,
+					left_player_id INTEGER,
 					left_player_alias TEXT NOT NULL,
 					right_player_id INTEGER,
 					right_player_alias TEXT NOT NULL,
@@ -50,6 +51,7 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 					status TEXT NOT NULL,
 					winner TEXT,
 					loser TEXT,
+					owner TEXT,
 					FOREIGN KEY(match_id) REFERENCES matches(id)
 			);
 		`, (err) => {

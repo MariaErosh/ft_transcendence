@@ -5,7 +5,7 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch } from "./lobbySockets";
+import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
 
 
@@ -105,6 +105,13 @@ async function buildServer() {
 		let res = (req.body as {matchName:string, games: any[]});
 		await notifyAboutNewGame(res.games, res.matchName);
 	})
+
+	server.post("/newgame", async (req, response) => {
+		let res = (req.body as {matchName: string, game: any});
+		console.log("New console game received: ", res.game);
+		await notifyAboutNewConsoleGame(res.game, res.matchName);
+	})
+
 
 	server.post("/end_match", async (req, response) => {
 		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
