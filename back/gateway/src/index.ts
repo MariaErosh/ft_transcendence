@@ -5,7 +5,7 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket } from "./management_sockets";
+import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
 
 
@@ -17,19 +17,8 @@ const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
 const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
 const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
-const onlineUsers = new Map<number, number>();
 
-function markUserOnline(userId: number) {
-	onlineUsers.set(userId, Date.now());
-}
 
-function getOnlineUsers(): number[] {
-	const cutoff = Date.now() - 120_000; // 2 minutes timeout
-	for (const [id, lastSeen] of onlineUsers.entries()) {
-		if (lastSeen < cutoff) onlineUsers.delete(id);
-	}
-	return [...onlineUsers.keys()];
-}
 
 async function buildServer() {
 	const server = Fastify({ logger: true });
@@ -58,7 +47,6 @@ async function buildServer() {
 				(request.headers as any)['x-username'] = String((request.user as any).username ?? "");
 				(request.headers as any)['x-user-service'] = String((request.user as any).service ?? "user");
 				(request.headers as any)['x-gateway-secret'] = GATEWAY_SECRET;
-				markUserOnline(userId);
 			} catch (err) {
 				reply.status(401).send({ error: "Unauthorized" });
 				throw err;
@@ -117,7 +105,11 @@ async function buildServer() {
 		let res = (req.body as {matchName:string, games: any[]});
 		await notifyAboutNewGame(res.games, res.matchName);
 	})
-	
+
+	server.post("/end_match", async (req, response) => {
+		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
+		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winerId);
+	})
 	return server;
 }
 

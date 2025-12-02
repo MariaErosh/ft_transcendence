@@ -1,12 +1,13 @@
 import { createConsoleMatch, sendGameToGameEngine } from "../api.js";
 
-export function renderNewConsoleTournament(box: HTMLElement) {
-	box.innerHTML = "";
+export function renderNewConsoleTournament() {
+	const blackBox = document.getElementById("black-box")!;
+	blackBox.innerHTML = "";
 
 	const title = document.createElement('div');
 	title.textContent = "Enter at least two players for the tournament";
 	title.className = "text-white text-4xl font-sans font-semibold mb-8";
-	box.appendChild(title);
+	blackBox.appendChild(title);
 
 	const playersBox = document.createElement('div');
 	playersBox.className = `
@@ -15,7 +16,7 @@ export function renderNewConsoleTournament(box: HTMLElement) {
 		p-4 mb-8
 		flex flex-col gap-2
 	`;
-	box.appendChild(playersBox);
+	blackBox.appendChild(playersBox);
 
 	const inputRow = document.createElement('div');
 	inputRow.className = "flex items-center gap-4 mb-8";
@@ -37,7 +38,7 @@ export function renderNewConsoleTournament(box: HTMLElement) {
 	`;
 	inputRow.appendChild(addButton);
 
-	box.appendChild(inputRow);
+	blackBox.appendChild(inputRow);
 	const startButton = document.createElement("button");
 	startButton.textContent = "START TOURNAMENT";
 	startButton.disabled = true;
@@ -46,7 +47,7 @@ export function renderNewConsoleTournament(box: HTMLElement) {
 		w-2/5 h-1/5 text-3xl
 		transition
 	`;
-	box.appendChild(startButton);
+	blackBox.appendChild(startButton);
 
 	//--LOGIC--
 	const players: string[] = [];
@@ -54,17 +55,17 @@ export function renderNewConsoleTournament(box: HTMLElement) {
 		try {
 			const newGame = await createConsoleMatch(players);
 			await sendGameToGameEngine(newGame);
-			box.innerHTML = "";
+			blackBox.innerHTML = "";
 			// const parent = box.parentElement;
 			// if (!parent) throw new Error("Black box has no parent");
 			// renderGameBoard(container);
 		} catch (error) {
 			console.error("Failed to create match:", error);
-			box.innerHTML = "";
+			blackBox.innerHTML = "";
 			const errorWindow = document.createElement("div");
 			errorWindow.className = "text-red-500 text-2xl p-4";
 			errorWindow.textContent = `Error: ${error instanceof Error ? error.message : 'Failed to create match'}`;
-			box.appendChild(errorWindow);
+			blackBox.appendChild(errorWindow);
 		}
 	});
 	function refreshPlayersList() {

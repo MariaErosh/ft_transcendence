@@ -26,8 +26,7 @@ export interface Player { alias: string, id: number | null }
 export interface PlayerSocket {
 	ws: WS;
 	alias: string;
-	side: "left" | "right";
-	ready: boolean;
+	gameId?: number;
 }
 
 export interface GameObject {

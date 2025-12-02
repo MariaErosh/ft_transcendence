@@ -12,12 +12,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# Install tools needed for bufferutil (node-gyp)
-RUN apk add --no-cache \
-    && npm install
-
-
-# RUN npm install
+RUN npm install
 
 COPY . .
 

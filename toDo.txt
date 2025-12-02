@@ -3,6 +3,9 @@ TO DO LIST per Module
 - general Website:
 	- The user should be able to use the Back and Forward buttons of the browser. 
 		--> make history of the sections - do we have to show the endpoints in the url bar? 
+
+- can the user join the multiple tournaments?
+- can the user leave the tournament before it started?
 	
 
 - Server Side PONG:

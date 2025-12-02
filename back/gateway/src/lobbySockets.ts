@@ -19,6 +19,14 @@ export function getMatchPlayers(matchName: string) {
 	return [...ids].map(id => (userInfo.get(id) ?? `User${id}`));
 }
 
+function playerInAnotherMatch(playerId: number, currentMatch: string): boolean {
+    for (const [matchName, players] of matchPlayers) {
+        if (matchName === currentMatch) continue;
+        if (players.has(playerId)) return true;
+    }
+    return false;
+}
+
 export async function notifyAboutNewGame(games: any[], matchName: string) {
 	for (const game of games) {
 		console.log("game:", game);
@@ -63,14 +71,33 @@ export async function notifyAboutNewGame(games: any[], matchName: string) {
 		}
 	}
 }
-	// TO CONSIDER: also broadcast a generic "match_started"
 
+export async function notifyEndMatch (matchName: string, matchId: number, winnerAlias: string, winnerId:number) {
+	const players = matchPlayers.get(matchName);
+	if (!players || players.size === 0) return new Error("no sockets for this match");
+	for (const player of players) {
+		const sockets = userSockets.get(player);
+		if (sockets) {
+			sockets.forEach(ws => {
+				if (ws.readyState === WebSocket.OPEN) {
+					console.log(`Sending end of match to player (userId: ${player})`);
+					ws.send(JSON.stringify({
+						type: "end_match",
+						matchName: matchName,
+						winner: winnerAlias
+					}));
+				}
+			});
+		} else {
+			console.warn(`Player ${player} has no active sockets`);
+		}
+	}
+	matchPlayers.delete(matchName);
+}
 
 export async function registerGatewayWebSocket(server: FastifyInstance) {
 	await server.register(websocketPlugin);
 	console.log("websocket registered on gateway");
-
-
 
 	server.get("/ws", { websocket: true }, (socket, req) => {
 
@@ -106,6 +133,10 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 				if (data.type === "join_match") {
 					const matchName = data.name;
+					if (playerInAnotherMatch(userId, matchName)){
+						console.log(`User ${userId} has already joined another match`);
+						return;
+					}
 					if (!matchPlayers.has(matchName)) matchPlayers.set(matchName, new Set());
 					matchPlayers.get(matchName)!.add(userId);
 
@@ -141,20 +172,29 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 					for (const id of playersId) {
 						if (userInfo.get(id) !== undefined)
 							players.push({ id: id, alias: userInfo.get(id)! });
+
+						const userSocket = userSockets.get(id);
+						if (userSocket) {
+							userSocket.forEach(ws => {
+								if (ws.readyState === WebSocket.OPEN) {
+									console.log(`Sending start_game to player (userId: ${id})`);
+									ws.send(JSON.stringify({
+										type: "start_match",
+										matchName: data.name
+									}));
+								}
+							});
+						} else {
+							console.warn(`Right player ${id} has no active sockets`);
+						}
 					}
 					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
-					const result = await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
+					await fetch(`${MATCH_SERVICE_DIRECT}/match/remote/new`, {
 						method: "POST",
 						headers: { "Content-Type": "application/json", "x-gateway-secret": `${process.env.GATEWAY_SECRET}`, },
 						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE" })
 					});
-
-					const { matchId, games } = await result.json();
-					console.log(`Match ${matchId} created with ${games.length} game(s)`);
-					
-					await notifyAboutNewGame(games, data.name);
 				}
-
 			} catch (err) {
 				console.error("Failed to parse socket message", err);
 			}
