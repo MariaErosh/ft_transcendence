@@ -1,5 +1,7 @@
 // Chat WebSocket client for ft_transcendence
 
+import { authorisedRequest } from "../api.js";
+
 const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
 
 interface ChatMessage {
@@ -15,19 +17,39 @@ let chatContainer: HTMLElement | null = null;
 let messagesContainer: HTMLElement | null = null;
 let isConnected = false;
 let isChatOpen = false;
+let messageHistory: ChatMessage[] = [];
+let storageListener: ((e: StorageEvent) => void) | null = null;
 
 /**
  * Initialize and render the chat UI (starts as bubble)
  */
 export function renderChat() {
-  chatContainer = document.getElementById("chat");
-  if (!chatContainer) return;
+	chatContainer = document.getElementById("chat");
+	if (!chatContainer) return;
 
-  // Start with the chat bubble (closed state)
-  renderChatBubble();
+	// Start with the chat bubble (closed state)
+	renderChatBubble();
 
-  // Connect to chat WebSocket
-  connectChat();
+	// Connect to chat WebSocket
+	connectChat();
+	if (storageListener) {
+		window.removeEventListener('storage', storageListener);
+	}
+	storageListener = (e: StorageEvent) => {
+		console.log('🔔 Storage event fired!', e.key, 'new:', e.newValue, 'old:', e.oldValue);
+		if (e.key === 'accessToken') {
+			if (!e.newValue) {
+				console.log('🔔 Access token removed, disconnecting chat');
+				// Token removed = logout
+				disconnectChat();
+			} else {
+				console.log('🔔 Access token added/changed, reconnecting chat');
+				// New token = login
+				reconnectChat();
+			}
+		}
+	};
+	window.addEventListener('storage', storageListener);
 }
 
 /**
@@ -179,8 +201,9 @@ function renderChatWindow() {
   if (isConnected) {
     enableInput(true);
     updateStatus("Connected", "success");
-    // Reload messages if any were missed
     clearMessages();
+    // Display stored message history
+    messageHistory.forEach(msg => displayMessage(msg));
   }
 }
 
@@ -220,11 +243,16 @@ function connectChat() {
       updateStatus("Connected", "success");
       enableInput(true);
       clearMessages();
+	  loadMessageHistory();
     };
 
     chatSocket.onmessage = (event) => {
       try {
         const message: ChatMessage = JSON.parse(event.data);
+        // Store new messages in history (except system messages about joining)
+        if (message.type === 'message') {
+          messageHistory.push(message);
+        }
         displayMessage(message);
       } catch (err) {
         console.error("Failed to parse message:", err);
@@ -249,6 +277,30 @@ function connectChat() {
   } catch (err) {
     console.error("Failed to connect to chat:", err);
     updateStatus("Connection failed", "error");
+  }
+}
+
+/**
+ * Load message history from server
+  */
+async function loadMessageHistory() {
+  try {
+    const data = await authorisedRequest('/chat/messages');
+    console.log('History loaded:', data.messages?.length, 'messages');
+    if (data.messages) {
+      // Store messages with type field added
+      messageHistory = data.messages.map((msg: any) => ({
+        ...msg,
+        type: 'message' as const
+      }));
+
+      // If chat is open, display them immediately
+      if (isChatOpen && messagesContainer) {
+        messageHistory.forEach(msg => displayMessage(msg));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load message history:', err);
   }
 }
 
@@ -346,7 +398,17 @@ export function disconnectChat() {
     chatSocket.close();
     chatSocket = null;
   }
+  messageHistory = [];
   isConnected = false;
+  isChatOpen = false;
+}
+
+/**
+ * Reconnect to chat
+ */
+export function reconnectChat() {
+  disconnectChat();
+  connectChat();
 }
 
 /**

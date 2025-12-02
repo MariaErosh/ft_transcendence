@@ -1,6 +1,7 @@
 import { login, verify2FA, register } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
+import { reconnectChat } from "./chat_service/chat.js";
 
 export function renderLogin() {
 	const main = document.getElementById("main")!;
@@ -57,6 +58,7 @@ export function renderLogin() {
 			localStorage.setItem("username", username.value);
 			localStorage.setItem("refreshToken", response.refreshToken);
 			history.pushState({ view: "main"}, "", "/");
+			reconnectChat();
 			renderUserMenu();
 			renderCreateTournamentForm();
 		} else {

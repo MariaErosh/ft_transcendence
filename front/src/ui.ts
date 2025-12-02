@@ -1,3 +1,4 @@
+import { disconnectChat } from "./chat_service/chat.js";
 import { renderLogin, renderRegister } from "./forms.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
@@ -43,6 +44,7 @@ export function renderUserMenu() {
       logoutBtn.addEventListener("click", () => {
         localStorage.removeItem("username");
         localStorage.removeItem("refreshToken");
+        disconnectChat();
         renderUserMenu();
         renderCreateTournamentForm();
       });

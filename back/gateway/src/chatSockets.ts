@@ -50,16 +50,18 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 		console.log(`Chat WebSocket: User ${player.username} connecting to ${chatWsUrl}`);
 
 		// Forward messages: Frontend → Gateway → Chat Service (birectionally)
-		socket.on("message", (msg) => {
+		socket.on("message", (msg: any) => {
 			if (chatSocket.readyState === WebSocket.OPEN) {
 				chatSocket.send(msg);
 			}
 		});
 
 		// Forward messages: Chat Service → Gateway → Frontend
-		chatSocket.on("message", (msg) => {
+		chatSocket.on("message", (msg: any) => {
 			if (socket.readyState === WebSocket.OPEN) {
-				socket.send(msg);
+				// Convert Buffer to string if needed
+				const messageStr = typeof msg === 'string' ? msg : msg.toString();
+				socket.send(messageStr);
 			}
 		});
 
