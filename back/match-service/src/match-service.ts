@@ -153,7 +153,7 @@ export class MatchService {
 		return games.count;
 	}
 
-	async createNewRound(matchId: number) {
+	async createNewRound(matchId: number, matchName: string) {
 		let games = [];
 		let { type } = await dbGet(this.db, "SELECT type FROM matches WHERE id = ?", [matchId]);
 		await dbRunQuery(this.db, "UPDATE players SET status = ? WHERE match_id = ? AND status = ?", ['NOT PLAYED', matchId, "WON"]);
@@ -171,7 +171,36 @@ export class MatchService {
 			}
 			games = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, round]);
 			await dbRunQuery(this.db, "UPDATE matches SET round = ? WHERE id = ?", [round, matchId]);
+			return await this.sendGames(matchName, games);
 		}
+		if (players.length === 1){
+			const row = await dbGet<{ round: number }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+			if (!row) throw new Error(`No match found with id ${matchId}`);
+			let game  = await dbGet(this.db, "SELECT * FROM games WHERE match_id = ? and round = ?", [matchId, row.round])
+			let payload = {
+				matchId: matchId,
+				matchName: matchName,
+				winnerAlias: game.winner,
+				winnerId: game.winner === game.right_player_alias 
+				? game.right_player_id 
+				: game.left_player_id
+			}
+			try {
+				await fetch(`${GATEWAY}/end_match`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(payload)
+				});
+				console.log("End of match sent to gateway");
+			}
+			catch (error) {
+				console.log("Failed to send end of match to gateway: ", error);
+				throw error;
+			}
+		}
+	}
+
+	 async sendGames(matchName:string, games:any[]) {
 		console.log("Games of the round: ", games);
 		for (const game of games) {
 			let payload: GamePayload = {
@@ -193,6 +222,11 @@ export class MatchService {
 				throw error;
 			}
 		}
+		await fetch(`${GATEWAY}/newround`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({matchName:matchName, games: games})
+				});
 		return games;
 	}
 }

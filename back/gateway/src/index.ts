@@ -5,7 +5,7 @@ import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, registerGatewayWebSocket } from "./management_sockets";
+import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
 import { registerChatWebSocket } from "./chatSockets";
 
@@ -62,7 +62,6 @@ async function buildServer() {
 				(request.headers as any)['x-username'] = String((request.user as any).username ?? "");
 				(request.headers as any)['x-user-service'] = String((request.user as any).service ?? "user");
 				(request.headers as any)['x-gateway-secret'] = GATEWAY_SECRET;
-				markUserOnline(userId);
 			} catch (err) {
 				reply.status(401).send({ error: "Unauthorized" });
 				throw err;
@@ -124,6 +123,15 @@ async function buildServer() {
 		return { players: getMatchPlayers(matchName) };
 	})
 
+	server.post("/newround", async (req, response) => {
+		let res = (req.body as {matchName:string, games: any[]});
+		await notifyAboutNewGame(res.games, res.matchName);
+	})
+
+	server.post("/end_match", async (req, response) => {
+		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
+		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winerId);
+	})
 	return server;
 }
 
