@@ -16,37 +16,36 @@ renderUserMenu();
 renderCreateTournamentForm();
 
 
-window.addEventListener("popstate", (event) => {
-	const state = event.state;
-	if (!state || !state.view) {
-		renderCreateTournamentForm();
-		return;
-	}
+// Redirect refresh to home if URL is not "/" 
+if (window.location.pathname !== "/") {
+    history.replaceState({ view: "main" }, "", "/");
+}
 
-	switch(state.view) {
-		case "login":
-			renderLogin();
-			break;
-		case "signup":
-			renderRegister();
-			break;
-		case "remote":
-			renderNewRemoteTournament();
-			break;
-		case "console":
-			renderNewConsoleTournament();
-			break;
-		case "game":
-			renderGameBoard();
-			break;
-		case "main":
-			setStop();
-			renderUserMenu();
-			renderCreateTournamentForm();
-			break;
-		default: 
-			setStop();
-			renderUserMenu();
-			renderCreateTournamentForm();
-	}
+// Handle initial state
+function handleState(state: { view?: string } | null) {
+    if (!state || !state.view) {
+        renderCreateTournamentForm();
+        return;
+    }
+
+    switch(state.view) {
+        case "login": renderLogin(); break;
+        case "signup": renderRegister(); break;
+        case "remote": renderNewRemoteTournament(); break;
+        case "console": renderNewConsoleTournament(); break;
+        case "game": renderGameBoard(); break;
+        case "main":
+        default:
+            setStop();
+            renderUserMenu();
+            renderCreateTournamentForm();
+    }
+}
+
+// On page load
+handleState(history.state);
+
+// Handle back/forward
+window.addEventListener("popstate", (event) => {
+    handleState(event.state);
 });
