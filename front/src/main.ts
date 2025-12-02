@@ -60,7 +60,6 @@ window.addEventListener("popstate", (event) => {
 			renderCreateTournamentForm();
 			break;
 		default:
-		default:
 			setStop();
 			renderUserMenu();
 			renderCreateTournamentForm();

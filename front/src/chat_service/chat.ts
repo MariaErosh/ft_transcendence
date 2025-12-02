@@ -1,6 +1,6 @@
 // Chat WebSocket client for ft_transcendence
 
-const GATEWAY_WS_URL = "ws://localhost:3000/ws/chat";
+const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
 
 interface ChatMessage {
   type: "message" | "system" | "error";
@@ -14,16 +14,57 @@ let chatSocket: WebSocket | null = null;
 let chatContainer: HTMLElement | null = null;
 let messagesContainer: HTMLElement | null = null;
 let isConnected = false;
+let isChatOpen = false;
 
 /**
- * Initialize and render the chat UI
+ * Initialize and render the chat UI (starts as bubble)
  */
 export function renderChat() {
   chatContainer = document.getElementById("chat");
   if (!chatContainer) return;
 
-  chatContainer.classList.remove('w-16', 'h-16', 'sm:w-20', 'sm:h-20', 'rounded-full', 'bg-pink-500', 'shadow-[6px_6px_0_0_#000000]');
-chatContainer.classList.add('w-80', 'h-96', 'bg-transparent', 'shadow-none', 'p-0', 'flex-none'); // Apply the size of the window and remove styling
+  // Start with the chat bubble (closed state)
+  renderChatBubble();
+
+  // Connect to chat WebSocket
+  connectChat();
+}
+
+/**
+ * Render the chat bubble (minimized state)
+ */
+function renderChatBubble() {
+  if (!chatContainer) return;
+
+  chatContainer.className = "fixed bottom-6 right-6 z-50";
+  chatContainer.innerHTML = `
+    <button id="chat-bubble" class="
+      w-16 h-16
+      bg-pink-500
+      border-4 border-black
+      rounded-full
+      shadow-[6px_6px_0_0_#000000]
+      hover:bg-pink-400
+      active:shadow-none active:translate-x-[2px] active:translate-y-[2px]
+      transition-all duration-150
+      flex items-center justify-center
+      text-3xl
+    ">
+      💬
+    </button>
+  `;
+
+  const bubble = document.getElementById("chat-bubble");
+  bubble?.addEventListener("click", openChat);
+}
+
+/**
+ * Render the full chat window (expanded state)
+ */
+function renderChatWindow() {
+  if (!chatContainer) return;
+
+  chatContainer.className = "fixed bottom-6 right-6 z-50";
   chatContainer.innerHTML = `
     <div class="
         bg-gray-200
@@ -40,14 +81,15 @@ chatContainer.classList.add('w-80', 'h-96', 'bg-transparent', 'shadow-none', 'p-
         flex justify-between items-center
       ">
         <h3 class="font-bold uppercase tracking-wider text-lg">
-          🤖 CHAT INTERFACE v1.2
+          💬 CHAT
         </h3>
-        <button id="chat-toggle" class="
+        <button id="chat-minimize" class="
           text-xl font-extrabold
           hover:text-pink-400
           leading-none
+          px-2
         ">
-          _
+          ✕
         </button>
       </div>
 
@@ -74,8 +116,10 @@ chatContainer.classList.add('w-80', 'h-96', 'bg-transparent', 'shadow-none', 'p-
           <input
             id="chat-input"
             type="text"
-            placeholder="ENTER COMMAND..."
+            placeholder="ENTER MESSAGE..."
             class="
+              text-sm
+              text-black
               flex-1
               px-3 py-2
               border-2 border-black
@@ -89,6 +133,7 @@ chatContainer.classList.add('w-80', 'h-96', 'bg-transparent', 'shadow-none', 'p-
           <button
             id="chat-send"
             class="
+              text-sm
               px-4 py-2
               bg-pink-500
               text-black
@@ -122,17 +167,37 @@ chatContainer.classList.add('w-80', 'h-96', 'bg-transparent', 'shadow-none', 'p-
   // Setup event listeners
   const input = document.getElementById("chat-input") as HTMLInputElement;
   const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
-  const toggleBtn = document.getElementById("chat-toggle") as HTMLButtonElement;
+  const minimizeBtn = document.getElementById("chat-minimize") as HTMLButtonElement;
 
-  sendBtn.addEventListener("click", () => sendMessage(input.value));
-  input.addEventListener("keypress", (e) => {
+  sendBtn?.addEventListener("click", () => sendMessage(input.value));
+  input?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendMessage(input.value);
   });
+  minimizeBtn?.addEventListener("click", closeChat);
 
-  toggleBtn.addEventListener("click", toggleChat);
+  // Update UI based on connection state
+  if (isConnected) {
+    enableInput(true);
+    updateStatus("Connected", "success");
+    // Reload messages if any were missed
+    clearMessages();
+  }
+}
 
-  // Connect to chat WebSocket
-  connectChat();
+/**
+ * Open chat window from bubble
+ */
+function openChat() {
+  isChatOpen = true;
+  renderChatWindow();
+}
+
+/**
+ * Close chat window back to bubble
+ */
+function closeChat() {
+  isChatOpen = false;
+  renderChatBubble();
 }
 
 /**
@@ -271,21 +336,7 @@ function clearMessages() {
   messagesContainer.innerHTML = "";
 }
 
-/**
- * Toggle chat visibility (minimize/maximize)
- */
-function toggleChat() {
-  const messagesEl = document.getElementById("chat-messages");
-  const inputArea = messagesEl?.parentElement?.querySelector(".border-t");
-  const toggleBtn = document.getElementById("chat-toggle");
 
-  if (messagesEl && inputArea && toggleBtn) {
-    const isHidden = messagesEl.style.display === "none";
-    messagesEl.style.display = isHidden ? "block" : "none";
-    (inputArea as HTMLElement).style.display = isHidden ? "block" : "none";
-    toggleBtn.textContent = isHidden ? "_" : "□";
-  }
-}
 
 /**
  * Disconnect from chat

@@ -48,7 +48,7 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
-		"/chat",
+		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
