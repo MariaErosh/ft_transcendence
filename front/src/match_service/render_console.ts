@@ -92,7 +92,7 @@ export async function renderNewConsoleTournament() {
 				}
 				if (msg.type == "end_match"){
 					console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-					renderArena();
+					renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
 				}
 			})
 	const players: string[] = [];

@@ -169,7 +169,7 @@ async function joinRoom(matchName: string) {
 				}
 			}
 			if (msg.type === "start_match" && msg.matchName === matchName) {
-				renderArena();
+				renderArena({ type: "waiting", match: matchName });
 				console.log("Ready to start the match: ", msg);
 			}
 			if (msg.type === "game_ready"){
@@ -183,7 +183,7 @@ async function joinRoom(matchName: string) {
 			}
 			if (msg.type == "end_match"){
 				console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-				renderArena();
+				renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
 			}
 		})
 		function refreshPlayers() {

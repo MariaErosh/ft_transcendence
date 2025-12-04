@@ -1,4 +1,5 @@
 import { refreshAccessToken } from "../api.js";
+import { session } from "../ui.js"
 
 export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
@@ -22,11 +23,11 @@ export async function connectGameWS(): Promise <void> {
   }
 
   return new Promise (async (resolve, reject)=>{
-    let token = localStorage.getItem("accessToken");
+    let token = session.accessToken  // localStorage.getItem("accessToken");
 
     if (!token && !(await refreshAccessToken())) return reject;
   
-    token = localStorage.getItem("accessToken");
+    token = session.accessToken  // localStorage.getItem("accessToken");
     gameSocket = new WebSocket(`ws://localhost:3000/game/ws?token=${token}`);
   
     gameSocket.onopen = () => {

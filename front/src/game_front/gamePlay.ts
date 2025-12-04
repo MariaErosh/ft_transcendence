@@ -82,7 +82,7 @@
 				//drawText(canvas, winner);
 				gameActive = false;
 				//overlay.innerHTML = '';
-				renderArena();
+				renderArena({ type: "winner", name: gameState.winner.alias });
 				}
 		}
 		});

@@ -1,11 +1,13 @@
 import { login, verify2FA, register } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
+import { session } from "./ui.js"
 
 export function renderLogin() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 
+	history.pushState({ view:"login"}, "", "login");
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
 
@@ -39,7 +41,6 @@ export function renderLogin() {
 	signupLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	signupLink.textContent = "Don't have an account yet? Sign up here.";
 	signupLink.addEventListener("click", () => {
-		history.pushState({ view:"signup"}, "", "signup");
 		renderRegister();
 	});
 	form.appendChild(signupLink);
@@ -54,8 +55,10 @@ export function renderLogin() {
 			msg.textContent = "Login successful!";
 			console.log(response);
 			//container.innerHTML = '';
-			localStorage.setItem("username", username.value);
-			localStorage.setItem("refreshToken", response.refreshToken);
+			session.username = username.value;
+			session.refreshToken = response.refreshToken;
+			//localStorage.setItem("username", username.value);
+			//localStorage.setItem("refreshToken", response.refreshToken);
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
@@ -69,6 +72,7 @@ export function renderLogin() {
 export function renderRegister() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
+	history.pushState({ view:"signup"}, "", "signup");
 
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
@@ -103,7 +107,6 @@ export function renderRegister() {
 	loginLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	loginLink.textContent = "Already have an account? Login here.";
 	loginLink.addEventListener("click", () => {
-		history.pushState({ view:"login"}, "", "login");
 		renderLogin();
 	});
 	form.appendChild(loginLink);

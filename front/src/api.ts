@@ -1,5 +1,6 @@
 //todo: rewrite via http://gateway:4000"
 const BASE_URL = "http://localhost:3000";
+import { session } from "./ui.js"
 
 interface ApiRequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -13,16 +14,16 @@ interface RefreshResponse {
 
 
 export async function authorisedRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
-  const accessToken = localStorage.getItem("accessToken");
+  //const accessToken = localStorage.getItem("accessToken");
 
   options.headers = {
     ...(options.headers || {}),
-    "Authorization": `Bearer ${accessToken}`,
+    "Authorization": `Bearer ${session.accessToken}`,
   };
 
   let res = await fetch(`${BASE_URL}${url}`, options);
 
-  if (res.status === 401 && localStorage.getItem("refreshToken")) {
+  if (res.status === 401 && session.refreshToken) { //localStorage.getItem("refreshToken")) {
     const refreshed = await refreshAccessToken();
     if (refreshed) return authorisedRequest(url, options); // retry request
   }
@@ -32,7 +33,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = localStorage.getItem("refreshToken");
+  const refreshToken = session.refreshToken //localStorage.getItem("refreshToken");
   if (!refreshToken) return false;
 
   const res = await fetch(`${BASE_URL}/auth/refresh`, {
@@ -47,8 +48,9 @@ export async function refreshAccessToken(): Promise<boolean> {
 
   if (!data.accessToken) return false;
 
-  localStorage.setItem("accessToken", data.accessToken);
-  if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+  //localStorage.setItem("accessToken", data.accessToken);
+  session.accessToken = data.accessToken;
+  if (data.refreshToken) session.refreshToken = data.refreshToken // localStorage.setItem("refreshToken", data.refreshToken);
 
   return true;
 }
@@ -61,9 +63,12 @@ export async function login(username: string, password: string) {
   });
   const data = await res.json();
   if (data.accessToken) {
-    localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
-    localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
+    session.accessToken = data.accessToken;
+    session.refreshToken = data.refreshToken;
+    session.refreshExpiresAt = data.refreshExpiresAt;
+    //localStorage.setItem("accessToken", data.accessToken);
+    //localStorage.setItem("refreshToken", data.refreshToken);
+    //localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
   }
   return data;
 }
