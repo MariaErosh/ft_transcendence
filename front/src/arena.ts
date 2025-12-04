@@ -60,8 +60,8 @@ export function renderArena(state: ArenaState) {
 			contentDiv.innerHTML = `
 			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
 						animate-fade-in flex flex-col gap-4 pointer-events-auto">
-			<h1 class="text-4xl font-bold">Winner!</h1>
-			<p class="text-2xl">${state.name}</p>
+			<h1 class="text-4xl font-bold">Winner of this game is ${state.name}!</h1>
+			<p class="text-2xl">Please wait for the next game or for the tournament results until the other player have finished</p>
 			</div>
 		`;
 		return;
@@ -71,7 +71,7 @@ export function renderArena(state: ArenaState) {
 			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
 						animate-fade-in flex flex-col gap-4 pointer-events-auto">
 			<h1 class="text-4xl font-bold">The tournament is over!</h1>
-			<p class="text-2xl">Winner of ${state.matchName} is ${state.winner}</p>
+			<p class="text-2xl">Winner of match ${state.matchName} is ${state.winner}</p>
 			</div>
 		`;
 		return;

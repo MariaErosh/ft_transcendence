@@ -160,9 +160,12 @@ export class MatchService {
 		let players: Player[] = await dbAll(this.db, "SELECT * FROM players WHERE match_id = ? AND status = ?", [matchId, "NOT PLAYED"]);
 		if (players === undefined || players.length === 0)
 			throw new Error("No winners in the match");
+
+		const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+		if (!row) throw new Error(`No match found with id ${matchId}`);
 		if (players.length > 1) {
-			const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
-			if (!row) throw new Error(`No match found with id ${matchId}`);
+			//const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+			//if (!row) throw new Error(`No match found with id ${matchId}`);
 			const round = row.round + 1;
 			players = shuffle(players);
 			while (players.length > 1) {
@@ -176,7 +179,12 @@ export class MatchService {
 			console.log("games created: ", games);
 		}
 		if (players.length === 1) {
-			this.sendEndOfMatch(matchId, matchName);
+			const lastGame = await dbGet(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, row.round]);
+			if (lastGame && lastGame.winner) {
+				this.sendEndOfMatch(matchId, matchName);
+			} else {
+				console.log("Not sending end_match: last game not finished yet");
+			}
 		}
 	}
 
