@@ -42,6 +42,7 @@ export function renderUserMenu() {
     logoutBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 w-28 text-center";
       logoutBtn.addEventListener("click", () => {
         localStorage.removeItem("username");
+        localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         renderUserMenu();
         renderCreateTournamentForm();
