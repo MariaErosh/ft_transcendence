@@ -31,28 +31,10 @@ export function renderArena(state: ArenaState) {
 		`;
 	arena.appendChild(board);
 
-	let backBtn = document.getElementById("back-button") as HTMLButtonElement | null;
-	if (!backBtn) {
-		backBtn = document.createElement("button");
-		backBtn.id = "back-button";
-		backBtn.textContent = "BACK TO MAIN MENU";
-		backBtn.className = `
-			bg-white text-black font-sans font-semibold
-			flex items-center justify-center m-4
-			w-1/3 h-12 text-xl
-			hover:bg-gray-200 transition
-		`;
-		board.appendChild(backBtn);
+	const contentDiv = document.createElement("div") as HTMLElement;
+	contentDiv.className = "flex flex-col items-center gap-4 text-white text-center";
+	board.appendChild(contentDiv);
 
-		const contentDiv = document.createElement("div") as HTMLElement;
-		contentDiv.className = "flex flex-col items-center gap-4 text-white text-center";
-		board.appendChild(contentDiv);
-	
-		backBtn.addEventListener("click", () => {
-			arena.innerHTML = "";
-			renderUserMenu();
-			renderCreateTournamentForm();
-		});
 
 	switch (state.type) {
 
@@ -61,10 +43,10 @@ export function renderArena(state: ArenaState) {
 			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
 						animate-fade-in flex flex-col gap-4 pointer-events-auto">
 			<h1 class="text-4xl font-bold">Winner of this game is ${state.name}!</h1>
-			<p class="text-2xl">Please wait for the next game or for the tournament results until the other player have finished</p>
+			<p class="text-2xl">Please wait for the next game or for the tournament results until the other players have finished</p>
 			</div>
 		`;
-		return;
+		break;
 
 		case "end":
 			contentDiv.innerHTML = `
@@ -74,7 +56,22 @@ export function renderArena(state: ArenaState) {
 			<p class="text-2xl">Winner of match ${state.matchName} is ${state.winner}</p>
 			</div>
 		`;
-		return;
+				const backBtn = document.createElement("button");
+				backBtn.id = "back-button";
+				backBtn.textContent = "BACK TO MAIN MENU";
+				backBtn.className = `
+					bg-white text-black font-sans font-semibold
+					flex items-center justify-center m-4
+					w-1/3 h-12 text-xl
+					hover:bg-gray-200 transition
+				`;
+				board.appendChild(backBtn);
+				backBtn.addEventListener("click", () => {
+					arena.innerHTML = "";
+					renderUserMenu();
+					renderCreateTournamentForm();
+				});
+			break;
 
 		case "waiting":
 			contentDiv.innerHTML = `
@@ -84,7 +81,6 @@ export function renderArena(state: ArenaState) {
 			<p class="text-xl">The next game of match ${state.match} will start when your opponent is ready</p>
 			</div>
 		`;
-		return;
+		break;
 		}
 	}
-}

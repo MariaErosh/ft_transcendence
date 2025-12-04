@@ -179,8 +179,10 @@ export class MatchService {
 			console.log("games created: ", games);
 		}
 		if (players.length === 1) {
+			const currentRoundGames = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ? AND status = ?", [matchId, row.round + 1, "OPEN"]);
+			if (!currentRoundGames || currentRoundGames.length === 0) {
 			const lastGame = await dbGet(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, row.round]);
-			if (lastGame && lastGame.winner) {
+			// if (lastGame && lastGame.winner) {
 				this.sendEndOfMatch(matchId, matchName);
 			} else {
 				console.log("Not sending end_match: last game not finished yet");
