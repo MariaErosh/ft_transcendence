@@ -155,10 +155,14 @@ export function render2FA(userId: number) {
 		e.preventDefault();
 		const response = await verify2FA(userId, tokenInput.value);
 		if (response.accessToken) {
-		msg.textContent = "2FA verified! Logged in.";
-		console.log(response);
+			msg.textContent = "2FA verified! Logged in.";
+			console.log(response);
+			history.pushState({ view: "main"}, "", "/"); // TODO To check with Henry
+			reconnectChat();
+			//renderUserMenu(); // TODO To check with Henry
+			//renderCreateTournamentForm(); // TODO To check with Henry
 		} else {
-		msg.textContent = response.error || "Invalid 2FA code";
+			msg.textContent = response.error || "Invalid 2FA code";
 		}
 	});
 

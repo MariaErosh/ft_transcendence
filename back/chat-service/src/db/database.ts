@@ -27,7 +27,8 @@ export function initDB(): Promise<void> {
                     user_id INTEGER NOT NULL,
                     username TEXT NOT NULL,
                     content TEXT NOT NULL,
-                    created_at INTEGER NOT NULL
+                    created_at INTEGER NOT NULL,
+                    recipient_id INTEGER DEFAULT NULL
                 )
             `, (err) => {
                 if (err) {
