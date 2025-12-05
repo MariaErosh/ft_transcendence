@@ -14,11 +14,8 @@ interface Match {
 }
 
 const matches = new Map<string, Match>();
-// const matchPlayers = new Map<string, Set<number>>();
-// const userInfo = new Map<number, string>();
 const userSockets = new Map<number, Set<WebSocket>>();
 
-// export function getOpenMatches() { return Array.from(matchPlayers.keys()) }
 export function getOpenMatches() {
 	const result: string[] = [];
 
@@ -31,12 +28,6 @@ export function getOpenMatches() {
 	return result;
 }
 
-// export function getMatchPlayers(matchName: string) {
-// 	const ids = matchPlayers.get(matchName);
-// 	if (!ids) return [];
-// 	return [...ids].map(id => (userInfo.get(id) ?? `User${id}`));
-// }
-
 export function getMatchPlayers(matchName: string) {
 	const players = matches.get(matchName)?.players;
 	if (!players) return [];
@@ -48,13 +39,6 @@ export function getMatchPlayers(matchName: string) {
 	return names;
 }
 
-// function playerInAnotherMatch(playerId: number, currentMatch: string): boolean {
-// 	for (const [matchName, players] of matchPlayers) {
-// 		if (matchName === currentMatch) continue;
-// 		if (players.has(playerId)) return true;
-// 	}
-// 	return false;
-// }
 function playerInAnotherMatch(playerId: number, currentMatch: string): boolean {
 	for (const [matchName, values] of matches.entries()) {
 		if (matchName === currentMatch) continue;
@@ -93,34 +77,6 @@ export async function notifyAboutNewConsoleGame(game: any, matchName: string) {
 	}
 }
 
-// export async function notifyAboutNewConsoleGame(game: any, matchName: string) {
-// 	console.log("game:", game);
-// 	const players = matchPlayers.get(matchName);
-// 	if (players) {
-// 		players.forEach(id => {
-// 			const sockets = userSockets.get(id);
-// 			if (sockets) {
-// 				sockets.forEach(ws => {
-// 					if (ws.readyState === WebSocket.OPEN) {
-// 						console.log(`Sending game_ready to console lobby socket player (userId: ${id})`);
-// 						ws.send(JSON.stringify({
-// 							type: "game_ready",
-// 							gameId: game.id,
-// 							matchName: matchName,
-// 							side: "both",
-// 							rightp_player: game.right_player_alias,
-// 							left_player: game.left_player_alias
-// 						}));
-// 					}
-// 				});
-// 			} else {
-// 				console.warn(`Player ${id} has no active sockets`);
-// 			}
-
-// 		})
-// 	}
-// }
-
 export async function notifyAboutNewGame(games: any[], matchName: string) {
 	for (const game of games) {
 		console.log("game:", game);
@@ -145,7 +101,6 @@ export async function notifyAboutNewGame(games: any[], matchName: string) {
 			console.warn(`Left player ${leftUserId} has no active sockets`);
 		}
 
-		// Send to right player
 		const rightSockets = userSockets.get(rightUserId);
 		if (rightSockets) {
 			rightSockets.forEach(ws => {
@@ -165,29 +120,6 @@ export async function notifyAboutNewGame(games: any[], matchName: string) {
 		}
 	}
 }
-
-// export async function notifyEndMatch(matchName: string, matchId: number, winnerAlias: string, winnerId: number) {
-// 	const players = matchPlayers.get(matchName);
-// 	if (!players || players.size === 0) return new Error("no sockets for this match");
-// 	for (const player of players) {
-// 		const sockets = userSockets.get(player);
-// 		if (sockets) {
-// 			sockets.forEach(ws => {
-// 				if (ws.readyState === WebSocket.OPEN) {
-// 					console.log(`Sending end of match to player (userId: ${player})`);
-// 					ws.send(JSON.stringify({
-// 						type: "end_match",
-// 						matchName: matchName,
-// 						winner: winnerAlias
-// 					}));
-// 				}
-// 			});
-// 		} else {
-// 			console.warn(`Player ${player} has no active sockets`);
-// 		}
-// 	}
-// 	matchPlayers.delete(matchName);
-// }
 
 export async function notifyEndMatch(matchName: string, matchId: number, winnerAlias: string, winnerId: number){
 	const players = matches.get(matchName)?.players;
@@ -239,7 +171,6 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 		const userId = player!.sub;
 		if (!userSockets.has(userId)) userSockets.set(userId, new Set());
 		userSockets.get(userId)!.add(socket);
-		// userInfo.set(player!.sub, player!.username);
 
 		console.log(`socket User connected: ${userId} (sockets: ${userSockets.get(userId)!.size})`);
 
@@ -254,8 +185,6 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						console.log(`User ${userId} has already joined another match`);
 						return;
 					}
-					// if (!matchPlayers.has(matchName)) matchPlayers.set(matchName, new Set());
-					// matchPlayers.get(matchName)!.add(userId);
 					if (!matches.has(matchName)) matches.set(matchName,{type: data.match_type, players: new Set()} );
 					matches.get(matchName)!.players.add(player);
 
@@ -323,17 +252,14 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 		socket.on("close", () => {
 			const sockets = userSockets.get(userId);
 		
-			// 1. Remove this socket
 			if (sockets) {
 				sockets.delete(socket);
 				if (sockets.size === 0) {
 					userSockets.delete(userId);
 		
-					// 2. Remove player from all matches
 					for (const [matchName, match] of matches) {
 						let changed = false;
 		
-						// Remove the player from the match
 						for (const player of match.players) {
 							if (player.sub === userId) {
 								match.players.delete(player);
@@ -342,7 +268,6 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 							}
 						}
 		
-						// 3. If match is empty AND is CONSOLE type → delete it
 						if (changed && match.players.size === 0 && match.type === "CONSOLE") {
 							matches.delete(matchName);
 							console.log(`Deleted empty CONSOLE match ${matchName}`);

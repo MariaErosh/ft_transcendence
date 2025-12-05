@@ -12,11 +12,11 @@ export async function connectWS(): Promise<void> {
 			resolve(); 
 			return;
 		}
-		let token = localStorage.getItem("accessToken");  // session.accessToken
+		let token = session.accessToken;  // localStorage.getItem("accessToken")
 
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
-		token = localStorage.getItem("accessToken");//session.accessToken  
+		token = session.accessToken ;// localStorage.getItem("accessToken")
 		lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {

@@ -3,6 +3,7 @@ import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
 import { lobbySocket, connectWS } from "./lobbySocket.js";
 import { userLoggedIn } from "../api.js";
+import { session } from "../ui.js";
 
 
 
@@ -74,7 +75,7 @@ export function renderCreateTournamentForm() {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			remoteButton.addEventListener("click", async () => {
-				if(localStorage.getItem("refreshToken")  && await userLoggedIn())
+				if(session.refreshToken && await userLoggedIn())//localStorage.getItem("refreshToken")
 				{
 					try {
 					await connectWS();
