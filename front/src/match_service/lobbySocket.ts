@@ -9,14 +9,14 @@ export async function connectWS(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
 		if (lobbySocket && lobbySocket.readyState === WebSocket.OPEN) {
 			console.log("Socket already connected, skipping new connection");
-			resolve(); // ✅ resolve here so awaiting code continues
+			resolve(); 
 			return;
 		}
-		let token = session.accessToken  // localStorage.getItem("accessToken");
+		let token = localStorage.getItem("accessToken");  // session.accessToken
 
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
-		token = session.accessToken  // localStorage.getItem("accessToken");
+		token = localStorage.getItem("accessToken");//session.accessToken  
 		lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {
@@ -34,7 +34,8 @@ export async function connectWS(): Promise<void> {
 			const msg = JSON.parse(ev.data);
 
 			if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
-				if (await refreshAccessToken()) reconnectWS();
+				if (await refreshAccessToken()) 
+          reconnectWS();
 			}
 		});
 
@@ -50,7 +51,6 @@ export async function connectWS(): Promise<void> {
 				reconnecting = true;
 				setTimeout(connectWS, 1000);
 			}
-			resolve();
 		};
 	})
 

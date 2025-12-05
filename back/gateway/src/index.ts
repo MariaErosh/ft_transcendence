@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
+import { ok } from "assert";
 
 
 
@@ -34,6 +35,7 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
+		"/check"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -95,6 +97,8 @@ async function buildServer() {
 	server.get("/open", async () => {
 		return { matches: getOpenMatches() };
 	})
+
+	server.get("/check", ()=>({ ok: true }));
 
 	server.post("/players", async (req, response) => {
 		let matchName = (req.body as {matchName:string}).matchName;

@@ -14,16 +14,16 @@ interface RefreshResponse {
 
 
 export async function authorisedRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
-  //const accessToken = localStorage.getItem("accessToken");
+  const accessToken = localStorage.getItem("accessToken");
 
   options.headers = {
     ...(options.headers || {}),
-    "Authorization": `Bearer ${session.accessToken}`,
+    "Authorization": `Bearer ${accessToken}`,//session.accessToken
   };
 
   let res = await fetch(`${BASE_URL}${url}`, options);
 
-  if (res.status === 401 && session.refreshToken) { //localStorage.getItem("refreshToken")) {
+  if (res.status === 401 && localStorage.getItem("refreshToken")) { // session.refreshToken){
     const refreshed = await refreshAccessToken();
     if (refreshed) return authorisedRequest(url, options); // retry request
   }
@@ -33,7 +33,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
 }
 
 export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = session.refreshToken //localStorage.getItem("refreshToken");
+  const refreshToken =  localStorage.getItem("refreshToken");//session.refreshToken
   if (!refreshToken) return false;
 
   const res = await fetch(`${BASE_URL}/auth/refresh`, {
@@ -48,9 +48,9 @@ export async function refreshAccessToken(): Promise<boolean> {
 
   if (!data.accessToken) return false;
 
-  //localStorage.setItem("accessToken", data.accessToken);
-  session.accessToken = data.accessToken;
-  if (data.refreshToken) session.refreshToken = data.refreshToken // localStorage.setItem("refreshToken", data.refreshToken);
+  localStorage.setItem("accessToken", data.accessToken);
+  // session.accessToken = data.accessToken;
+  if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);//session.refreshToken = data.refreshToken 
 
   return true;
 }
@@ -63,12 +63,12 @@ export async function login(username: string, password: string) {
   });
   const data = await res.json();
   if (data.accessToken) {
-    session.accessToken = data.accessToken;
-    session.refreshToken = data.refreshToken;
-    session.refreshExpiresAt = data.refreshExpiresAt;
-    //localStorage.setItem("accessToken", data.accessToken);
-    //localStorage.setItem("refreshToken", data.refreshToken);
-    //localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
+    // session.accessToken = data.accessToken;
+    // session.refreshToken = data.refreshToken;
+    // session.refreshExpiresAt = data.refreshExpiresAt;
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
   }
   return data;
 }
@@ -186,3 +186,7 @@ export async function sendGameToGameEngine(game:GameInstance){
 	console.log("Data sent to game engine");
 }
 
+export async function userLoggedIn(){
+  const res = await authorisedRequest("/check", {method: "GET"});
+  return res.ok;
+}

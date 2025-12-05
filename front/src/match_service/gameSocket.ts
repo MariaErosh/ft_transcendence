@@ -23,11 +23,11 @@ export async function connectGameWS(): Promise <void> {
   }
 
   return new Promise (async (resolve, reject)=>{
-    let token = session.accessToken  // localStorage.getItem("accessToken");
+    let token =   localStorage.getItem("accessToken");// session.accessToken
 
     if (!token && !(await refreshAccessToken())) return reject;
   
-    token = session.accessToken  // localStorage.getItem("accessToken");
+    token =   localStorage.getItem("accessToken");// session.accessToken
     gameSocket = new WebSocket(`ws://localhost:3000/game/ws?token=${token}`);
   
     gameSocket.onopen = () => {

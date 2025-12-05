@@ -28,8 +28,8 @@ export function renderUserMenu() {
   const menu = document.createElement("div");
   menu.className = "flex flex-row gap-2 items-center bg-white p-2 rounded shadow-md";
 
-  const username = session.username; // localStorage.getItem("username");
-
+  // const username = session.username; 
+ const username = localStorage.getItem("username");
   if (!username) {
 
     const loginBtn = document.createElement("button");
@@ -49,12 +49,12 @@ export function renderUserMenu() {
     logoutBtn.textContent = "Logout";
     logoutBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 w-28 text-center";
       logoutBtn.addEventListener("click", () => {
-        session.username = null;
-        session.refreshToken = null;
-        session.accessToken = null;
-        // localStorage.removeItem("username");
-        // localStorage.removeItem("accessToken");
-        // localStorage.removeItem("refreshToken");
+        // session.username = null;
+        // session.refreshToken = null;
+        // session.accessToken = null;
+        localStorage.removeItem("username");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         renderUserMenu();
         renderCreateTournamentForm();
       });

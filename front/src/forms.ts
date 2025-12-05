@@ -55,10 +55,10 @@ export function renderLogin() {
 			msg.textContent = "Login successful!";
 			console.log(response);
 			//container.innerHTML = '';
-			session.username = username.value;
-			session.refreshToken = response.refreshToken;
-			//localStorage.setItem("username", username.value);
-			//localStorage.setItem("refreshToken", response.refreshToken);
+			// session.username = username.value;
+			// session.refreshToken = response.refreshToken;
+			localStorage.setItem("username", username.value);
+			localStorage.setItem("refreshToken", response.refreshToken);
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();

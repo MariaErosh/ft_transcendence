@@ -2,6 +2,7 @@
 import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
 import { lobbySocket, connectWS } from "./lobbySocket.js";
+import { userLoggedIn } from "../api.js";
 
 
 
@@ -73,13 +74,19 @@ export function renderCreateTournamentForm() {
 			text-4xl
 			hover:bg-gray-200 transition`;
 			remoteButton.addEventListener("click", async () => {
-				try {
+				if(localStorage.getItem("refreshToken")  && await userLoggedIn())
+				{
+					try {
 					await connectWS();
 					renderNewRemoteTournament();
 					history.pushState({ view:"remote"}, "", "remote");
 				} catch (err) {
 					msg.textContent = "You need to be logged in to play remote";
 				}
+			}
+			else {
+				msg.textContent = "You need to be logged in to play remote";
+			}
 			});
 			blackBox!.appendChild(remoteButton);
 
