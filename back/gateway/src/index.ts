@@ -7,7 +7,6 @@ import dotenv from "dotenv";
 dotenv.config();
 import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
-import { ok } from "assert";
 
 
 

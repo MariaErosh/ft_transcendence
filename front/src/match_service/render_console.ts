@@ -100,6 +100,7 @@ export async function renderNewConsoleTournament() {
 		try {
 			lobbySocket?.send(JSON.stringify({
 				type: "join_match",
+				match_type:"CONSOLE",
 				name: matchName
 			}))
 			await createConsoleMatch(players, matchName, username);

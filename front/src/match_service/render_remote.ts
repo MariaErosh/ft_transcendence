@@ -105,6 +105,7 @@ export async function renderNewRemoteTournament() {
 				}
 				lobbySocket?.send(JSON.stringify({
 					type: "new_match",
+					match_type:"REMOTE",
 					name: name,
 				}))
 				console.log("Received a new remote match: ", name);
@@ -149,6 +150,7 @@ async function joinRoom(matchName: string) {
 			console.log("SENDING start_match");
 			lobbySocket?.send(JSON.stringify({
 				type: "start_match",
+				match_type: "REMOTE",
 				name: matchName
 			}))
 		});
@@ -208,6 +210,7 @@ async function joinRoom(matchName: string) {
 
 		lobbySocket?.send(JSON.stringify({
 			type: "join_match",
+			match_type: "REMOTE",
 			name: matchName,
 		}))
 	}
