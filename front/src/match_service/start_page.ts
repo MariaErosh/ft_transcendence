@@ -11,7 +11,7 @@ export function renderCreateTournamentForm() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 	console.log("Rendering match making menu");
-	history.pushState({ view:"main"}, "", "");
+	history.pushState({ view:"main"}, "", "/");
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null;
 	// if (wrapper) {
