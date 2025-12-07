@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const GATEWAY_URL = process.env.GATEWAY_URL;
+const USER_URL = process.env.USER_URL;
 
 export async function authRoutes(fastify: FastifyInstance) {
   const auth = new AuthService();
@@ -44,12 +45,16 @@ export async function authRoutes(fastify: FastifyInstance) {
 			//console.log("sending to UserService:", { auth_user_id: user.id, username, email, token: systemToken });
 			let response : Response;
 			try {
-				response = await fetch(`${GATEWAY_URL}/users`, {
+				//response = await fetch(`${GATEWAY_URL}/users`, {
+				response = await fetch(`${USER_URL}/users`, {
 								method: "POST",
 								headers: {
 									"Content-Type": "application/json",
-									"Authorization": `Bearer ${systemToken}`
-										},
+									//"Authorization": `Bearer ${systemToken}`
+									"x-gateway-secret": process.env.GATEWAY_SECRET!, // чтобы user-service пропустил
+									"x-user-service": "auth",
+									"x-user-id": user.id.toString()
+									},
 								body: JSON.stringify({
 										auth_user_id: user.id,
 										username: username,
