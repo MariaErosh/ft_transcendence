@@ -1,15 +1,6 @@
 import { renderLogin, renderRegister } from "./forms.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
-export const session: {
-    username?: string | null;
-    accessToken?: string | null;
-    refreshToken?: string | null;
-    refreshExpiresAt?: string;
-    gameSocket?: WebSocket;
-    playerAlias?: string;
-} = {};
-
 export function renderUserMenu() {
   console.log("Rendering user menu");
   const container = document.getElementById("menu")!;
@@ -28,7 +19,7 @@ export function renderUserMenu() {
   const menu = document.createElement("div");
   menu.className = "flex flex-row gap-2 items-center bg-white p-2 rounded shadow-md";
 
-  const username = session.username; // localStorage.getItem("username");
+  const username = localStorage.getItem("username");
 
   if (!username) {
 
@@ -49,12 +40,9 @@ export function renderUserMenu() {
     logoutBtn.textContent = "Logout";
     logoutBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 w-28 text-center";
       logoutBtn.addEventListener("click", () => {
-        session.username = null;
-        session.refreshToken = null;
-        session.accessToken = null;
-        // localStorage.removeItem("username");
-        // localStorage.removeItem("accessToken");
-        // localStorage.removeItem("refreshToken");
+        localStorage.removeItem("username");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
         renderUserMenu();
         renderCreateTournamentForm();
       });

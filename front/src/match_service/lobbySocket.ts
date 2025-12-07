@@ -1,5 +1,4 @@
 import { refreshAccessToken } from "../api.js";
-import { session } from "../ui.js"
 
 export let lobbySocket: WebSocket | null = null;
 let reconnecting = false;
@@ -12,11 +11,11 @@ export async function connectWS(): Promise<void> {
 			resolve(); // ✅ resolve here so awaiting code continues
 			return;
 		}
-		let token = session.accessToken  // localStorage.getItem("accessToken");
+		let token = localStorage.getItem("accessToken");
 
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
-		token = session.accessToken  // localStorage.getItem("accessToken");
+		token = localStorage.getItem("accessToken");
 		lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {
