@@ -219,27 +219,6 @@ export class MatchService {
 
 	async sendGames(matchName: string, games: any[]) {
 		console.log("Games of the round: ", games);
-		// for (const game of games) {
-		// 	let payload: GamePayload = {
-		// 		type: game.type,
-		// 		gameId: game.id,
-		// 		leftPlayer: { id: game.left_player_id, alias: game.left_player_alias },
-		// 		rightPlayer: { id: game.right_player_id, alias: game.right_player_alias },
-		// 		owner: game.owner
-		// 	}
-		// 	try {
-		// 		await fetch(`${GATEWAY}/game/start`, {
-		// 			method: "POST",
-		// 			headers: { "Content-Type": "application/json" },
-		// 			body: JSON.stringify(payload)
-		// 		});
-		// 		console.log("REMOTE game sent to game engine");
-		// 	}
-		// 	catch (error) {
-		// 		console.log("Failed to send games to game engine: ", error);
-		// 		throw error;
-		// 	}
-		// }
 		await fetch(`${GATEWAY}/newround`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
