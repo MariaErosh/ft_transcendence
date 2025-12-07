@@ -6,17 +6,10 @@ export interface Match {
 
 export interface Player{
 	id: number,
-	auth_user_id: number | null,
+	user_id: number | null,
 	alias: string,
 	match_id: number,
 	status: string,
-}
-
-export interface Game {
-	id: number,
-	left_player_id: number,
-	right_player_id: number,
-	match_id: number
 }
 
 export interface PlayerPayload {
@@ -25,19 +18,23 @@ export interface PlayerPayload {
 }
 
 export interface CreateMatchPayload{
-	type: string;
-	players: PlayerPayload[];
+	type: string,
+	name: string | null,
+	players: PlayerPayload[],
+	owner: string | null
 }
 
 export interface GamePayload{
-	type: string;
-	matchId: number;
-	leftPlayer: PlayerPayload;
-	rightPlayer: PlayerPayload;
+	type: string,
+	gameId: number,
+	leftPlayer: PlayerPayload,
+	rightPlayer: PlayerPayload,
+	owner: string | null
 }
 
 export interface resultPayload{
-	matchId: number;
-	winner: PlayerPayload;
+	gameId: number,
+	winner: PlayerPayload,
 	loser: PlayerPayload
 }
+

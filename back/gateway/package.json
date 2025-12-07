@@ -15,11 +15,15 @@
     "@fastify/cors": "^11.1.0",
     "@fastify/http-proxy": "^11.3.0",
     "@fastify/jwt": "^10.0.0",
+    "@fastify/websocket": "^11.2.0",
     "dotenv": "^17.2.2",
-    "fastify": "^5.6.0"
+    "fastify": "^5.6.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.2",
+    "@types/ws": "^8.18.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   }

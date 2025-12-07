@@ -73,15 +73,15 @@ export async function authRoutes(fastify: FastifyInstance) {
 				await rollbackAuthUser();
 				return reply.status(500).send({ error: `UserService error: ${text}` });
 			}
-				
+
 			const prof = await response.json();
 			reply.code(201).send({
 				auth_user: user,
 				profile: prof
 			});
 
-					
-		} catch (err: any) {			
+
+		} catch (err: any) {
 			await rollbackAuthUser();
 			reply.status(400).send({ error: err.message });
 		}
@@ -116,7 +116,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			return reply.status(500).send({ error: "Internal server error"})
 		}
 	});
-		
+
 
 	// Token refresh
 	fastify.post("/auth/refresh", async (req, reply) => {
@@ -143,7 +143,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		}
 	}
 	);
-		
+
 	// Logout (revoke all refresh tokens for user)
 	fastify.post("/auth/logout", async (req, reply) => {
 		// expects Authorization: Bearer <accessToken>

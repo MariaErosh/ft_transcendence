@@ -36,7 +36,7 @@ services:
       - internal
 
 
-  game-engine:
+  game:
     build:
       context: ../back/game-engine
       dockerfile: Dockerfile

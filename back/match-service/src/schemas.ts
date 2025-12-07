@@ -6,6 +6,10 @@ export const createMatchSchema = {
 			type: {
 				type: 'string'
 			},
+			name: {
+				type: 'string',
+				nullable: true
+			},
 			players: {
 				type: 'array',
 				minItems: 2,
@@ -17,6 +21,10 @@ export const createMatchSchema = {
 						alias: { type: 'string' },
 					}
 				}
+			},
+			owner: {
+				type: 'string',
+				nullable: true
 			}
 		}
 	}
@@ -26,9 +34,9 @@ export const createMatchSchema = {
 export const resultSchema = {
 	body: {
 		type: 'object',
-		required: ['matchId', 'winner', 'loser'],
+		required: ['gameId', 'winner', 'loser'],
 		properties: {
-			matchId:{
+			gameId:{
 				type: 'number'
 			},
 			winner: {
@@ -36,7 +44,7 @@ export const resultSchema = {
 				required: ['alias', 'id'],
 				properties: {
 					alias: {type: 'string'},
-					id: {type: ['number', 'null']},
+					id: {type: 'number', nullable: true},
 				}
 			},
 			loser: {

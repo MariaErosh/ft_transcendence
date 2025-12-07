@@ -5,19 +5,19 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# prod stage 
+# prod stage
 FROM base AS prod
+
 WORKDIR /app
 
-COPY package.json ./
+COPY package*.json ./
 
-RUN npm install || echo "No dependencies yet"
+RUN npm install
 
 COPY . .
 
 RUN npm run build
 
 EXPOSE 3000
-
 
 CMD ["npm", "run", "start"]

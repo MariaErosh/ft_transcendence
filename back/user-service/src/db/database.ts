@@ -9,7 +9,7 @@ const DBSOURCE = "./data/database.sqlite";
 // Create connection
 export const db = new sqlite3.Database(DBSOURCE, (err) => {
 	  if (err) {
-		console.error("Failed to open database:", err.message);	
+		console.error("Failed to open database:", err.message);
 	} else {
 		console.log("Connected to SQLite database at", DBSOURCE);
 	}
@@ -29,7 +29,7 @@ export function initDB() {
 		)
     `, (err) => {
 	  if (err) {
-		console.error('Failed to create "users" table:', err.message);	
+		console.error('Failed to create "users" table:', err.message);
 		} else {
 			console.log('"users" table created or already exists');
 		}
