@@ -1,6 +1,7 @@
-import { createConsoleMatch, login, register, sendGameToGameEngine } from "../api.js";
+import { createConsoleMatch, login, register, sendGameToGameEngine, userLoggedIn } from "../api.js";
 import { renderArena } from "../arena.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
+import { logout } from "../ui.js";
 import { connectGameWS, gameSocket } from "./gameSocket.js";
 import { connectWS, lobbySocket } from "./lobbySocket.js";
 
@@ -14,6 +15,8 @@ function generateRandomCredentials() {
 }
 
 async function createTempUser(){
+	if (await userLoggedIn())
+		logout();
 	const {username, password, matchName} = generateRandomCredentials();
 	try {
 		await register(username, password);
@@ -22,6 +25,7 @@ async function createTempUser(){
 		console.log("Didn't register temp user: ", err);
 	}
 	await login(username, password);
+	localStorage.setItem("temp", "temp");
 	return {username, password, matchName}
 }
 

@@ -1,6 +1,6 @@
-import { lobbySocket, connectWS } from "./lobbySocket.js";
+import { lobbySocket, connectWS, disconnectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
-import { connectGameWS, gameSocket } from "./gameSocket.js";
+import { connectGameWS, disconnectGameWS, gameSocket } from "./gameSocket.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { renderArena } from "../arena.js";
 
@@ -16,9 +16,7 @@ interface PlayerPayload {
 export async function renderNewRemoteTournament() {
 		const blackBox = document.getElementById("black-box")!;
 		blackBox.innerHTML = "";
-
 	await connectWS();
-	let gameOwner = false;
 
 	const title = document.createElement("div");
 	title.textContent = "Open Tournaments";
@@ -109,7 +107,6 @@ export async function renderNewRemoteTournament() {
 					name: name,
 				}))
 				console.log("Received a new remote match: ", name);
-				gameOwner = true;
 				await joinRoom(name);
 			} catch (err) {
 				console.error(err);

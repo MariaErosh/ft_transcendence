@@ -56,6 +56,7 @@ export function renderLogin() {
 			//container.innerHTML = '';
 			localStorage.setItem("username", username.value);
 			localStorage.setItem("refreshToken", response.refreshToken);
+			localStorage.removeItem("temp");
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
@@ -154,6 +155,7 @@ export function render2FA(userId: number) {
 		const response = await verify2FA(userId, tokenInput.value);
 		if (response.accessToken) {
 		msg.textContent = "2FA verified! Logged in.";
+		localStorage.removeItem("temp");
 		console.log(response);
 		} else {
 		msg.textContent = response.error || "Invalid 2FA code";

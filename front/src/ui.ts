@@ -1,4 +1,6 @@
 import { renderLogin, renderRegister } from "./forms.js";
+import { disconnectGameWS } from "./match_service/gameSocket.js";
+import { disconnectWS } from "./match_service/lobbySocket.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
 export function renderUserMenu() {
@@ -40,11 +42,7 @@ export function renderUserMenu() {
     logoutBtn.textContent = "Logout";
     logoutBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 w-28 text-center";
       logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("username");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        renderUserMenu();
-        renderCreateTournamentForm();
+        logout();
       });
       menu.appendChild(logoutBtn);
   }
@@ -60,4 +58,15 @@ export function renderUserMenu() {
   container.appendChild(menu);
   //menuWrapper.appendChild(menu);
 
+}
+
+export function logout(){
+  localStorage.removeItem("username");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("temp");
+  disconnectGameWS();
+  disconnectWS();
+  renderUserMenu();
+  renderCreateTournamentForm();
 }
