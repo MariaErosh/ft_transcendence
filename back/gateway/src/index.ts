@@ -117,8 +117,8 @@ async function buildServer() {
 
 
 	server.post("/end_match", async (req, response) => {
-		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
-		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winerId);
+		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winnerId: number});
+		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winnerId);
 	})
 	return server;
 }

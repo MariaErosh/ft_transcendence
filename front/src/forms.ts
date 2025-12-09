@@ -1,7 +1,6 @@
 import { login, verify2FA, register } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
-import { session } from "./ui.js"
 
 export function renderLogin() {
 	const main = document.getElementById("main")!;
@@ -55,10 +54,8 @@ export function renderLogin() {
 			msg.textContent = "Login successful!";
 			console.log(response);
 			//container.innerHTML = '';
-			session.username = username.value;
-			session.refreshToken = response.refreshToken;
-			// localStorage.setItem("username", username.value);
-			// localStorage.setItem("refreshToken", response.refreshToken);
+			localStorage.setItem("username", username.value);
+			localStorage.setItem("refreshToken", response.refreshToken);
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();

@@ -65,7 +65,7 @@ export async function notifyAboutNewConsoleGame(game: any, matchName: string) {
 							gameId: game.id,
 							matchName: matchName,
 							side: "both",
-							rightp_player: game.right_player_alias,
+							right_player: game.right_player_alias,
 							left_player: game.left_player_alias
 						}));
 					}
