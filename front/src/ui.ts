@@ -61,6 +61,7 @@ export function renderUserMenu() {
 }
 
 export function logout(){
+  //TODO: remove temp user
   localStorage.removeItem("username");
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");

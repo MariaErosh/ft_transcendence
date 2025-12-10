@@ -2,22 +2,24 @@ import { createConsoleMatch, login, register, sendGameToGameEngine, userLoggedIn
 import { renderArena } from "../arena.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { logout } from "../ui.js";
-import { connectGameWS, gameSocket } from "./gameSocket.js";
-import { connectWS, lobbySocket } from "./lobbySocket.js";
+import { connectGameWS, disconnectGameWS, gameSocket } from "./gameSocket.js";
+import { connectWS, disconnectWS, lobbySocket } from "./lobbySocket.js";
 
+function generateMatchName(){
+	const random = Math.random().toString(36).slice(2, 10); // 8 chars
+	const matchName = "match_" + random;
+	return matchName ;
+}
 
 function generateRandomCredentials() {
 	const random = Math.random().toString(36).slice(2, 10); // 8 chars
 	const username = "temp_" + random;
 	const password = "pw_" + random + Math.random().toString(36).slice(2, 6);
-	const matchName = "match_" + random;
-	return { username, password, matchName };
+	return { username, password };
 }
 
 async function createTempUser(){
-	if (await userLoggedIn())
-		logout();
-	const {username, password, matchName} = generateRandomCredentials();
+	const {username, password} = generateRandomCredentials();
 	try {
 		await register(username, password);
 	}
@@ -26,13 +28,15 @@ async function createTempUser(){
 	}
 	await login(username, password);
 	localStorage.setItem("temp", "temp");
-	return {username, password, matchName}
 }
 
 export async function renderNewConsoleTournament() {
-
-	const {username, password, matchName} = await createTempUser();
+	disconnectWS();
+	disconnectGameWS();
+	if (!await userLoggedIn())
+		await createTempUser();
 	await connectWS();
+	const matchName = generateMatchName();
 	const blackBox = document.getElementById("black-box")!;
 	blackBox.innerHTML = "";
 
@@ -107,7 +111,8 @@ export async function renderNewConsoleTournament() {
 				match_type:"CONSOLE",
 				name: matchName
 			}))
-			await createConsoleMatch(players, matchName, username);
+			if (!localStorage.getItem("username")) throw new Error ("No username stored");
+			await createConsoleMatch(players, matchName, localStorage.getItem("username")!);
 			blackBox.innerHTML = "";
 		} catch (error) {
 			console.error("Failed to create match:", error);
