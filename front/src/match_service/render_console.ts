@@ -21,7 +21,9 @@ function generateRandomCredentials() {
 async function createTempUser(){
 	const {username, password} = generateRandomCredentials();
 	try {
-		await register(username, password);
+		const data = await register(username, password);
+		localStorage.setItem("userid", data.id);
+		localStorage.setItem("username", username);
 	}
 	catch (err){
 		console.log("Didn't register temp user: ", err);

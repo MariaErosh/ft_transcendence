@@ -10,6 +10,7 @@ import { logout } from "../ui.js";
 // setupSocket().catch(err => console.error("Failed to setup socket:", err));
 
 export function renderCreateTournamentForm() {
+	if (localStorage.getItem("temp") === "temp") logout();
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 	console.log("Rendering match making menu");

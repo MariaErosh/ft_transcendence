@@ -1,3 +1,4 @@
+import { authorisedRequest } from "./api.js";
 import { renderLogin, renderRegister } from "./forms.js";
 import { disconnectGameWS } from "./match_service/gameSocket.js";
 import { disconnectWS } from "./match_service/lobbySocket.js";
@@ -60,12 +61,22 @@ export function renderUserMenu() {
 
 }
 
-export function logout(){
+export async function logout(){
   //TODO: remove temp user
+  // if (localStorage.getItem("temp") === "temp"){
+  //   try {
+  //     await authorisedRequest(`/users/${localStorage.getItem("userid")}`, {method: "DELETE"});
+  //     console.log("Temp user deleted");
+  //   }
+  //   catch (err){
+  //     console.log("Failed to delete user: ", err);
+  //   }
+  // }
   localStorage.removeItem("username");
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("temp");
+  localStorage.removeItem("userid");
   disconnectGameWS();
   disconnectWS();
   renderUserMenu();
