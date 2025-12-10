@@ -1,5 +1,5 @@
 import { gameSocket } from "./match_service/gameSocket.js";
-import { draw, drawText } from "./game_front/draw.js";
+// import { draw, drawText } from "./game_front/draw.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
@@ -7,8 +7,9 @@ export 	type ArenaState =
 		| { type: "winner"; name: string }
 		| { type: "waiting"; match: string }
 		| { type: "end"; matchName: string, winner: string }
+		| { type: "start"; matchName: string }
 
-export function renderArena(state: ArenaState) {
+export async function renderArena(state: ArenaState) {
 	const main = document.getElementById("main") as HTMLElement;
 	main.innerHTML = "";
 	history.pushState({ view:"arena", arenaState: state}, "", "arena");
@@ -38,6 +39,19 @@ export function renderArena(state: ArenaState) {
 
 	switch (state.type) {
 
+		case "start":
+			contentDiv.innerHTML = `
+			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
+						animate-fade-in flex flex-col gap-4 pointer-events-auto">
+			<h1 class="text-4xl font-bold">Match ${state.matchName}!</h1>
+			<p class="text-2xl">Are you ready to play?</p>
+
+			<button id="ready-btn"
+				class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-xl transition">
+				Yes!</button>
+			</div>
+			`;
+			break;
 		case "winner":
 			contentDiv.innerHTML = `
 			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
@@ -82,5 +96,18 @@ export function renderArena(state: ArenaState) {
 			</div>
 		`;
 		break;
+		}
+
+		if (state.type === "start") {
+			const btn = document.getElementById("ready-btn") as HTMLButtonElement;
+			if (btn) {
+				btn.addEventListener("click", () => {
+					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
+
+					btn.disabled = true;
+					btn.innerText = "waiting for opponent to be ready";
+					btn.classList.add("bg-gray-600");
+				});
+			}
 		}
 	}

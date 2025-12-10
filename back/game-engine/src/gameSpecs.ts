@@ -27,6 +27,7 @@ export interface PlayerSocket {
 	ws: WS;
 	alias: string;
 	gameId?: number;
+	ready: boolean;
 }
 
 export interface GameObject {

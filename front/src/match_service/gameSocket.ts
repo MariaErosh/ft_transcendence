@@ -1,4 +1,6 @@
 import { refreshAccessToken } from "../api.js";
+import { renderGameBoard } from "../game_front/gameMenu.js";
+import { board, gameState } from "../game_front/gameSpecs.js"
 
 export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
@@ -40,6 +42,16 @@ export async function connectGameWS(): Promise <void> {
     
       if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
         if (await refreshAccessToken()) reconnectGameWs();
+      }
+      if (msg.type === "new_game") {
+        console.log("new game info received in game frontend:", msg);
+        Object.assign(board, msg.data.board);
+        Object.assign(gameState, msg.data.gameState);
+      }
+      if (msg.type === "start") {
+        console.log("start message received in game frontend");
+        renderGameBoard();
+        return;
       }
     });
   

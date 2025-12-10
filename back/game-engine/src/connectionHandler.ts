@@ -49,7 +49,7 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 		ws.close();
 		return;
 	}
-	const playerSocket: PlayerSocket = { ws, alias: player};
+	const playerSocket: PlayerSocket = { ws, alias: player, ready: false};
 	if (!playerSockets.has(player))
 		playerSockets.set(player, new Set());
 	playerSockets.get(player)!.add(playerSocket);
@@ -94,6 +94,9 @@ async function handleMessage(player: PlayerSocket, message: any) {
 
 	if (message.type === "consts")
 		player.ws.send(JSON.stringify({ type: "consts", data: board }));
+
+	if (message.type === "PLAYER_READY")
+		player.ready = true;
 	
 	if (message.type === "new_game") {
 		const newGameId = Number(message.gameId);

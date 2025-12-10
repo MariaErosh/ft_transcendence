@@ -2,10 +2,6 @@ import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants, gameState, GameState } from "./gameSpecs.js";
 import { disconnectGameWS, gameSocket } from "../match_service/gameSocket.js";
 
-// // export let engineSocket: WebSocket;
-export let defGameId: number = 111;
-export let defToken: string = 'token';
-
 export function readyToRender(gameId: any) {
 	const matchMenu = document.getElementById("match-menu");
 	if (matchMenu) matchMenu.innerHTML = '';
@@ -13,7 +9,6 @@ export function readyToRender(gameId: any) {
 	if (gameBoard) {
 		gameBoard.remove();
 	}
-	const container = document.getElementById('app') as HTMLElement;
 	renderGameBoard();
 }
 
