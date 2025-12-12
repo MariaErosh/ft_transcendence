@@ -123,7 +123,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 		const { refreshToken } = req.body as any;
 		try {
 			const userId = await auth.consumeRefreshToken(refreshToken);
-			const accessToken = fastify.jwt.sign({ sub: userId }, { expiresIn: "15m" });
+			const user = await auth.findUserById(userId);
+            if (!user) {
+                return reply.status(401).send({ error: "User not found" });
+            }
+			const accessToken = fastify.jwt.sign(
+                { sub: user.id, username: user.username },
+                { expiresIn: "15m" }
+            );
 			const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
 			reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
 		} catch (err: any) {

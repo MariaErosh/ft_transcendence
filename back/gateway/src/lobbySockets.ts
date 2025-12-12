@@ -161,6 +161,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 		try {
 			player = server.jwt.verify<PlayerPayload>(token);
+			console.log(`Result of parsing token on opening lobby socket: `, player)
 		} catch (err) {
 			socket.send(JSON.stringify({ error: "Unauthorized" }));
 			console.log("COULDN'T PARSE TOKEN");
@@ -186,18 +187,19 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						return;
 					}
 					if (!matches.has(matchName)) matches.set(matchName,{type: data.match_type, players: new Set()} );
-					matches.get(matchName)!.players.add(player);
+					matches.get(matchName)!.players.add(player!);
 
 					console.log(`User ${userId} joined match ${matchName}`);
+					console.log(`Players of the match ${matchName}:`, matches.get(matchName)!.players);
 
 					const players = matches.get(matchName)!.players;
-					for (const player of players) {
-						userSockets.get(player.sub)?.forEach((s) => {
+					for (const playerPayload of players) {
+						userSockets.get(playerPayload.sub)?.forEach((s) => {
 							if (s.readyState === WebSocket.OPEN) {
 								s.send(JSON.stringify({
 									type: "player_joined",
 									name: matchName,
-									alias: player!.username,
+									alias: playerPayload!.username,
 									match_type: matches.get(matchName)!.type
 								}));
 							}
@@ -251,15 +253,15 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 		socket.on("close", () => {
 			const sockets = userSockets.get(userId);
-		
+
 			if (sockets) {
 				sockets.delete(socket);
 				if (sockets.size === 0) {
 					userSockets.delete(userId);
-		
+
 					for (const [matchName, match] of matches) {
 						let changed = false;
-		
+
 						for (const player of match.players) {
 							if (player.sub === userId) {
 								match.players.delete(player);
@@ -267,7 +269,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 								break;
 							}
 						}
-		
+
 						if (changed && match.players.size === 0 && match.type === "CONSOLE") {
 							matches.delete(matchName);
 							console.log(`Deleted empty CONSOLE match ${matchName}`);
@@ -275,10 +277,10 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 					}
 				}
 			}
-		
+
 			console.log(`User ${userId} disconnected`);
 		});
-		
+
 	});
 
 	console.log("WebSocket Gateway registered.");

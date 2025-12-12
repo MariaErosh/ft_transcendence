@@ -103,6 +103,7 @@ async function buildServer() {
 
 	server.post("/players", async (req, response) => {
 		let matchName = (req.body as {matchName:string}).matchName;
+		console.log(`Players in the gateway for match ${matchName}:`, getMatchPlayers(matchName))
 		return { players: getMatchPlayers(matchName) };
 	})
 
