@@ -128,7 +128,8 @@ services:
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     ports:
@@ -141,6 +142,9 @@ services:
     container_name: logstash
     volumes:
       - ../observability/logging/logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     ports:
       - "5000:5000"
       - "9600:9600"
@@ -154,6 +158,9 @@ services:
     container_name: kibana
     ports:
       - "5601:5601"
+    environment:
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       - elasticsearch
     networks:
