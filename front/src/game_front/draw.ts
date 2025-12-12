@@ -3,11 +3,11 @@ import { gameState, board} from "./gameSpecs.js";
 
 
 const COLORS = {
-	BACKGROUND: '#000000', // Back to Black for maximum focus
-    BALL: '#FFFFFF',       // White Ball for contrast
-    PADDLE: '#FFFFFF',     // White Paddles
-    TEXT: '#FFFFFF',       // White Text
-    ACCENT: '#DB2777'      // Keeping Pink as the highlight color
+	BACKGROUND: '#000000',
+    BALL: '#FFFFFF',
+    PADDLE: '#FFFFFF',
+    TEXT: '#FFFFFF',
+    ACCENT: '#DB2777'
 };
 
 
@@ -49,7 +49,7 @@ function drawPaddelsAndBall(ctx: CanvasRenderingContext2D) {
 }
 
 function drawCenterLine(ctx: CanvasRenderingContext2D) {
-	ctx.strokeStyle = '#333333'; // Dark Gray so it doesn't distract from the white ball
+	ctx.strokeStyle = '#333333';
     ctx.lineWidth = 2;
     ctx.setLineDash([15, 15]);
 
@@ -84,7 +84,6 @@ export function drawText(canvas: HTMLCanvasElement, lines: string[]) {
 
     lines.forEach((line, i) => {
         const textWidth = ctx.measureText(line.toUpperCase()).width;
-        // High contrast block
         ctx.fillStyle = COLORS.ACCENT;
         ctx.fillRect(board.CANVAS_WIDTH / 2 - (textWidth/2) - 15, board.CANVAS_HEIGHT / 2 - 50 + (i * 50), textWidth + 30, 45);
 
