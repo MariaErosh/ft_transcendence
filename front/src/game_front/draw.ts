@@ -24,19 +24,14 @@ export function draw(canvas: HTMLCanvasElement) {
 }
 
 export function drawNumber(ctx: CanvasRenderingContext2D, n: number) {
-	const x = board.CANVAS_WIDTH / 2;
+   const x = board.CANVAS_WIDTH / 2;
     const y = board.CANVAS_HEIGHT / 2;
 
-    // Use a Bright Accent Box so the countdown is impossible to miss
-    ctx.fillStyle = COLORS.ACCENT;
-    ctx.fillRect(x - 60, y - 60, 120, 120);
-
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(x - 60, y - 60, 120, 120);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x - 70, y - 70, 140, 140);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '900 80px monospace';
+    ctx.font = '900 120px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(n.toString(), x, y);
@@ -66,24 +61,18 @@ function drawCenterLine(ctx: CanvasRenderingContext2D) {
 }
 
 function drawScore(ctx: CanvasRenderingContext2D) {
-	ctx.fillStyle = COLORS.TEXT;
-    ctx.font = '900 48px monospace';
-    ctx.textBaseline = 'top';
+	ctx.fillStyle = 'white';
+	ctx.font = '900 48px monospace';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'top';
 
-    // Simplified for quick reading during gameplay
-    const leftScore = gameState.score.left.toString();
-    const rightScore = gameState.score.right.toString();
+	const leftStat = gameState.current.leftPlayer.alias.concat(" ", gameState.score.left.toString());
+	const rightStat = gameState.current.rightPlayer.alias.concat(" ", gameState.score.right.toString());
 
-    ctx.textAlign = 'right';
-    ctx.fillText(leftScore, board.CANVAS_WIDTH / 2 - 60, 30);
-    ctx.textAlign = 'left';
-    ctx.fillText(rightScore, board.CANVAS_WIDTH / 2 + 60, 30);
-
-    // Player Names (Smaller, less distracting)
-    ctx.font = '900 28px monospace';
-    ctx.fillText(gameState.current.leftPlayer.alias.toUpperCase(), 20, 20);
-    ctx.textAlign = 'right';
-    ctx.fillText(gameState.current.rightPlayer.alias.toUpperCase(), board.CANVAS_WIDTH - 20, 20);
+	ctx.textAlign = 'right'
+	ctx.fillText(leftStat, board.CANVAS_WIDTH / 2 - 50, 20);
+	ctx.textAlign = 'left'
+	ctx.fillText(rightStat, board.CANVAS_WIDTH / 2 + 50, 20);
 }
 
 export function drawText(canvas: HTMLCanvasElement, lines: string[]) {

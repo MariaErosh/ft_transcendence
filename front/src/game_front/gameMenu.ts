@@ -63,7 +63,7 @@ export async function renderGameBoard() {
 			canvas.id = 'game-board';
 			canvas.width = board.CANVAS_WIDTH;
 			canvas.height =  board.CANVAS_HEIGHT;
-			canvas.className = 'border-4 border-black bg-gray-200';
+			canvas.className = 'border-4 border-black bg-black';
 			wrapper.appendChild(canvas);
 
 			const overlay = document.createElement('div');
