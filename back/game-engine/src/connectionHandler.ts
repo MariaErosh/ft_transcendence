@@ -6,10 +6,11 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import dotenv from "dotenv";
 import cors from "@fastify/cors";
 import websocketPlugin from "@fastify/websocket";
+import metricsPlugin from "fastify-metrics";
 
 export const playerKeys = new Map<number, {
 	left: { up: boolean, down: boolean },
-	right: { up: boolean, down: boolean } 
+	right: { up: boolean, down: boolean }
 }>();
 
 dotenv.config(); //loads the credentials from the .env file insto process.env
@@ -18,6 +19,7 @@ const GATEWAY = process.env.GATEWAY_URL;
 //const GENGINE_URL = process.env.GENGINE_URL;
 
 export const server = Fastify({ logger: true });
+await server.register(metricsPlugin, { endpoint: '/metrics' });
 await server.register(cors, { origin: true });
 await server.register(websocketPlugin);
 
@@ -94,7 +96,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 
 	if (message.type === "consts")
 		player.ws.send(JSON.stringify({ type: "consts", data: board }));
-	
+
 	if (message.type === "new_game") {
 		const newGameId = Number(message.gameId);
 		const oldGameId = player.gameId;
@@ -109,7 +111,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 
 	console.log(`Client connected for game ${newGameId}, player ${player.alias}`);
 	if (!gameStates.get(newGameId)) {
-		let next = await loadGameData(newGameId); 
+		let next = await loadGameData(newGameId);
 		gameStates.set(newGameId, new GameState(next));
 	}
 	const gameState = gameStates.get(newGameId);
@@ -130,7 +132,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	// 	console.log('Client is ready, starting game');
 	// 	player.ws.send(JSON.stringify({ type: "set", data: gameState }));
 	// }
-	
+
 	if (message.type === "please serve") {
 		deleteInterval(gameId);
 		console.log("serving ball");
@@ -175,7 +177,7 @@ async function loadGameData(gameId: number) {
 	});
 	let gameData = await data.json();
 	console.log("gameData fetched:", gameData);
-	
+
 	if (!gameData.type || !gameData.leftPlayer?.alias || !gameData.rightPlayer?.alias || !gameData.gameId  || (gameData.type == 'REMOTE' && !gameData.leftPlayer?.id) || (gameData.type == 'REMOTE' && !gameData.rightPlayer?.id))
 		throw new Error("Incomplete game data");
 	game = {

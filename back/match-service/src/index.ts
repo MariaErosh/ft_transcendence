@@ -1,11 +1,13 @@
-import { database, initDB } from "./db/database"; 
+import { database, initDB } from "./db/database";
 import Fastify from 'fastify'
 import { MatchService } from "./match-service";
 import { matchRoutes } from "./match-service-controllers";
+import metricsPlugin from "fastify-metrics";
 
 
 async function runMatchService() {
 	const fastify = Fastify({ logger: true });
+	await fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 	initDB();
 	const matchService = new MatchService(database);
