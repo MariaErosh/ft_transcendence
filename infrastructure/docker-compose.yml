@@ -122,6 +122,53 @@ services:
     networks:
       - internal
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - internal
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.22
+    container_name: logstash
+    volumes:
+      - ../observability/logging/logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    depends_on:
+      - elasticsearch
+    networks:
+      - internal
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.22
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ../front
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "8080:80"
+    networks:
+      - internal
+
 networks:
   internal:
     driver: bridge
@@ -130,3 +177,4 @@ networks:
 volumes:
   prometheus_data:
   grafana_data:
+  elasticsearch_data:
