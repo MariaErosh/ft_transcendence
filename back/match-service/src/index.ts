@@ -6,7 +6,20 @@ import metricsPlugin from "fastify-metrics";
 
 
 async function runMatchService() {
-	const fastify = Fastify({ logger: true });
+	const fastify = Fastify({
+		logger: {
+			level: 'info',
+			transport: {
+				targets: [
+					{ target: 'pino/file', options: { destination: 1 } },
+					{
+						target: 'pino-socket',
+						options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+					}
+				]
+			}
+		}
+	});
 	await fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 	initDB();

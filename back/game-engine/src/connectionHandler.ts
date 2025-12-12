@@ -18,7 +18,20 @@ const PORT = Number(process.env.PORT || 3003);
 const GATEWAY = process.env.GATEWAY_URL;
 //const GENGINE_URL = process.env.GENGINE_URL;
 
-export const server = Fastify({ logger: true });
+export const server = Fastify({
+	logger: {
+		level: 'info',
+		transport: {
+			targets: [
+				{ target: 'pino/file', options: { destination: 1 } },
+				{
+					target: 'pino-socket',
+					options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+				}
+			]
+		}
+	}
+});
 await server.register(metricsPlugin, { endpoint: '/metrics' });
 await server.register(cors, { origin: true });
 await server.register(websocketPlugin);

@@ -22,7 +22,20 @@ const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:300
 
 
 async function buildServer() {
-	const server = Fastify({ logger: true });
+	const server = Fastify({
+		logger: {
+			level: 'info',
+			transport: {
+				targets: [
+					{ target: 'pino/file', options: { destination: 1 } },
+					{
+						target: 'pino-socket',
+						options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+					}
+				]
+			}
+		}
+	});
 
 	await server.register(metricsPlugin, { endpoint: '/metrics' });
 	await server.register(cors, { origin: true });
@@ -36,7 +49,6 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
-		"/check"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -98,8 +110,6 @@ async function buildServer() {
 	server.get("/open", async () => {
 		return { matches: getOpenMatches() };
 	})
-
-	server.get("/check", ()=>({ ok: true }));
 
 	server.post("/players", async (req, response) => {
 		let matchName = (req.body as {matchName:string}).matchName;
