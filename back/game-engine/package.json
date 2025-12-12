@@ -5,6 +5,7 @@
     "dotenv": "^17.2.2",
     "fastify": "^5.5.0",
     "fastify-metrics": "^11.0.0",
+    "pino-socket": "^6.0.0",
     "prom-client": "^15.1.0",
     "ws": "^8.18.3"
   },
