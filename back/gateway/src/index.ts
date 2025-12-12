@@ -3,6 +3,7 @@ import proxy from "@fastify/http-proxy";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
+import metricsPlugin from "fastify-metrics";
 
 dotenv.config();
 import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
@@ -23,6 +24,7 @@ const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:300
 async function buildServer() {
 	const server = Fastify({ logger: true });
 
+	await server.register(metricsPlugin, { endpoint: '/metrics' });
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
 

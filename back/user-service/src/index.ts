@@ -3,10 +3,12 @@ import { db, initDB } from "./db/database";
 import { UserService } from "./services/userService";
 import { userRoutes } from "./routes/user";
 import  authPlugin  from "./plugins/authPlugin";
+import metricsPlugin from "fastify-metrics";
 
 
 async function start() {
 	const fastify = Fastify({ logger: true });
+	await fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
 	//todo: store the secret key in normal way
 	//(fastify as any).register(jwt, { secret: "!TheLastProjectIn42!" });
