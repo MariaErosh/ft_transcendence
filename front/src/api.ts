@@ -177,7 +177,10 @@ export async function sendGameToGameEngine(game:GameInstance){
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify(game)
 	});
-	// const data = await res.json();
 	console.log("Data sent to game engine");
 }
 
+export async function userLoggedIn(){
+  const res = await authorisedRequest("/check", {method: "GET"});
+  return res.ok;
+}

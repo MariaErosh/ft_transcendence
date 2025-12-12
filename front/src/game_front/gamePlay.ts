@@ -77,13 +77,13 @@
 			if (message.type === "win") {
 				draw(canvas);
 				cancelAnimationFrame(frameID);
-				
+
 				gameActive = false;
-				
+
 				if (gameState.current.type == "REMOTE")
 					renderArena({ type: "winner", name: gameState.winner.alias });
 				else {
-					overlay.style = 'flex';
+					overlay.style.display = 'flex';
 					const winner = ["THE WINNER IS ", gameState.winner.alias];
 					drawText(canvas, winner);
 					//overlay.innerHTML = '';
