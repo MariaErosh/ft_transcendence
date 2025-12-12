@@ -1,4 +1,7 @@
+import { authorisedRequest } from "./api.js";
 import { renderLogin, renderRegister } from "./forms.js";
+import { disconnectGameWS } from "./match_service/gameSocket.js";
+import { disconnectWS } from "./match_service/lobbySocket.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 
 export function renderUserMenu() {
@@ -27,7 +30,6 @@ export function renderUserMenu() {
     loginBtn.textContent = "Login";
     loginBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-28 text-center";
     loginBtn.addEventListener("click", () => {
-      history.pushState({ view:"login"}, "", "login");
       renderLogin();
     });
     menu.appendChild(loginBtn);
@@ -41,10 +43,7 @@ export function renderUserMenu() {
     logoutBtn.textContent = "Logout";
     logoutBtn.className = "bg-blue-500 text-white px-3 py-1 rounded hover:bg-red-600 w-28 text-center";
       logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("username");
-        localStorage.removeItem("refreshToken");
-        renderUserMenu();
-        renderCreateTournamentForm();
+        logout();
       });
       menu.appendChild(logoutBtn);
   }
@@ -53,7 +52,6 @@ export function renderUserMenu() {
   signupBtn.textContent = "Sign Up";
   signupBtn.className = "bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-28 text-center";
   signupBtn.addEventListener("click", () => {
-    history.pushState({ view:"signup"}, "", "signup");
     renderRegister();
   });
   menu.appendChild(signupBtn);
@@ -61,4 +59,26 @@ export function renderUserMenu() {
   container.appendChild(menu);
   //menuWrapper.appendChild(menu);
 
+}
+
+export async function logout(){
+  //TODO: remove temp user
+  // if (localStorage.getItem("temp") === "temp"){
+  //   try {
+  //     await authorisedRequest(`/users/${localStorage.getItem("userid")}`, {method: "DELETE"});
+  //     console.log("Temp user deleted");
+  //   }
+  //   catch (err){
+  //     console.log("Failed to delete user: ", err);
+  //   }
+  // }
+  localStorage.removeItem("username");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("temp");
+  localStorage.removeItem("userid");
+  disconnectGameWS();
+  disconnectWS();
+  renderUserMenu();
+  renderCreateTournamentForm();
 }

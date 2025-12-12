@@ -22,6 +22,11 @@ export async function renderGameBoard() {
 	main.innerHTML = "";
 	history.pushState({ view:"game"}, "", "game");
 
+	const exist = document.getElementById("game-board-wrapper");
+	if (exist) exist.remove();
+	const arena = document.getElementById("arena");
+	if (arena) arena.remove();
+
 	if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
 	  }
@@ -37,6 +42,7 @@ export async function renderGameBoard() {
 	
 			gameSocket?.removeEventListener("message", getReady);
 
+		
 			const wrapper = document.createElement('div');
 			wrapper.style.width = board.CANVAS_WIDTH + "px";
 			wrapper.style.height = board.CANVAS_HEIGHT + "px";

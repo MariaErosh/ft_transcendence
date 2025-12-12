@@ -6,6 +6,11 @@ let manualClose = false;
 
 export async function connectWS(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
+		if (lobbySocket && lobbySocket.readyState === WebSocket.OPEN) {
+			console.log("Socket already connected, skipping new connection");
+			resolve(); 
+			return;
+		}
 		let token = localStorage.getItem("accessToken");
 
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
@@ -28,7 +33,8 @@ export async function connectWS(): Promise<void> {
 			const msg = JSON.parse(ev.data);
 
 			if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
-				if (await refreshAccessToken()) reconnectWS();
+				if (await refreshAccessToken()) 
+          reconnectWS();
 			}
 		});
 
@@ -44,7 +50,6 @@ export async function connectWS(): Promise<void> {
 				reconnecting = true;
 				setTimeout(connectWS, 1000);
 			}
-			resolve();
 		};
 	})
 

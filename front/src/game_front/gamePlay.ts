@@ -77,15 +77,20 @@
 			if (message.type === "win") {
 				draw(canvas);
 				cancelAnimationFrame(frameID);
-				//overlay.style = 'flex';
-				//const winner = ["THE WINNER IS ", gameState.winner.alias];
-				//drawText(canvas, winner);
+				
 				gameActive = false;
-				//overlay.innerHTML = '';
-				renderArena();
+				
+				if (gameState.current.type == "REMOTE")
+					renderArena({ type: "winner", name: gameState.winner.alias });
+				else {
+					overlay.style = 'flex';
+					const winner = ["THE WINNER IS ", gameState.winner.alias];
+					drawText(canvas, winner);
+					//overlay.innerHTML = '';
 				}
+			}
 		}
-		});
+	});
 
 		gameSocket.addEventListener("error", (event) => {
 			console.error("WebSocket encountered an error:", event);

@@ -33,7 +33,8 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		if (match.type === "CONSOLE")
 			matchService.sendNewGame(matchId, 1, match.name!);
 		//ADD ERROR CHECKING
-		return reply.code(200);
+		//return reply.code(200);
+		return reply.code(200).send({ status: "ok" });
 	})
 
 	fastify.post<{ Body: resultPayload }>('/match/result', { schema: resultSchema }, async (request, reply) => {

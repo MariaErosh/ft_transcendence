@@ -160,9 +160,12 @@ export class MatchService {
 		let players: Player[] = await dbAll(this.db, "SELECT * FROM players WHERE match_id = ? AND status = ?", [matchId, "NOT PLAYED"]);
 		if (players === undefined || players.length === 0)
 			throw new Error("No winners in the match");
+
+		const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+		if (!row) throw new Error(`No match found with id ${matchId}`);
 		if (players.length > 1) {
-			const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
-			if (!row) throw new Error(`No match found with id ${matchId}`);
+			//const row = await dbGet<{ round: number, owner: string | null, type: string }>(this.db, "SELECT * FROM matches WHERE id = ?", [matchId]);
+			//if (!row) throw new Error(`No match found with id ${matchId}`);
 			const round = row.round + 1;
 			players = shuffle(players);
 			while (players.length > 1) {
@@ -176,7 +179,14 @@ export class MatchService {
 			console.log("games created: ", games);
 		}
 		if (players.length === 1) {
-			this.sendEndOfMatch(matchId, matchName);
+			const currentRoundGames = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ? AND status = ?", [matchId, row.round + 1, "OPEN"]);
+			if (!currentRoundGames || currentRoundGames.length === 0) {
+			const lastGame = await dbGet(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ?", [matchId, row.round]);
+			// if (lastGame && lastGame.winner) {
+				this.sendEndOfMatch(matchId, matchName);
+			} else {
+				console.log("Not sending end_match: last game not finished yet");
+			}
 		}
 	}
 
@@ -209,27 +219,6 @@ export class MatchService {
 
 	async sendGames(matchName: string, games: any[]) {
 		console.log("Games of the round: ", games);
-		// for (const game of games) {
-		// 	let payload: GamePayload = {
-		// 		type: game.type,
-		// 		gameId: game.id,
-		// 		leftPlayer: { id: game.left_player_id, alias: game.left_player_alias },
-		// 		rightPlayer: { id: game.right_player_id, alias: game.right_player_alias },
-		// 		owner: game.owner
-		// 	}
-		// 	try {
-		// 		await fetch(`${GATEWAY}/game/start`, {
-		// 			method: "POST",
-		// 			headers: { "Content-Type": "application/json" },
-		// 			body: JSON.stringify(payload)
-		// 		});
-		// 		console.log("REMOTE game sent to game engine");
-		// 	}
-		// 	catch (error) {
-		// 		console.log("Failed to send games to game engine: ", error);
-		// 		throw error;
-		// 	}
-		// }
 		await fetch(`${GATEWAY}/newround`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },

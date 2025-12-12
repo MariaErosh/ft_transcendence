@@ -6,6 +6,7 @@ export function renderLogin() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 
+	history.pushState({ view:"login"}, "", "login");
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
 
@@ -39,7 +40,6 @@ export function renderLogin() {
 	signupLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	signupLink.textContent = "Don't have an account yet? Sign up here.";
 	signupLink.addEventListener("click", () => {
-		history.pushState({ view:"signup"}, "", "signup");
 		renderRegister();
 	});
 	form.appendChild(signupLink);
@@ -56,6 +56,7 @@ export function renderLogin() {
 			//container.innerHTML = '';
 			localStorage.setItem("username", username.value);
 			localStorage.setItem("refreshToken", response.refreshToken);
+			localStorage.removeItem("temp");
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
@@ -69,6 +70,7 @@ export function renderLogin() {
 export function renderRegister() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
+	history.pushState({ view:"signup"}, "", "signup");
 
 	const form = document.createElement("form");
 	form.className = "bg-white p-6 rounded shadow-md w-80 flex flex-col gap-4";
@@ -103,7 +105,6 @@ export function renderRegister() {
 	loginLink.className = "text-sm text-blue-600 underline cursor-pointer text-center";
 	loginLink.textContent = "Already have an account? Login here.";
 	loginLink.addEventListener("click", () => {
-		history.pushState({ view:"login"}, "", "login");
 		renderLogin();
 	});
 	form.appendChild(loginLink);
@@ -154,6 +155,7 @@ export function render2FA(userId: number) {
 		const response = await verify2FA(userId, tokenInput.value);
 		if (response.accessToken) {
 		msg.textContent = "2FA verified! Logged in.";
+		localStorage.removeItem("temp");
 		console.log(response);
 		} else {
 		msg.textContent = response.error || "Invalid 2FA code";

@@ -1,34 +1,44 @@
-import { createConsoleMatch, login, register, sendGameToGameEngine } from "../api.js";
+import { createConsoleMatch, login, register, sendGameToGameEngine, userLoggedIn } from "../api.js";
 import { renderArena } from "../arena.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
-import { connectGameWS, gameSocket } from "./gameSocket.js";
-import { connectWS, lobbySocket } from "./lobbySocket.js";
+import { logout } from "../ui.js";
+import { connectGameWS, disconnectGameWS, gameSocket } from "./gameSocket.js";
+import { connectWS, disconnectWS, lobbySocket } from "./lobbySocket.js";
 
+function generateMatchName(){
+	const random = Math.random().toString(36).slice(2, 10); // 8 chars
+	const matchName = "match_" + random;
+	return matchName ;
+}
 
 function generateRandomCredentials() {
 	const random = Math.random().toString(36).slice(2, 10); // 8 chars
 	const username = "temp_" + random;
 	const password = "pw_" + random + Math.random().toString(36).slice(2, 6);
-	const matchName = "match_" + random;
-	return { username, password, matchName };
+	return { username, password };
 }
 
 async function createTempUser(){
-	const {username, password, matchName} = generateRandomCredentials();
+	const {username, password} = generateRandomCredentials();
 	try {
-		await register(username, password);
+		const data = await register(username, password);
+		localStorage.setItem("userid", data.id);
+		localStorage.setItem("username", username);
 	}
 	catch (err){
 		console.log("Didn't register temp user: ", err);
 	}
 	await login(username, password);
-	return {username, password, matchName}
+	localStorage.setItem("temp", "temp");
 }
 
 export async function renderNewConsoleTournament() {
-
-	const {username, password, matchName} = await createTempUser();
+	disconnectWS();
+	disconnectGameWS();
+	if (!await userLoggedIn())
+		await createTempUser();
 	await connectWS();
+	const matchName = generateMatchName();
 	const blackBox = document.getElementById("black-box")!;
 	blackBox.innerHTML = "";
 
@@ -92,7 +102,7 @@ export async function renderNewConsoleTournament() {
 				}
 				if (msg.type == "end_match"){
 					console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-					renderArena();
+					renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
 				}
 			})
 	const players: string[] = [];
@@ -100,9 +110,11 @@ export async function renderNewConsoleTournament() {
 		try {
 			lobbySocket?.send(JSON.stringify({
 				type: "join_match",
+				match_type:"CONSOLE",
 				name: matchName
 			}))
-			await createConsoleMatch(players, matchName, username);
+			if (!localStorage.getItem("username")) throw new Error ("No username stored");
+			await createConsoleMatch(players, matchName, localStorage.getItem("username")!);
 			blackBox.innerHTML = "";
 		} catch (error) {
 			console.error("Failed to create match:", error);
