@@ -101,7 +101,6 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	if (message.type === "PLAYER_READY") {
 		player.ready = true;
 		canStartGame(player.gameId);
-
 	}
 	
 	if (message.type === "new_game") {
@@ -196,7 +195,7 @@ function canStartGame(gameId?: number) {
 	for (const p of sockets) {
 		if (p.ready) meta.playersReady.add(p.alias);
 	}
-	if (meta.playersReady.size < 2) {
+	if (gameState.current.type === "REMOTE" && meta.playersReady.size < 2) {
 		console.log(`Game ${gameId}: waiting for players`);
 		return;
 	}

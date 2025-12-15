@@ -87,8 +87,10 @@ export class MatchService {
 			await this.createNewRound(match.id, match.name);
 			gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		}
-		if (match.type === "CONSOLE" && gamesLeft && gamesLeft.length > 0)
+		if (match.type === "CONSOLE" && gamesLeft && gamesLeft.length > 0) {
+			console.log("sending new game in match service backend");
 			this.sendNewGame(matchId, match.round, match.name);
+		}
 	}
 
 	async recordGameResults(gameId: number, loserAlias: string, winnerAlias: string) {

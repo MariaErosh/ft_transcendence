@@ -82,12 +82,9 @@
 				
 				if (gameState.current.type == "REMOTE")
 					renderArena({ type: "winner", name: gameState.winner.alias });
-				else {
-					overlay.style = 'flex';
-					const winner = ["THE WINNER IS ", gameState.winner.alias];
-					drawText(canvas, winner);
-					//overlay.innerHTML = '';
-				}
+				else
+					renderArena({ type: "winner_console", name: gameState.winner.alias });
+		
 			}
 		}
 	});

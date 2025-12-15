@@ -88,7 +88,7 @@ export async function renderNewConsoleTournament() {
 						type:"new_game",
 						gameId:msg.gameId
 					}))
-					await renderArena({ type: "start", matchName: msg.matchName });
+					renderArena({ type: "start", matchName: msg.matchName });
 					//await renderGameBoard();
 				}
 				if (msg.type == "end_match"){
