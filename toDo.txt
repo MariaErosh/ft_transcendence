@@ -4,9 +4,9 @@ TO DO LIST per Module
 	- The user should be able to use the Back and Forward buttons of the browser. 
 		--> make history of the sections - do we have to show the endpoints in the url bar? 
 
-- can the user join the multiple tournaments?
-- can the user leave the tournament before it started?
-	
+- MatchService:
+	- the user should be able to leave the tournament
+	- handle disconnects and logouts before and during the match
 
 - Server Side PONG:
 	- API endpoint to start match, stop, move and show game state updates

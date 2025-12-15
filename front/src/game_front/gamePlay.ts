@@ -77,9 +77,9 @@
 			if (message.type === "win") {
 				draw(canvas);
 				cancelAnimationFrame(frameID);
-				
+
 				gameActive = false;
-				
+
 				if (gameState.current.type == "REMOTE")
 					renderArena({ type: "winner", name: gameState.winner.alias });
 				else

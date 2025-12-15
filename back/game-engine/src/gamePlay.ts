@@ -1,5 +1,19 @@
 import { board, GameObject, GameState, whichSide } from "./gameSpecs.js";
 import { gameStates, playerKeys } from "./connectionHandler.js";
+import pino from "pino";
+
+const logger = pino({
+	level: 'info',
+	transport: {
+		targets: [
+			{ target: 'pino/file', options: { destination: 1 } },
+			{
+				target: 'pino-socket',
+				options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+			}
+		]
+	}
+});
 
 let paused = false;
 
@@ -30,6 +44,7 @@ export function updatePos(gameState: GameState): void | number {
 	// score when ball hits left or right walls
 	if (gameState.ball.x - board.BALL_RADIUS / 2 <= 0 || gameState.ball.x + board.BALL_RADIUS / 2 >= board.CANVAS_WIDTH) {
 		gameState.ball.x - board.BALL_RADIUS / 2 <= 0 ? gameState.score.right++ : gameState.score.left++;
+		logger.info({ gameId: gameState.current.gameId, score: gameState.score }, "Point scored");
 		if (gameState.score.right >= 5 || gameState.score.left >= 5) {
 			const rightWins = gameState.score.right >= 5;
 

@@ -6,10 +6,11 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import dotenv from "dotenv";
 import cors from "@fastify/cors";
 import websocketPlugin from "@fastify/websocket";
+import metricsPlugin from "fastify-metrics";
 
 export const playerKeys = new Map<number, {
 	left: { up: boolean, down: boolean },
-	right: { up: boolean, down: boolean } 
+	right: { up: boolean, down: boolean }
 }>();
 
 const gameMeta = new Map<number, GameMeta>();
@@ -19,7 +20,21 @@ const PORT = Number(process.env.PORT || 3003);
 const GATEWAY = process.env.GATEWAY_URL;
 //const GENGINE_URL = process.env.GENGINE_URL;
 
-export const server = Fastify({ logger: true });
+export const server = Fastify({
+	logger: {
+		level: 'info',
+		transport: {
+			targets: [
+				{ target: 'pino/file', options: { destination: 1 } },
+				{
+					target: 'pino-socket',
+					options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+				}
+			]
+		}
+	}
+});
+await server.register(metricsPlugin, { endpoint: '/metrics' });
 await server.register(cors, { origin: true });
 await server.register(websocketPlugin);
 
@@ -46,7 +61,7 @@ function broadcast(gameId: number, payload: object) {
 
 server.get("/ws", { websocket: true }, async (ws, req) => {
 	const { player } = req.query as { player: string };
-	console.log("inside game socket");
+	server.log.info("inside game socket");
 	if (!player) {
 		ws.close();
 		return;
@@ -61,20 +76,20 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 			const message = JSON.parse(data.toString());
 			handleMessage(playerSocket, message);
 		} catch (err) {
-			console.error("Failed to parse incoming message:", err);
+			server.log.error({ err }, "Failed to parse incoming message");
 		}
 	});
 	ws.on("close", () => {
 		const gameId = playerSocket.gameId;
 		if (!gameId) {
 			playerSockets.get(player)?.delete(playerSocket);
-			return console.log(`Player ${player} disconnected`);
+			return server.log.info(`Player ${player} disconnected`);
 		}
 		gameSockets.get(gameId)?.delete(playerSocket);
 		// if no players are connected anymore, stop the loop
 		if (gameSockets.get(gameId)?.size === 0) {
 			deleteInterval(gameId);
-			console.log(`Stopped loop for game with id ${gameId}`);
+			server.log.info(`Stopped loop for game with id ${gameId}`);
 			games.delete(gameId);
 			gameSockets.delete(gameId);
 			gameStates.delete(gameId);
@@ -89,10 +104,10 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 
 
 await server.listen({ port: PORT, host: "0.0.0.0" });
-console.log(`Game Engine API and WS running on http://localhost:${PORT}`);
+server.log.info(`Game Engine API and WS running on http://localhost:${PORT}`);
 
 async function handleMessage(player: PlayerSocket, message: any) {
-	console.log('Parsed message: ', message, 'received from player ', player.alias);
+	server.log.info({ message, player: player.alias }, 'Parsed message received');
 	//let gameState = gameStates.get(gameId) as GameState;
 
 	if (message.type === "consts")
@@ -116,9 +131,9 @@ async function handleMessage(player: PlayerSocket, message: any) {
 			gameSockets.set(newGameId, new Set());
 		gameSockets.get(newGameId)!.add(player);
 
-	console.log(`Client connected for game ${newGameId}, player ${player.alias}`);
+	server.log.info(`Client connected for game ${newGameId}, player ${player.alias}`);
 	if (!gameStates.get(newGameId)) {
-		let next = await loadGameData(newGameId); 
+		let next = await loadGameData(newGameId);
 		gameStates.set(newGameId, new GameState(next));
 
 		gameMeta.set(newGameId, {
@@ -136,7 +151,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 }
 
 	if (!player.gameId) {
-		console.warn("Received later message before new_game message");
+		server.log.warn("Received later message before new_game message");
 		return;
 	}
 	const gameId = player.gameId;
@@ -145,10 +160,10 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	// 	console.log('Client is ready, starting game');
 	// 	player.ws.send(JSON.stringify({ type: "set", data: gameState }));
 	// }
-	
+
 	if (message.type === "please serve") {
 		deleteInterval(gameId);
-		console.log("serving ball");
+		server.log.info("serving ball");
 		serveBall(gameState);
 		// player.ws.send(JSON.stringify({ type: "go"}));
 		broadcast(gameId, { type: "go" });
@@ -157,7 +172,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 
 				const sockets = gameSockets.get(gameId);
 				if (!sockets) {
-					console.error("No matching game socket found for game ID", gameId);
+					server.log.error(`No matching game socket found for game ID ${gameId}`);
 					return;
 				}
 				sendResult(gameState);
@@ -209,15 +224,15 @@ function canStartGame(gameId?: number) {
 async function loadGameData(gameId: number) {
 	let game = games.get(gameId);
 	if (game) return game;
-	console.log("backend requesting game via GET");
+	server.log.info("backend requesting game via GET");
 
 	let data = await fetch(`${GATEWAY}/match/game?gameId=${gameId}`, {
 	method: "GET",
 	headers: { "Content-Type": "application/json" },
 	});
 	let gameData = await data.json();
-	console.log("gameData fetched:", gameData);
-	
+	server.log.info({ gameData }, "gameData fetched");
+
 	if (!gameData.type || !gameData.leftPlayer?.alias || !gameData.rightPlayer?.alias || !gameData.gameId  || (gameData.type == 'REMOTE' && !gameData.leftPlayer?.id) || (gameData.type == 'REMOTE' && !gameData.rightPlayer?.id))
 		throw new Error("Incomplete game data");
 	game = {
@@ -236,9 +251,9 @@ async function sendResult(gameState: GameState) {
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }),
 	});
-	console.log("sending result for game id ", gameState.current.gameId, "winner: ", gameState.winner, ", loser: ", gameState.loser);
+	server.log.info({ gameId: gameState.current.gameId, winner: gameState.winner, loser: gameState.loser }, "sending result");
 	if (!response.ok)
-		console.error("failed to record results");
+		server.log.error("failed to record results");
 }
 
 function handleInput(gameId: number, player: PlayerSocket, code: string, pressed: boolean) {
@@ -276,7 +291,7 @@ function handleInput(gameId: number, player: PlayerSocket, code: string, pressed
 			//resetSpecs(gameState, -1);
 			const sockets = gameSockets.get(gameId);
 			if (!sockets) {
-				console.error("No matching game socket found for game ID", gameId);
+				server.log.error(`No matching game socket found for game ID ${gameId}`);
 				return;
 			}
 			for (const p of sockets) {
