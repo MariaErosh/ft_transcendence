@@ -1,6 +1,20 @@
 import { rejects } from 'assert';
 import { resolve } from 'path';
 import sqlite3 from 'sqlite3';
+import pino from 'pino';
+
+const logger = pino({
+	level: 'info',
+	transport: {
+		targets: [
+			{ target: 'pino/file', options: { destination: 1 } },
+			{
+				target: 'pino-socket',
+				options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+			}
+		]
+	}
+});
 
 const DBSOURCE = "./data/database.sqlite";
 
@@ -8,10 +22,10 @@ sqlite3.verbose();
 
 export const database = new sqlite3.Database(DBSOURCE, (err) => {
 	if (err) {
-		console.log("Error opening database: ", err.message);
+		logger.error({ err }, "Error opening database");
 	}
 	else {
-		console.log("Connected to the database at ", DBSOURCE);
+		logger.info(`Connected to the database at ${DBSOURCE}`);
 	}
 })
 
@@ -56,10 +70,10 @@ export function initDB(db: sqlite3.Database = database): Promise<void> {
 			);
 		`, (err) => {
 				if (err) {
-					console.error('Failed to create tables:', err.message);
+					logger.error({ err }, 'Failed to create tables');
 					reject(err);
 				} else {
-					console.log('tables created or already exist');
+					logger.info('tables created or already exist');
 					resolve();
 				}
 			});
