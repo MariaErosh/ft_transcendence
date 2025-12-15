@@ -30,10 +30,10 @@ async function runMatchService() {
 
 	fastify.listen({ port: 3004, host: "0.0.0.0" }, (err, address) => {
 		if (err) {
-			console.error(err);
+			fastify.log.error(err);
 			process.exit(1);
 		}
-		console.log(`This is new image. Match service running on ${address}`);
+		fastify.log.info(`Match service running on ${address}`);
 	});
 }
 

@@ -123,7 +123,7 @@ async function buildServer() {
 
 	server.post("/newgame", async (req, response) => {
 		let res = (req.body as {matchName: string, game: any});
-		console.log("New console game received: ", res.game);
+		server.log.info({ game: res.game }, "New console game received");
 		await notifyAboutNewConsoleGame(res.game, res.matchName);
 	})
 
@@ -137,12 +137,14 @@ async function buildServer() {
 
 
 async function start() {
+	let server;
 	try {
-		const server = await buildServer();
+		server = await buildServer();
 		await server.listen({ port: PORT, host: "0.0.0.0" });
 		server.log.info(`Gateway listening on http://0.0.0.0:${PORT}`);
 	} catch (err) {
-		console.error(err);
+		if (server) server.log.error(err);
+		else console.error(err);
 		process.exit(1);
 	}
 }
