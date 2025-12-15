@@ -179,7 +179,8 @@ async function joinRoom(matchName: string) {
 					type:"new_game",
 					gameId:msg.gameId
 				}))
-				await renderGameBoard();
+				//await renderGameBoard();
+				renderArena({ type: "start", matchName: matchName})
 			}
 			if (msg.type == "end_match"){
 				console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);

@@ -37,17 +37,11 @@ export interface GameObject {
 	type: string;
 }
 
-// export interface GameState {
-// 	ball: { x: number; y: number };
-// 	leftPaddle: { x: number; y: number };
-// 	rightPaddle: { x: number; y: number };
-// 	speed: { bX: number; bY: number; p: number };
-// 	score: {left: number; right: number };
-// 	servingPlayer: 'left' | 'right';
-// 	current: GameObject;
-// 	winner: Player;
-// 	loser: Player;
-// }
+export interface GameMeta {
+	newGameLoaded: boolean;
+	playersReady:Set<string>;
+	started: boolean;
+};
 
 export class GameState {
 	ball: { x: number; y: number };

@@ -24,17 +24,17 @@ export async function renderArena(state: ArenaState) {
 	`;
 	main.appendChild(arena);
 
-	const board = document.createElement("div");
-	board.className = `
+	const arenaBoard = document.createElement("div");
+	arenaBoard.className = `
 		bg-black w-2/3 h-2/3
 		flex flex-col items-center justify between
 		p-10 rounded-xl
 		`;
-	arena.appendChild(board);
+	arena.appendChild(arenaBoard);
 
 	const contentDiv = document.createElement("div") as HTMLElement;
 	contentDiv.className = "flex flex-col items-center gap-4 text-white text-center";
-	board.appendChild(contentDiv);
+	arenaBoard.appendChild(contentDiv);
 
 
 	switch (state.type) {
@@ -79,7 +79,7 @@ export async function renderArena(state: ArenaState) {
 					w-1/3 h-12 text-xl
 					hover:bg-gray-200 transition
 				`;
-				board.appendChild(backBtn);
+				arenaBoard.appendChild(backBtn);
 				backBtn.addEventListener("click", () => {
 					arena.innerHTML = "";
 					renderUserMenu();

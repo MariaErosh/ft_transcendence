@@ -1,6 +1,6 @@
 import { RawData } from "ws";
 import { serveBall, updatePos } from "./gamePlay.js";
-import { board, GameObject, GameState, PlayerSocket } from "./gameSpecs.js";
+import { board, GameObject, GameState, PlayerSocket, GameMeta } from "./gameSpecs.js";
 import Fastify from "fastify";
 import { FastifyRequest, FastifyReply } from "fastify";
 import dotenv from "dotenv";
@@ -11,6 +11,8 @@ export const playerKeys = new Map<number, {
 	left: { up: boolean, down: boolean },
 	right: { up: boolean, down: boolean } 
 }>();
+
+const gameMeta = new Map<number, GameMeta>();
 
 dotenv.config(); //loads the credentials from the .env file insto process.env
 const PORT = Number(process.env.PORT || 3003);
@@ -76,6 +78,7 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 			games.delete(gameId);
 			gameSockets.delete(gameId);
 			gameStates.delete(gameId);
+			gameMeta.delete(gameId);
 		}
 	});
 })
@@ -95,8 +98,11 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	if (message.type === "consts")
 		player.ws.send(JSON.stringify({ type: "consts", data: board }));
 
-	if (message.type === "PLAYER_READY")
+	if (message.type === "PLAYER_READY") {
 		player.ready = true;
+		canStartGame(player.gameId);
+
+	}
 	
 	if (message.type === "new_game") {
 		const newGameId = Number(message.gameId);
@@ -105,6 +111,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 		if (oldGameId && gameSockets.has(oldGameId))
 			gameSockets.get(oldGameId)!.delete(player);
 		player.gameId = newGameId;
+		player.ready = false;
 
 		if (!gameSockets.has(newGameId))
 			gameSockets.set(newGameId, new Set());
@@ -114,12 +121,18 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	if (!gameStates.get(newGameId)) {
 		let next = await loadGameData(newGameId); 
 		gameStates.set(newGameId, new GameState(next));
+
+		gameMeta.set(newGameId, {
+			newGameLoaded: true,
+			playersReady: new Set(),
+			started:false,
+		});
 	}
-	const gameState = gameStates.get(newGameId);
-	console.log("game State: ", gameState);
+	//const gameState = gameStates.get(newGameId);
+	//console.log("game State: ", gameState);
 	playerKeys.set(newGameId, { left: { up: false, down: false }, right: { up: false, down: false}});
 
-	player.ws.send(JSON.stringify({ type: "ready", data: { board, gameState }}));
+	//player.ws.send(JSON.stringify({ type: "ready", data: { board, gameState }}));
 	return;
 }
 
@@ -156,6 +169,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 				gameStates.delete(gameId);
 				games.delete(gameId);
 				gameSockets.delete(gameId);
+				gameMeta.delete(gameId);
 			}
 			broadcast(gameId, { type: "state", data: gameState });
 			}, 1000 / 60);
@@ -165,6 +179,32 @@ async function handleMessage(player: PlayerSocket, message: any) {
 	if (message.type === "input") {
 		handleInput(gameId, player, message.data.code, message.data.pressed);
 	}
+}
+
+function canStartGame(gameId?: number) {
+	if (!gameId) return;
+
+	const meta = gameMeta.get(gameId);
+	const sockets = gameSockets.get(gameId);
+	const gameState = gameStates.get(gameId);
+
+	if (!meta || !sockets || !gameState) return;
+	if (meta.started) return;
+
+	meta.playersReady.clear();
+
+	for (const p of sockets) {
+		if (p.ready) meta.playersReady.add(p.alias);
+	}
+	if (meta.playersReady.size < 2) {
+		console.log(`Game ${gameId}: waiting for players`);
+		return;
+	}
+
+	meta.started = true;
+	console.log(`Game ${gameId}: starting`);
+
+	broadcast(gameId, {type: "ready", data: { board, gameState }});
 }
 
 async function loadGameData(gameId: number) {

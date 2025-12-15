@@ -2,16 +2,6 @@ import { startGame, cleanup } from "./gamePlay.js";
 import { board, BoardConstants, gameState, GameState } from "./gameSpecs.js";
 import { disconnectGameWS, gameSocket } from "../match_service/gameSocket.js";
 
-export function readyToRender(gameId: any) {
-	const matchMenu = document.getElementById("match-menu");
-	if (matchMenu) matchMenu.innerHTML = '';
-	const gameBoard = document.getElementById('game-board-wrapper') as HTMLElement;
-	if (gameBoard) {
-		gameBoard.remove();
-	}
-	renderGameBoard();
-}
-
 export async function renderGameBoard() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
@@ -26,16 +16,16 @@ export async function renderGameBoard() {
 		throw new Error("Game socket not connected");
 	  }
 	// await setupEngineSocket(gameId, defToken);
-	console.log("waiting for board constants");
+	//console.log("waiting for board constants");
 	
-	function getReady(event: MessageEvent) {
+	//function getReady(event: MessageEvent) {
 	//gameSocket.addEventListener("message", function getReady(event) => {
-		const message = JSON.parse(event.data);
-		if (message.type === "ready") {
-			Object.assign(board, message.data.board);
-			Object.assign(gameState, message.data.gameState);
+		//const message = JSON.parse(event.data);
+		// if (message.type === "ready") {
+		// 	Object.assign(board, message.data.board);
+		// 	Object.assign(gameState, message.data.gameState);
 	
-			gameSocket?.removeEventListener("message", getReady);
+		// 	gameSocket?.removeEventListener("message", getReady);
 
 		
 			const wrapper = document.createElement('div');
@@ -66,9 +56,9 @@ export async function renderGameBoard() {
 
 			startGame(overlay, canvas);
 		}
-	}
-	gameSocket?.addEventListener("message", getReady);
-}
+	// }
+	// gameSocket?.addEventListener("message", getReady);
+//}
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
