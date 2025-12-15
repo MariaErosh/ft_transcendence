@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps --verbose --retry 5
 
 COPY tsconfig.json tailwind.config.js ./ 
 COPY src ./src
@@ -15,6 +15,9 @@ RUN npm run build
 
 # --- production stage ---
 FROM nginx:alpine
+
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 
 COPY --from=build /app/index.html /usr/share/nginx/html/index.html

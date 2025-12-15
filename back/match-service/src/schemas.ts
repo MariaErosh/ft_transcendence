@@ -21,6 +21,10 @@ export const createMatchSchema = {
 						alias: { type: 'string' },
 					}
 				}
+			},
+			owner: {
+				type: 'string',
+				nullable: true
 			}
 		}
 	}

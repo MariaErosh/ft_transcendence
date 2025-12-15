@@ -5,6 +5,7 @@ import { renderNewRemoteTournament,  } from "./match_service/render_remote.js";
 import { renderNewConsoleTournament } from "./match_service/render_console.js";
 import { renderGameBoard } from "./game_front/gameMenu.js";
 import { setStop } from "./game_front/gamePlay.js"
+import { renderArena } from "./arena.js";
 import { renderChat } from "./chat_service/chat.js";
 
 const app = document.getElementById("app")!;
@@ -28,12 +29,15 @@ app.innerHTML = `
 
 renderUserMenu();
 renderCreateTournamentForm();
-renderChat(); // Initialize chat when app loads
+renderChat();
 
 
 window.addEventListener("popstate", (event) => {
 	const state = event.state;
 	if (!state || !state.view) {
+		history.replaceState({ view: "main" }, "", "/"); // make URL home
+		setStop();
+		renderUserMenu();
 		renderCreateTournamentForm();
 		return;
 	}
@@ -53,6 +57,13 @@ window.addEventListener("popstate", (event) => {
 			break;
 		case "game":
 			renderGameBoard();
+			break;
+		case "arena":
+			if (state.arenaState) {
+				renderArena(state.arenaState);
+			} else {
+				console.warn("No arena state in history, cannot render");
+			}
 			break;
 		case "main":
 			setStop();

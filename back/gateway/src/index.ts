@@ -3,9 +3,10 @@ import proxy from "@fastify/http-proxy";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import dotenv from "dotenv";
+import metricsPlugin from "fastify-metrics";
 
 dotenv.config();
-import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch } from "./lobbySockets";
+import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
 import { registerChatWebSocket } from "./chatSockets";
 
@@ -36,6 +37,7 @@ function getOnlineUsers(): number[] {
 async function buildServer() {
 	const server = Fastify({ logger: true });
 
+	await server.register(metricsPlugin, { endpoint: '/metrics' });
 	await server.register(cors, { origin: true });
 	await server.register(jwt, { secret: JWT_SECRET });
 
@@ -48,7 +50,8 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
-		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
+		"/check",
+		"/chat/messages"  // Protect REST endpoint, but not /chat/ws WebSocket
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -118,6 +121,8 @@ async function buildServer() {
 		return { matches: getOpenMatches() };
 	})
 
+	server.get("/check", ()=>({ ok: true }));
+
 	server.post("/players", async (req, response) => {
 		let matchName = (req.body as {matchName:string}).matchName;
 		return { players: getMatchPlayers(matchName) };
@@ -129,8 +134,8 @@ async function buildServer() {
 	})
 
 	server.post("/end_match", async (req, response) => {
-		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winerId: number});
-		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winerId);
+		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winnerId: number});
+		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winnerId);
 	})
 	return server;
 }

@@ -18,21 +18,23 @@ export interface PlayerPayload {
 }
 
 export interface CreateMatchPayload{
-	type: string;
-	name: string | null;
-	players: PlayerPayload[];
+	type: string,
+	name: string | null,
+	players: PlayerPayload[],
+	owner: string | null
 }
 
 export interface GamePayload{
-	type: string;
-	gameId: number;
-	leftPlayer: PlayerPayload;
-	rightPlayer: PlayerPayload;
+	type: string,
+	gameId: number,
+	leftPlayer: PlayerPayload,
+	rightPlayer: PlayerPayload,
+	owner: string | null
 }
 
 export interface resultPayload{
-	gameId: number;
-	winner: PlayerPayload;
+	gameId: number,
+	winner: PlayerPayload,
 	loser: PlayerPayload
 }
 

@@ -4,10 +4,12 @@ import cors from "@fastify/cors";
 import { initDB } from "./db/database";
 import { authRoutes } from "./routes/auth";
 import  authPlugin  from "./plugins/authPlugins";
+import metricsPlugin from "fastify-metrics";
 
 const server = Fastify({ logger: true });
 
 server.register(authPlugin);
+server.register(metricsPlugin, { endpoint: '/metrics' });
 server.register(cors, { origin: true });
 //todo: store the secret key in normal way
 //server.register(jwt, { secret: "!TheLastProjectIn42!" });

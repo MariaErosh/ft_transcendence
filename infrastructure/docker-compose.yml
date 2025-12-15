@@ -11,12 +11,14 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: auth
-    ports:
-      - "3001:3001"
+    expose:
+      - 3001
     volumes:
       - ../back/auth-service/data/:/app/data
     env_file:
     - ../back/auth-service/.env
+    networks:
+      - internal
 
   user:
     build:
@@ -24,12 +26,14 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: user
-    ports:
-      - "3002:3002"
+    expose:
+        - 3002
     volumes:
       - ../back/user-service/data/:/app/data
     env_file:
     - ../back/user-service/.env
+    networks:
+      - internal
 
 
   game:
@@ -37,9 +41,12 @@ services:
       context: ../back/game-engine
       dockerfile: Dockerfile
       target: prod
-    container_name: game
+    container_name: game-engine
     ports:
       - "3003:3003"
+    networks:
+      - internal
+
 
   match:
     build:
@@ -47,8 +54,10 @@ services:
       dockerfile: Dockerfile
       target: prod
     container_name: match
-    ports:
-      - "3004:3004"
+    expose:
+      - 3004
+    networks:
+      - internal
 
   chat:
     build:
@@ -76,3 +85,60 @@ services:
       - chat
     env_file:
     - ../back/gateway/.env
+    networks:
+      - internal
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ../observability/monitoring/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    ports:
+      - "9090:9090"
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3100:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../observability/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+      - ../observability/monitoring/grafana/dashboards/:/etc/grafana/dashboards/
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    networks:
+      - internal
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+    internal: false
+
+volumes:
+  prometheus_data:
+  grafana_data:

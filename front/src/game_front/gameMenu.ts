@@ -22,43 +22,52 @@ export async function renderGameBoard() {
 	main.innerHTML = "";
 	history.pushState({ view:"game"}, "", "game");
 
+	const exist = document.getElementById("game-board-wrapper");
+	if (exist) exist.remove();
+	const arena = document.getElementById("arena");
+	if (arena) arena.remove();
+
 	if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
 		throw new Error("Game socket not connected");
 	  }
 	// await setupEngineSocket(gameId, defToken);
 	console.log("waiting for board constants");
-	
+
 	function getReady(event: MessageEvent) {
 	//gameSocket.addEventListener("message", function getReady(event) => {
 		const message = JSON.parse(event.data);
 		if (message.type === "ready") {
 			Object.assign(board, message.data.board);
 			Object.assign(gameState, message.data.gameState);
-	
+
 			gameSocket?.removeEventListener("message", getReady);
 
+
 			const wrapper = document.createElement('div');
-			wrapper.style.width = board.CANVAS_WIDTH + "px";
-			wrapper.style.height = board.CANVAS_HEIGHT + "px";
-			wrapper.className = "relative";
 			wrapper.id = 'game-board-wrapper';
+			wrapper.className = `
+				relative p-4 bg-gray-200
+				border-8 border-black
+				shadow-[20px_20px_0_0_#000000]
+				flex flex-col items-center
+			`;
 			main.appendChild(wrapper);
-			
+
+			// const topBar = document.createElement('div');
+			// topBar.className = "w-full bg-black text-white font-mono text-xs p-1 mb-2 flex justify-between uppercase";
+			// topBar.innerHTML = `<span>Match_ID: ${board.CANVAS_WIDTH}x${board.CANVAS_HEIGHT}</span><span>Status: LIVE</span>`;
+			// wrapper.appendChild(topBar);
 
 			//creating canvas
 			const canvas = document.createElement('canvas');
 			canvas.id = 'game-board';
 			canvas.width = board.CANVAS_WIDTH;
 			canvas.height =  board.CANVAS_HEIGHT;
-			canvas.className = 'rounded';
-			//canvas.style.display = "block"; // prevents inline canvas from collapsing
-			canvas.style.backgroundColor = 'black';
+			canvas.className = 'border-4 border-black bg-black';
 			wrapper.appendChild(canvas);
 
 			const overlay = document.createElement('div');
-			overlay.style.position = 'absolute';
-			overlay.style.inset = '0';
-			overlay.className = 'absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded';
+			overlay.className = 'absolute inset-0 bg-purple-600/40 backdrop-blur-sm flex items-center justify-center font-mono text-4xl font-black text-white uppercase';
 			overlay.style.display = "none";
 			overlay.id = 'overlay';
 			wrapper.appendChild(overlay);

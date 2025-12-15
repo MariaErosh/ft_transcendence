@@ -5,56 +5,66 @@ let reconnecting = false;
 let manualClose = false;
 
 export async function connectWS(): Promise<void> {
-  return new Promise(async (resolve, reject) => {
-    let token = localStorage.getItem("accessToken");
+	return new Promise(async (resolve, reject) => {
+		if (lobbySocket && lobbySocket.readyState === WebSocket.OPEN) {
+			console.log("Socket already connected, skipping new connection");
+			resolve(); 
+			return;
+		}
+		let token = localStorage.getItem("accessToken");
 
-    if (!token && !(await refreshAccessToken())) return reject;
+		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
-    token = localStorage.getItem("accessToken");
-    lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+		token = localStorage.getItem("accessToken");
+		lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
 
-    lobbySocket.onopen = () => {
-      console.log("WS connected");
-      reconnecting = false;
-      resolve();
-    };
+		lobbySocket.onerror = (err) => {
+			console.error("WS connection error:", err);
+			reject(new Error("WebSocket failed to connect"));
+		};
+		
+		lobbySocket.onopen = () => {
+			console.log("WS connected");
+			reconnecting = false;
+			resolve();
+		};
 
-    lobbySocket.addEventListener("message", async (ev) => {
-      const msg = JSON.parse(ev.data);
+		lobbySocket.addEventListener("message", async (ev) => {
+			const msg = JSON.parse(ev.data);
 
-      if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
-        if (await refreshAccessToken()) reconnectWS();
-      }
-    });
+			if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
+				if (await refreshAccessToken()) 
+          reconnectWS();
+			}
+		});
 
-    lobbySocket.onclose = () => {
-      console.warn("WS closed");
+		lobbySocket.onclose = () => {
+			console.warn("WS closed");
 
-      if (manualClose) {
-        manualClose = false;
-        return;
-      }
+			if (manualClose) {
+				manualClose = false;
+				return;
+			}
 
-      if (!reconnecting) {
-        reconnecting = true;
-        setTimeout(connectWS, 1000);
-      }
-      resolve();
-    };
-  })
+			if (!reconnecting) {
+				reconnecting = true;
+				setTimeout(connectWS, 1000);
+			}
+		};
+	})
 
 }
 
 export function disconnectWS() {
-  if (!lobbySocket) return;
-  manualClose = true;
-  lobbySocket.close();
+	if (!lobbySocket) return;
+	manualClose = true;
+	lobbySocket.close();
 }
 
 async function reconnectWS() {
-  if (lobbySocket) {
-    manualClose = true;
-    lobbySocket.close();
-  }
-  await connectWS();
+	if (lobbySocket) {
+		manualClose = true;
+		lobbySocket.close();
+	}
+	await connectWS();
 }

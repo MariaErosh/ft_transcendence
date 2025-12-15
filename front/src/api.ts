@@ -93,9 +93,11 @@ export async function register(username: string, password: string) {
 interface CreateMatchPayload{
 	type: string;
 	players: Player[];
+	owner: string | null;
+	name: string | null
 }
 
-export async function createConsoleMatch(aliases:string[]) {
+export async function createConsoleMatch(aliases:string[], name:string, owner: string) {
 	const players: Player[] = aliases.map(alias => ({
 		id: null,
 		alias
@@ -103,10 +105,12 @@ export async function createConsoleMatch(aliases:string[]) {
 
 	const payload: CreateMatchPayload = {
 		type: "CONSOLE",
-		players
+		players,
+		owner: owner,
+		name: name
 	};
 
-	const res = await fetch(`${BASE_URL}/match/console/new`, {
+	const res = await fetch(`${BASE_URL}/match/new`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -173,7 +177,10 @@ export async function sendGameToGameEngine(game:GameInstance){
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify(game)
 	});
-	// const data = await res.json();
 	console.log("Data sent to game engine");
 }
 
+export async function userLoggedIn(){
+  const res = await authorisedRequest("/check", {method: "GET"});
+  return res.ok;
+}
