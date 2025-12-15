@@ -1,0 +1,102 @@
+import { FastifyInstance } from 'fastify';
+import * as conversationRepo from '../repositories/conversationRepository';
+import * as messageRepo from '../repositories/messageRepository';
+import * as blockRepo from '../repositories/blockRepository';
+
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user:3002';
+const GATEWAY_SECRET = process.env.GATEWAY_SECRET;
+
+/**
+ * Fetch username for a given user ID from user-service
+ */
+async function getUsernameById(userId: number): Promise<string | null> {
+    try {
+        const response = await fetch(`${USER_SERVICE_URL}/users/${userId}`, {
+            headers: {
+                'x-gateway-secret': GATEWAY_SECRET || ''
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const user: any = await response.json();
+        return user.username || null;
+    } catch (error) {
+        console.error(`Failed to fetch username for user ${userId}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Enrich messages with sender usernames
+ */
+async function enrichMessagesWithUsernames(messages: any[]): Promise<any[]> {
+    // Collect unique sender IDs
+    const senderIds = [...new Set(messages.map(msg => msg.sender_id))];
+
+    // Fetch all usernames in parallel
+    const usernamePromises = senderIds.map(id =>
+        getUsernameById(id).then(username => ({ id, username }))
+    );
+    const usernames = await Promise.all(usernamePromises);
+
+    // Create a map of userId -> username
+    const usernameMap = new Map(
+        usernames.map(({ id, username }) => [id, username])
+    );
+
+    // Add sender_username to each message
+    return messages.map(msg => ({
+        ...msg,
+        sender_username: usernameMap.get(msg.sender_id) || 'Unknown'
+    }));
+}
+
+export function registerMessageRoutes(app: FastifyInstance) {
+    // Get message history
+    app.get('/chat/messages', async (request: any, reply: any) => {
+        try {
+            // Verify request is from gateway with valid authentication
+            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+                return reply.code(401).send({ error: 'Unauthorized' });
+            }
+
+            const userId = parseInt((request.headers as any)['x-user-id']);
+            const recipientId = (request.query as any).recipientId;
+
+            if (recipientId) {
+                // Check if blocked
+                const blocked = await blockRepo.areUsersBlocked(userId, parseInt(recipientId));
+                if (blocked) {
+                    return reply.code(403).send({ error: 'Cannot access messages with this user' });
+                }
+
+                // Get conversation between users
+                const conversationId = await conversationRepo.findConversationBetweenUsers(userId, parseInt(recipientId));
+
+                if (!conversationId) {
+                    app.log.info({ userId, recipientId }, 'No conversation found between users');
+                    return reply.send({ messages: [] });
+                }
+
+                // Get messages from conversation
+                const messages = await messageRepo.getMessagesByConversation(conversationId, 50);
+                app.log.info({ conversationId, messageCount: messages.length }, 'Messages retrieved from DB');
+                const enrichedMessages = await enrichMessagesWithUsernames(messages);
+                app.log.info({ enrichedCount: enrichedMessages.length }, 'Messages enriched with usernames');
+                return reply.send({ messages: enrichedMessages });
+            } else {
+                // Get all recent messages for user across all conversations
+                const messages = await messageRepo.getUserRecentMessages(userId, 50);
+                const enrichedMessages = await enrichMessagesWithUsernames(messages);
+                return reply.send({ messages: enrichedMessages });
+            }
+        } catch (error: any) {
+            app.log.error({ error }, 'Failed to get message history');
+            return reply.code(500).send({ error: 'Failed to fetch messages' });
+        }
+    });
+}

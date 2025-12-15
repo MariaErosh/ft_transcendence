@@ -5,18 +5,23 @@ import { authorisedRequest } from "../api.js";
 const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
 
 interface ChatMessage {
-  type: "message" | "system" | "error";
-  user_id?: number;
-  username?: string;
+  type: "message" | "system" | "error" | "game_invitation" | "invitation_response";
+  id?: number;
+  conversation_id?: number;
+  sender_id?: number;
+  sender_username?: string;
+  user_id?: number; // Legacy support
+  username?: string; // Legacy support
   content: string;
-  created_at?: number;
+  created_at?: string | number;
   timestamp?: number;
   recipient_id?: number | null;
   isDM?: boolean;
+  delivered?: boolean;
 }
 
 interface User {
-  userId: number;
+  userId?: number;
   username: string;
   isOnline?: boolean;
 }
@@ -31,8 +36,8 @@ let storageListener: ((e: StorageEvent) => void) | null = null;
 let shouldReconnect = false;
 let allUsers: User[] = [];
 let onlineUsers: User[] = [];
-let currentRecipient: User | null = null; // null = public chat
-let isUserListOpen = false;
+let currentRecipient: User | null = null; // null = no user selected
+let isUserListOpen = true; // Start with user list open
 
 /**
  * Initialize and render the chat UI (starts as bubble)
@@ -139,7 +144,7 @@ function renderChatWindow() {
               👥
             </button>
             <h3 id="chat-title" class="font-bold uppercase tracking-wider text-sm">
-              ${currentRecipient ? `@${currentRecipient.username}` : '💬 PUBLIC CHAT'}
+              ${currentRecipient ? `DM: @${currentRecipient.username}` : 'SELECT A USER'}
             </h3>
           </div>
           <button id="chat-minimize" class="
@@ -175,7 +180,7 @@ function renderChatWindow() {
             <input
               id="chat-input"
               type="text"
-              placeholder="${currentRecipient ? `DM to @${currentRecipient.username}...` : 'ENTER MESSAGE...'}"
+              placeholder="${currentRecipient ? `Message @${currentRecipient.username}...` : 'Select a user first...'}"
               class="
                 text-sm
                 text-black
@@ -187,7 +192,7 @@ function renderChatWindow() {
                 focus:border-purple-600
                 font-mono
               "
-              disabled
+              ${!currentRecipient ? 'disabled' : ''}
             />
             <button
               id="chat-send"
@@ -230,7 +235,7 @@ function renderChatWindow() {
   const minimizeBtn = document.getElementById("chat-minimize") as HTMLButtonElement;
   const toggleUsersBtn = document.getElementById("toggle-users") as HTMLButtonElement;
 
-  sendBtn?.addEventListener("click", () => sendMessage(input.value));
+  sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
   input?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendMessage(input.value);
   });
@@ -242,8 +247,9 @@ function renderChatWindow() {
 
   // Update UI based on connection state
   if (isConnected) {
-    enableInput(true);
-    updateStatus("Connected", "success");
+    const hasRecipient = !!currentRecipient;
+    enableInput(hasRecipient);
+    updateStatus(hasRecipient ? "Connected" : "Select user to chat", hasRecipient ? "success" : "info");
     clearMessages();
     // Display stored message history
     messageHistory.forEach(msg => displayMessage(msg));
@@ -294,25 +300,34 @@ function connectChat() {
       console.log("Chat WebSocket connected");
       isConnected = true;
       updateStatus("Connected", "success");
-      enableInput(true);
-      clearMessages();
-	  loadMessageHistory();
-    };
+      enableInput(!!currentRecipient);
 
+      // Only load history if we have a recipient selected
+      if (currentRecipient) {
+        loadMessageHistory();
+      } else {
+        clearMessages();
+      }
+    };
     chatSocket.onmessage = (event) => {
       try {
         const message: ChatMessage = JSON.parse(event.data);
 
-        // Only display messages relevant to current context
+        // Handle different message types from new backend
+        if (message.type === 'game_invitation' || message.type === 'invitation_response') {
+          // Handle game invitations (could show notification)
+          console.log('Game invitation received:', message);
+          return;
+        }
+
+        // Only display messages relevant to current conversation
         const isRelevantMessage =
           message.type === 'system' ||
           message.type === 'error' ||
-          // Show public messages when in public chat
-          (!currentRecipient && !message.isDM) ||
-          // Show DMs in the correct thread
-          (currentRecipient && message.isDM && (
-            message.recipient_id === currentRecipient.userId ||
-            message.user_id === currentRecipient.userId
+          // Show messages in the current DM conversation
+          (currentRecipient && (
+            message.sender_id === currentRecipient.userId ||
+            message.conversation_id // If it has conversation_id, it's in current context
           ));
 
         // Store new messages in history (except system messages)
@@ -357,21 +372,31 @@ function connectChat() {
 
 /**
  * Load message history from server
-  */
+ */
 async function loadMessageHistory() {
   try {
-    const url = currentRecipient
-      ? `/chat/messages?recipientId=${currentRecipient.userId}`
-      : '/chat/messages';
+    // Don't load history if no recipient is selected
+    if (!currentRecipient || !currentRecipient.userId) {
+      console.log('No recipient selected, skipping history load');
+      return;
+    }
+
+    const url = `/chat/messages?recipientId=${currentRecipient.userId}`;
+    console.log('Loading message history from:', url);
 
     const data = await authorisedRequest(url);
-    console.log('History loaded:', data.messages?.length, 'messages');
+    console.log('History loaded:', data.messages?.length, 'messages for', currentRecipient.username);
 
     if (data.messages) {
-      // Store messages with type field added
+      // Store messages with type field and normalized format
       messageHistory = data.messages.map((msg: any) => ({
-        ...msg,
-        type: 'message' as const
+        type: 'message' as const,
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        sender_id: msg.sender_id,
+        sender_username: msg.sender_username || msg.username,
+        content: msg.content,
+        created_at: msg.created_at,
       }));
 
       // If chat is open, display them immediately
@@ -389,21 +414,25 @@ async function loadMessageHistory() {
  * Send a chat message
  */
 function sendMessage(content: string) {
-  const input = document.getElementById("chat-input") as HTMLInputElement;
-
   if (!content.trim() || !chatSocket || !isConnected) return;
 
-  try {
-    const payload: any = { content: content.trim() };
+  // Must have a recipient for DMs (no public chat in new schema)
+  if (!currentRecipient || !currentRecipient.userId) {
+    updateStatus("Select a user to chat with", "error");
+    return;
+  }
 
-    // Add recipient info if it's a DM
-    if (currentRecipient) {
-      payload.recipientId = currentRecipient.userId;
-      payload.recipientUsername = currentRecipient.username;
-    }
+  try {
+    const payload = {
+      content: content.trim(),
+      recipientId: currentRecipient.userId
+    };
 
     chatSocket.send(JSON.stringify(payload));
-    input.value = "";
+
+    // Clear input field
+    const inputEl = document.getElementById("chat-input") as HTMLInputElement;
+    if (inputEl) inputEl.value = "";
   } catch (err) {
     console.error("Failed to send message:", err);
     updateStatus("Failed to send", "error");
@@ -431,7 +460,7 @@ function displayMessage(message: ChatMessage) {
     messageEl.innerHTML = `
       <div class="flex justify-between items-start gap-2">
         <div class="flex-1">
-          <span class="font-semibold text-sm text-blue-600">${message.username || "Unknown"}</span>
+          <span class="font-semibold text-sm text-blue-600">${message.sender_username || message.username || "Unknown"}</span>
           <p class="text-gray-800 text-sm mt-1">${escapeHtml(message.content)}</p>
         </div>
         <span class="text-xs text-gray-400">${time}</span>
@@ -535,19 +564,21 @@ async function loadUsers() {
   try {
     // Get all users from user service
     const allUsersData = await authorisedRequest('/users');
+    console.log('Raw user data from /users:', allUsersData);
     allUsers = allUsersData || [];
 
-    // Get online users from chat service
+    // Get online users from chat service (they have userId)
     const onlineData = await authorisedRequest('/chat/users/online');
-    const onlineUserIds = new Set((onlineData.users || []).map((u: any) => u.userId));
+    console.log('Online users data:', onlineData);
+    const onlineUsernames = new Set((onlineData.users || []).map((u: any) => u.username));
 
-    // Mark which users are online
+    // Map users - we only have username from /users endpoint
     allUsers = allUsers.map((user: any) => ({
-      userId: user.auth_user_id,
       username: user.username,
-      isOnline: onlineUserIds.has(user.auth_user_id),
+      isOnline: onlineUsernames.has(user.username),
     }));
 
+    console.log('Final allUsers array:', allUsers);
     renderUserList();
   } catch (err) {
     console.error('Failed to load users:', err);
@@ -567,13 +598,12 @@ function renderUserList() {
     .filter((user) => user.username !== currentUsername) // Don't show yourself
     .map((user) => `
       <button
-        data-user-id="${user.userId}"
         data-username="${user.username}"
         class="
           w-full text-left px-2 py-1
           text-xs font-mono
           hover:bg-purple-200
-          ${currentRecipient?.userId === user.userId ? 'bg-purple-300' : ''}
+          ${currentRecipient?.username === user.username ? 'bg-purple-300' : ''}
           flex items-center gap-1
         "
       >
@@ -589,9 +619,12 @@ function renderUserList() {
   // Add click handlers
   userListEl.querySelectorAll('button').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const userId = parseInt(btn.getAttribute('data-user-id') || '0');
       const username = btn.getAttribute('data-username') || '';
-      selectUser(userId, username);
+      console.log('User button clicked:', username);
+      if (username) {
+        console.log('Selecting user:', username);
+        selectUser(username);
+      }
     });
   });
 }
@@ -599,12 +632,18 @@ function renderUserList() {
 /**
  * Select a user to DM or switch to public chat
  */
-async function selectUser(userId: number, username: string) {
-  if (currentRecipient?.userId === userId) {
-    // Clicking same user = go back to public chat
+async function selectUser(username: string) {
+  if (currentRecipient?.username === username) {
+    // Clicking same user = deselect
     currentRecipient = null;
   } else {
-    currentRecipient = { userId, username };
+    // Get userId from online users if available
+    const onlineData = await authorisedRequest('/chat/users/online');
+    const onlineUser = (onlineData.users || []).find((u: any) => u.username === username);
+    currentRecipient = {
+      username,
+      userId: onlineUser?.userId
+    };
   }
 
   // Update UI
@@ -613,20 +652,38 @@ async function selectUser(userId: number, username: string) {
 
   if (titleEl) {
     titleEl.textContent = currentRecipient
-      ? `@${currentRecipient.username}`
-      : '💬 PUBLIC CHAT';
+      ? `DM: @${currentRecipient.username}`
+      : 'SELECT A USER';
   }
 
   if (inputEl) {
     inputEl.placeholder = currentRecipient
-      ? `DM to @${currentRecipient.username}...`
-      : 'ENTER MESSAGE...';
+      ? `Message @${currentRecipient.username}...`
+      : 'Select a user first...';
+    inputEl.disabled = !currentRecipient;
+  }
+
+  // Update send button
+  const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+  if (sendBtn) {
+    sendBtn.disabled = !currentRecipient || !isConnected;
+  }
+
+  // Update status
+  if (currentRecipient) {
+    updateStatus("Connected", "success");
+  } else {
+    updateStatus("Select user to chat", "info");
   }
 
   // Render user list to update selection
   renderUserList();
 
-  // Load message history for this context
-  await loadMessageHistory();
+  // Load message history for this user
+  if (currentRecipient) {
+    await loadMessageHistory();
+  } else {
+    clearMessages();
+  }
 }
 
