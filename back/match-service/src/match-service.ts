@@ -81,14 +81,15 @@ export class MatchService {
 		}
 		const matchId = game.match_id;
 		await this.recordGameResults(gameId, loser.alias, winner.alias);
-		const match = await this.getMatchById(matchId);
+		let match = await this.getMatchById(matchId);
 		let gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		if (gamesLeft.length === 0) {
 			await this.createNewRound(match.id, match.name);
+			match = await this.getMatchById(matchId);
 			gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		}
 		if (match.type === "CONSOLE" && gamesLeft && gamesLeft.length > 0)
-			this.sendNewGame(gamesLeft[0]!, match.name);
+			this.sendNewGame(matchId, match.round, match.name);
 	}
 
 	async recordGameResults(gameId: number, loserAlias: string, winnerAlias: string) {
