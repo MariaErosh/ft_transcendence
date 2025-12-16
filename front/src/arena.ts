@@ -46,7 +46,7 @@ export function renderArena(state: ArenaState) {
 			contentDiv.innerHTML = `
             <div class="bg-black text-white text-center p-8 border-4 border-white shadow-[6px_6px_0_0_#ffffff]
                         animate-fade-in flex flex-col gap-4 pointer-events-auto">
-            <h1 class="text-4xl font-bold">Match ${state.matchName}!</h1>
+            <h1 class="text-4xl font-bold"> ${state.matchName} tournament!</h1>
             <p class="text-2xl">Ready to play?</p>
 
             <button id="ready-btn"
@@ -94,7 +94,7 @@ export function renderArena(state: ArenaState) {
                     <div class="bg-pink-500 text-black text-3xl font-black p-6 border-4 border-black shadow-[10px_10px_0_0_#000000]">
                         WINNER: ${state.winner}
                     </div>
-                    <p class="text-lg font-bold">MATCH IDENTIFIER: ${state.matchName}</p>
+                    <p class="text-lg font-bold">TOURNAMENT: ${state.matchName}</p>
                 </div>
             `;
 				const backBtn = document.createElement("button");
@@ -122,7 +122,7 @@ export function renderArena(state: ArenaState) {
                     <div class="text-8xl animate-bounce">⏳</div>
                     <h1 class="text-5xl font-black uppercase tracking-tighter">PLEASE WAIT</h1>
                     <div class="bg-black text-white p-4 font-bold text-lg">
-                        MATCH: ${state.match}
+                        TOURNAMENT: ${state.match}
                     </div>
                     <p class="text-xl font-medium italic">
                         "OPPONENT IS INITIALIZING HARDWARE..."
@@ -134,13 +134,14 @@ export function renderArena(state: ArenaState) {
 
 		if (state.type === "start" || state.type === "winner_console") {
 			const btn = document.getElementById("ready-btn") as HTMLButtonElement;
+			const DISABLED_BTN_CLASS = "bg-gray-400 text-gray-700 font-bold uppercase px-6 py-3 border-2 border-black cursor-not-allowed opacity-70 shadow-none text-xl";
 			if (btn) {
 				btn.addEventListener("click", () => {
 					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
 
 					btn.disabled = true;
 					btn.innerText = "waiting for opponent to be ready";
-					btn.classList.add("bg-gray-400 text-gray-700 font-bold uppercase p-2 border-2 border-black cursor-not-allowed opacity-70 shadow-none")
+					btn.className = DISABLED_BTN_CLASS;
 				});
 			}
 		}
