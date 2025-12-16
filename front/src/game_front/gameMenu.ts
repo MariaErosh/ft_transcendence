@@ -1,6 +1,6 @@
-import { startGame, cleanup } from "./gamePlay.js";
-import { board, BoardConstants, gameState, GameState } from "./gameSpecs.js";
-import { disconnectGameWS, gameSocket } from "../match_service/gameSocket.js";
+import { startGame } from "./gamePlay.js";
+import { board } from "./gameSpecs.js";
+import { gameSocket } from "../match_service/gameSocket.js";
 
 export async function renderGameBoard() {
 	const main = document.getElementById("main")!;
@@ -12,56 +12,35 @@ export async function renderGameBoard() {
 	const arena = document.getElementById("arena");
 	if (arena) arena.remove();
 
-	if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN) {
+	if (!gameSocket || gameSocket.readyState !== WebSocket.OPEN)
 		throw new Error("Game socket not connected");
-	  }
-	// await setupEngineSocket(gameId, defToken);
-	//console.log("waiting for board constants");
-	
-	//function getReady(event: MessageEvent) {
-	//gameSocket.addEventListener("message", function getReady(event) => {
-		//const message = JSON.parse(event.data);
-		// if (message.type === "ready") {
-		// 	Object.assign(board, message.data.board);
-		// 	Object.assign(gameState, message.data.gameState);
-	
-		// 	gameSocket?.removeEventListener("message", getReady);
 
+	const wrapper = document.createElement('div');
+	wrapper.id = 'game-board-wrapper';
+	wrapper.className = `
+		relative p-4 bg-gray-200
+		border-8 border-black
+		shadow-[20px_20px_0_0_#000000]
+		flex flex-col items-center
+	`;
+	main.appendChild(wrapper);
 
-			const wrapper = document.createElement('div');
-			wrapper.id = 'game-board-wrapper';
-			wrapper.className = `
-				relative p-4 bg-gray-200
-				border-8 border-black
-				shadow-[20px_20px_0_0_#000000]
-				flex flex-col items-center
-			`;
-			main.appendChild(wrapper);
+	//creating canvas
+	const canvas = document.createElement('canvas');
+	canvas.id = 'game-board';
+	canvas.width = board.CANVAS_WIDTH;
+	canvas.height =  board.CANVAS_HEIGHT;
+	canvas.className = 'border-4 border-black bg-black';
+	wrapper.appendChild(canvas);
 
-			// const topBar = document.createElement('div');
-			// topBar.className = "w-full bg-black text-white font-mono text-xs p-1 mb-2 flex justify-between uppercase";
-			// topBar.innerHTML = `<span>Match_ID: ${board.CANVAS_WIDTH}x${board.CANVAS_HEIGHT}</span><span>Status: LIVE</span>`;
-			// wrapper.appendChild(topBar);
+	const overlay = document.createElement('div');
+	overlay.className = 'absolute inset-0 bg-purple-600/40 backdrop-blur-sm flex items-center justify-center font-mono text-4xl font-black text-white uppercase';
+	overlay.style.display = "none";
+	overlay.id = 'overlay';
+	wrapper.appendChild(overlay);
 
-			//creating canvas
-			const canvas = document.createElement('canvas');
-			canvas.id = 'game-board';
-			canvas.width = board.CANVAS_WIDTH;
-			canvas.height =  board.CANVAS_HEIGHT;
-			canvas.className = 'border-4 border-black bg-black';
-			wrapper.appendChild(canvas);
-
-			const overlay = document.createElement('div');
-			overlay.className = 'absolute inset-0 bg-purple-600/40 backdrop-blur-sm flex items-center justify-center font-mono text-4xl font-black text-white uppercase';
-			overlay.style.display = "none";
-			overlay.id = 'overlay';
-			wrapper.appendChild(overlay);
-
-			startGame(overlay, canvas);
-		}
-	// }
-	// gameSocket?.addEventListener("message", getReady);
-//}
+	startGame(overlay, canvas);
+}
 
 export function waitForInput<T>(expectedType: string): Promise<T> {
 	return new Promise((resolve) => {
@@ -88,28 +67,4 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 		}
 	}, { once: true }); // makes sure listener only runs once
 	});
-}
-
-// export function disconnectEngine() {
-// 	if (socket && socket.readyState === WebSocket.OPEN) {
-// 		socket.close();
-// 	}
-// 	socket = null as any;
-// 	boardPromise = null;
-// }
-
-export async function disconnectEngine() {
-    // return new Promise<void>((resolve) => {
-    //     if (socket && socket.readyState !== WebSocket.CLOSED) {
-    //         socket.addEventListener("close", () => {
-    //            // console.log("old socket closed");
-    //             setupSocket().then(resolve);
-    //         }, { once: true });
-    //         socket.close();
-    //     } else {
-    //         // If already closed, just setup a new one
-    //         setupSocket().then(resolve);
-    //     }
-    // });
-	disconnectGameWS();
 }
