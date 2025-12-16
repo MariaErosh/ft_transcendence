@@ -145,9 +145,17 @@ services:
     environment:
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - HTTP_HOST=0.0.0.0
     ports:
       - "5000:5000"
       - "9600:9600"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
       - elasticsearch
     networks:
@@ -173,12 +181,13 @@ services:
   logstash-exporter:
     image: kuskoman/logstash-exporter:v1.1.0
     container_name: logstash-exporter
-    command:
-      - '--logstash.endpoint=http://logstash:9600'
+    environment:
+      - LOGSTASH_URL=http://logstash:9600
     ports:
       - "9198:9198"
     depends_on:
-      - logstash
+      logstash:
+        condition: service_healthy
     networks:
       - internal
 
