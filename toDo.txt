@@ -9,5 +9,9 @@ TO DO LIST per Module
 	- handle disconnects and logouts before and during the match
 
 - Server Side PONG:
-	- API endpoint to show game state updates
-	- should it be possible to have several games through CLI or just 1?
+	- API endpoint to start match, stop, move and show game state updates
+
+- when escape in game, return from all other players as well
+- stop game when othe rplayer leaves game.
+
+- replace console warnings with just logs

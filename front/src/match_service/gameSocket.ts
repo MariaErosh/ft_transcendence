@@ -1,4 +1,7 @@
 import { refreshAccessToken } from "../api.js";
+import { renderGameBoard } from "../game_front/gameMenu.js";
+import { board, gameState } from "../game_front/gameSpecs.js"
+import { applyGameBootstrap, gameBootstrapped, setGameBootstrapped } from "../game_front/runtimeImports.js"
 
 export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
@@ -40,6 +43,20 @@ export async function connectGameWS(): Promise <void> {
     
       if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
         if (await refreshAccessToken()) reconnectGameWs();
+      }
+      if (msg.type === "new_game") {
+        console.log("new game info received in game frontend:", msg);
+        Object.assign(board, msg.data.board);
+        Object.assign(gameState, msg.data.gameState);
+	setGameBootstrapped(false);
+      }
+      if (msg.type === "ready") {
+        console.log("ready message received in game frontend");
+	//if (gameBootstrapped) return;
+	applyGameBootstrap(msg.data);
+	console.log(board.CANVAS_WIDTH, board.CANVAS_HEIGHT);
+        renderGameBoard();
+        return;
       }
     });
   

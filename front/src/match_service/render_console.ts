@@ -114,11 +114,12 @@ export async function renderNewConsoleTournament() {
 						type:"new_game",
 						gameId:msg.gameId
 					}))
-					await renderGameBoard();
+					renderArena({ type: "start", matchName: "Console" });
+					//await renderGameBoard();
 				}
 				if (msg.type == "end_match"){
 					console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-					renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
+					renderArena({ type: "end", matchName: "Console", winner: msg.winner });
 				}
 			})
 	const players: string[] = [];

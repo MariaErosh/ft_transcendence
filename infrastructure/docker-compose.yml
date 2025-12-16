@@ -149,7 +149,7 @@ services:
       - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
       - HTTP_HOST=0.0.0.0
     ports:
-      - "5000:5000"
+      - "5001:5000"
       - "9600:9600"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9600"]

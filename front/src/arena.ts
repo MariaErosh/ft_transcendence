@@ -1,5 +1,5 @@
 import { gameSocket } from "./match_service/gameSocket.js";
-import { draw, drawText } from "./game_front/draw.js";
+// import { draw, drawText } from "./game_front/draw.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
@@ -7,6 +7,8 @@ export 	type ArenaState =
 		| { type: "winner"; name: string }
 		| { type: "waiting"; match: string }
 		| { type: "end"; matchName: string, winner: string }
+		| { type: "start"; matchName: string }
+		| { type: "winner_console"; name: string; }
 
 export function renderArena(state: ArenaState) {
 	const main = document.getElementById("main") as HTMLElement;
@@ -23,23 +25,36 @@ export function renderArena(state: ArenaState) {
 	`;
 	main.appendChild(arena);
 
-	const board = document.createElement("div");
-	board.className = `
+	const arenaBoard = document.createElement("div");
+	arenaBoard.className = `
 		bg-gray-200 w-2/3 h-2/3
         flex flex-col items-center justify-center
         p-12 border-8 border-black
         shadow-[20px_20px_0_0_#000000]
         font-mono relative
 		`;
-	arena.appendChild(board);
+	arena.appendChild(arenaBoard);
 
 	const contentDiv = document.createElement("div") as HTMLElement;
 	contentDiv.className = "flex flex-col items-center gap-6 text-black text-center w-full";
-	board.appendChild(contentDiv);
+	arenaBoard.appendChild(contentDiv);
 
 
 	switch (state.type) {
 
+		case "start":
+			contentDiv.innerHTML = `
+            <div class="bg-black text-white text-center p-8 border-4 border-white shadow-[6px_6px_0_0_#ffffff]
+                        animate-fade-in flex flex-col gap-4 pointer-events-auto">
+            <h1 class="text-4xl font-bold"> ${state.matchName} tournament!</h1>
+            <p class="text-2xl">Ready to play?</p>
+
+            <button id="ready-btn"
+                class="bg-purple-600 text-white px-6 py-3 border-2 border-black font-bold uppercase shadow-[3px_3px_0_0_#000000] hover:bg-purple-500 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all text-xl">
+                I'M READY!</button>
+            </div>
+            `;
+            break;
 		case "winner":
 			contentDiv.innerHTML = `
                 <div class="flex flex-col gap-6">
@@ -55,6 +70,21 @@ export function renderArena(state: ArenaState) {
             `;
 		break;
 
+		case "winner_console":
+			contentDiv.innerHTML = `
+			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
+						animate-fade-in flex flex-col gap-4 pointer-events-auto">
+			<h1 class="text-4xl font-bold">Winner of this game is ${state.name}!</h1>
+			<p class="text-2xl">Ready for the next game?</p>
+			</div>
+
+			<button id="ready-btn"
+				class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-xl transition">
+				Yes!</button>
+			</div>
+		`;
+		break;
+
 		case "end":
 			contentDiv.innerHTML = `
                 <div class="flex flex-col gap-6">
@@ -64,7 +94,7 @@ export function renderArena(state: ArenaState) {
                     <div class="bg-pink-500 text-black text-3xl font-black p-6 border-4 border-black shadow-[10px_10px_0_0_#000000]">
                         WINNER: ${state.winner}
                     </div>
-                    <p class="text-lg font-bold">MATCH IDENTIFIER: ${state.matchName}</p>
+                    <p class="text-lg font-bold">TOURNAMENT: ${state.matchName}</p>
                 </div>
             `;
 				const backBtn = document.createElement("button");
@@ -78,7 +108,7 @@ export function renderArena(state: ArenaState) {
                 	active:shadow-none active:translate-x-[4px] active:translate-y-[4px]
                 	transition-all cursor-pointer
 				`;
-				board.appendChild(backBtn);
+				arenaBoard.appendChild(backBtn);
 				backBtn.addEventListener("click", () => {
 					arena.innerHTML = "";
 					renderUserMenu();
@@ -92,7 +122,7 @@ export function renderArena(state: ArenaState) {
                     <div class="text-8xl animate-bounce">⏳</div>
                     <h1 class="text-5xl font-black uppercase tracking-tighter">PLEASE WAIT</h1>
                     <div class="bg-black text-white p-4 font-bold text-lg">
-                        MATCH: ${state.match}
+                        TOURNAMENT: ${state.match}
                     </div>
                     <p class="text-xl font-medium italic">
                         "OPPONENT IS INITIALIZING HARDWARE..."
@@ -100,5 +130,19 @@ export function renderArena(state: ArenaState) {
                 </div>
             `;
 		break;
+		}
+
+		if (state.type === "start" || state.type === "winner_console") {
+			const btn = document.getElementById("ready-btn") as HTMLButtonElement;
+			const DISABLED_BTN_CLASS = "bg-gray-400 text-gray-700 font-bold uppercase px-6 py-3 border-2 border-black cursor-not-allowed opacity-70 shadow-none text-xl";
+			if (btn) {
+				btn.addEventListener("click", () => {
+					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
+
+					btn.disabled = true;
+					btn.innerText = "waiting for opponent to be ready";
+					btn.className = DISABLED_BTN_CLASS;
+				});
+			}
 		}
 	}

@@ -27,6 +27,7 @@ export interface PlayerSocket {
 	ws: WS;
 	alias: string;
 	gameId?: number;
+	ready: boolean;
 }
 
 export interface GameObject {
@@ -36,17 +37,11 @@ export interface GameObject {
 	type: string;
 }
 
-// export interface GameState {
-// 	ball: { x: number; y: number };
-// 	leftPaddle: { x: number; y: number };
-// 	rightPaddle: { x: number; y: number };
-// 	speed: { bX: number; bY: number; p: number };
-// 	score: {left: number; right: number };
-// 	servingPlayer: 'left' | 'right';
-// 	current: GameObject;
-// 	winner: Player;
-// 	loser: Player;
-// }
+export interface GameMeta {
+	newGameLoaded: boolean;
+	playersReady:Set<string>;
+	started: boolean;
+};
 
 export class GameState {
 	ball: { x: number; y: number };
@@ -58,6 +53,7 @@ export class GameState {
 	current: GameObject;
 	winner: Player;
 	loser: Player;
+	status: "RUNNING" | "HALTED";
 
 	constructor(game?: GameObject) {
 		this.ball = {
@@ -93,45 +89,9 @@ export class GameState {
 		}
 		this.winner = { alias: 'none', id: -1 },
 		this.loser = { alias: 'none', id: -1 };
+		this.status = "RUNNING";
 	}
 }
-
-// export function initGameState (next: GameObject | -1 ): GameState {
-	
-// 	let init: GameState = {} as GameState;
-// 	init.ball = {
-// 		x: board.CANVAS_WIDTH / 2,
-// 		y: board.CANVAS_HEIGHT / 2,
-// 	},
-// 	init.leftPaddle = {
-// 		x: board.MARGIN,
-// 		y: board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2
-// 	},
-// 	init.rightPaddle = {
-// 		x: board.CANVAS_WIDTH - board.PADDLE_WIDTH - board.MARGIN,
-// 		y: board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2
-// 	},
-// 	init.speed = {
-// 		bX: 0,
-// 		bY: 0,
-// 		p: 6
-// 	},
-// 	init.score = {
-// 		left: 0,
-// 		right: 0
-// 	},
-// 	init.servingPlayer = whichSide(),
-// 	init.current = {
-// 		leftPlayer: { alias: 'left', id: -1 },
-// 		rightPlayer: { alias: 'right', id: -2 },
-// 		gameId: -1,
-// 		type: 'none'
-// 	},
-// 	init.winner = { alias: 'none', id: -1 },
-// 	init.loser = { alias: 'none', id: -1 };
-
-// 	return init;
-// };
 
 export function whichSide() : 'left' | 'right' {
 	return Math.random() < 0.5 ? 'left' : 'right'; //Math.random() returns a float number between 0 and 1
