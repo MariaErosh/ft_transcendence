@@ -44,17 +44,17 @@ export function renderArena(state: ArenaState) {
 
 		case "start":
 			contentDiv.innerHTML = `
-			<div class="bg-black/70 text-white text-center p-10 rounded-2xl shadow-xl
-						animate-fade-in flex flex-col gap-4 pointer-events-auto">
-			<h1 class="text-4xl font-bold">Match ${state.matchName}!</h1>
-			<p class="text-2xl">Ready to play?</p>
+            <div class="bg-black text-white text-center p-8 border-4 border-white shadow-[6px_6px_0_0_#ffffff]
+                        animate-fade-in flex flex-col gap-4 pointer-events-auto">
+            <h1 class="text-4xl font-bold">Match ${state.matchName}!</h1>
+            <p class="text-2xl">Ready to play?</p>
 
-			<button id="ready-btn"
-				class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold text-xl transition">
-				Yes!</button>
-			</div>
-			`;
-			break;
+            <button id="ready-btn"
+                class="bg-purple-600 text-white px-6 py-3 border-2 border-black font-bold uppercase shadow-[3px_3px_0_0_#000000] hover:bg-purple-500 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all text-xl">
+                I'M READY!</button>
+            </div>
+            `;
+            break;
 		case "winner":
 			contentDiv.innerHTML = `
                 <div class="flex flex-col gap-6">
@@ -140,7 +140,7 @@ export function renderArena(state: ArenaState) {
 
 					btn.disabled = true;
 					btn.innerText = "waiting for opponent to be ready";
-					btn.classList.add("bg-gray-600");
+					btn.classList.add("bg-gray-400 text-gray-700 font-bold uppercase p-2 border-2 border-black cursor-not-allowed opacity-70 shadow-none")
 				});
 			}
 		}
