@@ -146,7 +146,7 @@ services:
       - ELASTIC_USER=${ELASTIC_USER:-elastic}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     ports:
-      - "5000:5000"
+      - "5001:5000"
       - "9600:9600"
     depends_on:
       - elasticsearch

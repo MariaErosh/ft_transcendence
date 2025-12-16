@@ -49,6 +49,7 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
+		"/check"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -99,6 +100,8 @@ async function buildServer() {
 		status: "ok",
 		ts: new Date().toISOString(),
 	}));
+	
+	server.get("/check", ()=>({ ok: true }));
 
 	await server.register(proxy, {
 		upstream: MATCH_SERVICE_URL,
