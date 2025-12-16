@@ -13,3 +13,5 @@ TO DO LIST per Module
 
 - when escape in game, return from all other players as well
 - stop game when othe rplayer leaves game.
+
+- replace console warnings with just logs
