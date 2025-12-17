@@ -47,8 +47,8 @@ export class AuthService {
 		const hash = await bcrypt.hash(password, 10);
 		return new Promise((resolve, reject) => {
 		db.run(
-			"INSERT INTO users (username, password_hash) VALUES (?, ?)",
-			[username, hash],
+			"INSERT INTO users (username, password_hash, two_factor_enabled) VALUES (?, ?, ?)",
+			[username, hash, two_factor_enabled],
 			function (err) {
 			if (err) {
 				logger.error({ err }, "Failed to create user");
