@@ -1,5 +1,5 @@
 //todo: rewrite via http://gateway:4000"
-const BASE_URL = "http://localhost:3000";
+//const BASE_URL = "http://localhost:3000";
 
 interface ApiRequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -20,7 +20,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
     "Authorization": `Bearer ${accessToken}`,
   };
 
-  let res = await fetch(`${BASE_URL}${url}`, options);
+  let res = await fetch(url, options);
 
   if (res.status === 401 && localStorage.getItem("refreshToken")) {
     const refreshed = await refreshAccessToken();
@@ -77,11 +77,11 @@ export async function verify2FA(userId: number, token: string) {
   return res.json();
 }
 
-export async function register(username: string, password: string) {
+export async function register(username: string, password: string, tfa: boolean) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, tfa }),
   });
   //return res.json();
   const data = await res.json();
@@ -89,6 +89,14 @@ export async function register(username: string, password: string) {
   return data;
 }
 
+export async function enable2FA(userId: number, username: string) {
+  const res = await authorisedRequest(`/auth/2fa/enable`, {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId})
+    });
+    return res;
+}
 
 interface CreateMatchPayload{
 	type: string;
