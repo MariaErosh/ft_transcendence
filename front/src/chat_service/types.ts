@@ -1,7 +1,7 @@
 // Chat type definitions
 
 export interface ChatMessage {
-  type: "message" | "system" | "error" | "game_invitation" | "invitation_response";
+  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "auth_success" | "auth_error";
   id?: number;
   conversation_id?: number;
   sender_id?: number;
