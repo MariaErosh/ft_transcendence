@@ -1,31 +1,30 @@
+*This project has been created as part of the 42 curriculum by alvutina, auspensk, hzimmerm, meroshen, smanriqu.*
+
 # 🏓 ft_transcendence
 
 ![Project Status](https://img.shields.io/badge/status-complete-success)
 ![Architecture](https://img.shields.io/badge/architecture-microservices-blueviolet)
 ![Docker](https://img.shields.io/badge/containerization-docker-2496ED)
 
-**The ultimate multiplayer Pong experience, re-imagined as a robust, scalable microservices ecosystem.**
+**A real-time multiplayer Pong game built with microservices.**
 
 ---
 
-## 🌟 Overview
+## Description
 
-**ft_transcendence** is our final capstone project. It is not just a game; it is a demonstration of modern software engineering principles. We moved beyond the monolithic approach to build a distributed system where every component—from authentication to real-time physics—operates as an independent, containerized service.
-
-Our goal was to create a seamless, real-time multiplayer platform that is secure, performant, and observable.
+**ft_transcendence** is our final project at 42. We wanted to do more than just build a game; we wanted to build it the right way, using modern tools. Instead of a single, large application, we built it as a set of small, independent microservices that talk to each other. This includes everything from user login to the game's physics. Our goal was to create a smooth, real-time multiplayer game that's also secure, fast, and easy to monitor.
 
 ## 🏗️ Architecture & Microservices
 
 The system is orchestrated via **Docker Compose**, connecting the following specialized services:
 
 ### 🛡️ API Gateway
-**The Central Nervous System.**
-Built with **Fastify** for high performance, this service acts as the unified facade for our distributed architecture.
-- **Smart Routing:** Proxies HTTPS requests to Auth, User, Matchmaking, and Game services.
-- **Edge Security:** Validates **JWTs** and injects internal security headers (`x-gateway-secret`, `x-user-id`) to ensure microservices only accept authorized traffic.
-- **Lobby Orchestration:** Manages real-time matchmaking queues and state in-memory via WebSockets before offloading confirmed matches to the Match Service.
-- **Game Proxy:** Establishes a direct, low-latency WebSocket pipe between the client and the Game Engine.
-- **Observability:** Exposes real-time metrics via **Prometheus** and ships structured logs to **Logstash**.
+The main entry point for the app. It receives requests from the frontend and sends them to the correct service.
+- **Routing:** Sends traffic to Auth, User, Matchmaking, and Game services.
+- **Security:** Checks if you are logged in (validates JWTs) and adds internal security headers.
+- **Lobby:** Manages the queue of players waiting to play.
+- **Game Proxy:** Connects players directly to the Game Engine using WebSockets.
+
 
 ### 🔐 Auth Service
 The security backbone.
@@ -46,9 +45,9 @@ The tournament organizer.
 - **Event Driven:** Reacts to game results to automatically generate next-round pairings or declare tournament winners, communicating updates back to the Gateway.
 
 ### 🎮 Gengine (Game Engine)
-**The Physics Core.**
-- **Authoritative Simulation:** Runs a custom 60Hz(setInterval) server-side physics loop, calculating precise collision vectors and ball dynamics to prevent client-side manipulation.
-- **Versatile Gameplay:** Supports both **Remote** (online multiplayer) and **Console** (local shared-keyboard) modes.
+The physics server.
+- **Fair Play:** Calculates all ball movements and collisions on the server to prevent cheating.
+- **Modes:** Supports both online multiplayer and local play on the same keyboard.
 
 ### 💬 Chat Service
 **The Social Hub.**
@@ -57,14 +56,14 @@ The tournament organizer.
 - **User Control:** Includes blocking capabilities and direct access to user profiles from the chat interface.
 
 ### 📊 Observability Stack
-We don't just run code; we monitor it.
-- **ELK Stack (Elasticsearch, Logstash, Kibana):** A robust pipeline where logs are shipped via TCP to Logstash, indexed in Elastic, and analyzed in Kibana.
-- **Prometheus:** Scrapes real-time metrics from the Gateway and microservices.
-- **Grafana:** Visualizes system health, request rates, and game statistics in custom dashboards.
+Tools we use to monitor the app.
+- **ELK Stack:** Collects logs from all services so we can search through them easily.
+- **Prometheus:** Collects metrics like CPU usage and request counts.
+- **Grafana:** Shows graphs and dashboards based on the data from Prometheus.
 
 ---
 
-## 🚀 Getting Started
+## Instructions
 
 
 ### Installation
@@ -83,7 +82,7 @@ We don't just run code; we monitor it.
    # Fill in your credentials in .env
    ```
 
-3. **Launch the System:**
+3. **Execution:**
    ```bash
    cd infrastructure
    docker-compose up --build
@@ -126,6 +125,20 @@ This project was brought to life by a team of 5 dedicated developers.
 </div>
 
 ---
+
+## Resources
+
+- **Fastify Documentation:** https://fastify.dev/docs/latest/
+- **Docker Documentation:** https://docs.docker.com/
+- **ELK Stack Guide:** https://www.elastic.co/what-is/elk-stack
+- **Prometheus Documentation:** https://prometheus.io/docs/introduction/overview/
+- **Grafana Documentation:** https://grafana.com/docs/grafana/latest/
+
+**AI Usage:**
+We used AI tools (Gemini, ChatGPT) to help with:
+- **Debugging:** Fixing errors in Docker configurations and TypeScript types.
+- **Boilerplate:** Generating basic code structures for components.
+- **Learning:** Understanding how to implement JWT rotation, 2FA, and the monitoring and logging stack.
 
 ## 📝 License
 
