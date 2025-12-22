@@ -13,19 +13,19 @@ TO DO LIST per Module
 
 - replace console warnings with just logs(?)
 
-- README (Nastya)
+✅ README (Nastya)
 
 - handle resizing of the window (?)
 
 - Terms of Service and Privacy Policy (Sasha)
 
-- add .env.example in the Git (Nastya)
+✅ add .env.example in the Git (Nastya)
 
 - SQL injections for signing in (Masha)
 
 - email for signing up and logging in (Masha/Sasha)
 
-- test browser compatibility 
+- test browser compatibility
 
 - implement spectator mode (?)
 
