@@ -15,6 +15,7 @@ import "@fastify/websocket";
  */
 export async function registerChatWebSocket(server: FastifyInstance) {
 	const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3005";
+	const MAX_QUEUE_SIZE = 100; // Prevent unbounded queue growth
 
 	server.get("/chat/ws", { websocket: true }, (socket, request) => {
 		let authenticated = false;
@@ -77,14 +78,17 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 					// Handle disconnections - keep both sides in sync
 					const handleSocketClose = () => {
 						console.log(`Chat WebSocket: User ${player!.username} disconnected`);
-						if (chatSocket) {
+						if (chatSocket && chatSocket.readyState !== WebSocket.CLOSED) {
 							chatSocket.close();
 						}
+						// Clear queue to prevent memory leaks
+						messageQueue = [];
 					};
 
 					const handleChatClose = () => {
 						console.log("Chat WebSocket: Chat service disconnected, closing frontend connection");
 						socket.close();
+						messageQueue = [];
 					};
 
 					socket.on("close", handleSocketClose);
@@ -94,15 +98,24 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 					chatSocket.on("error", (err) => {
 						console.error("Chat WebSocket: Error from chat service:", err);
 						socket.close();
+						messageQueue = [];
 					});
 
-					// Send any queued messages
-					messageQueue.forEach(msg => {
-						if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-							chatSocket.send(msg);
+					// Handle chat socket open - send queued messages
+					chatSocket.on("open", () => {
+						console.log("Chat WebSocket: Chat service connection established");
+						// Send any queued messages
+						for (const msg of messageQueue) {
+							try {
+								if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+									chatSocket.send(msg);
+								}
+							} catch (err) {
+								console.error("Chat WebSocket: Failed to send queued message:", err);
+							}
 						}
+						messageQueue = [];
 					});
-					messageQueue = [];
 
 				} catch (err) {
 					console.error("Chat WebSocket: Authentication error:", err);
@@ -113,9 +126,15 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 				// Authenticated - forward to chat service or queue if not ready
 				if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
 					chatSocket.send(data);
-				} else {
+				} else if (messageQueue.length < MAX_QUEUE_SIZE) {
 					// Queue messages if chat socket is not ready yet
 					messageQueue.push(data);
+				} else {
+					console.warn("Chat WebSocket: Message queue full, dropping message");
+					socket.send(JSON.stringify({ 
+						type: "error", 
+						content: "Server is busy, please try again" 
+					}));
 				}
 			}
 		};
@@ -126,9 +145,10 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 		// Handle errors on the frontend socket
 		socket.on("error", (err) => {
 			console.error("Chat WebSocket: Error from frontend:", err);
-			if (chatSocket) {
+			if (chatSocket && chatSocket.readyState !== WebSocket.CLOSED) {
 				chatSocket.close();
 			}
+			messageQueue = [];
 		});
 	});
 
