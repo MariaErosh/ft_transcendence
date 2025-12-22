@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { login, verify2FA, register, enable2FA } from "./api.js";
-=======
 import { login, verify2FA, register, enable2FA, set2FAenabled } from "./api.js";
->>>>>>> d94f84a (use emp token during 2FA enable process)
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
