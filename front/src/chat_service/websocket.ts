@@ -24,9 +24,14 @@ export function connectChat() {
   }
 
   try {
-    chatSocket = new WebSocket(`${GATEWAY_WS_URL}?token=${token}`);
+    chatSocket = new WebSocket(GATEWAY_WS_URL);
 
-    chatSocket.onopen = handleOpen;
+    chatSocket.onopen = () => {
+      // Send authentication token as first message
+      if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({ type: 'auth', token }));
+      }
+    };
     chatSocket.onmessage = handleMessage;
     chatSocket.onclose = handleClose;
     chatSocket.onerror = handleError;
@@ -66,6 +71,22 @@ function handleOpen() {
 function handleMessage(event: MessageEvent) {
   try {
     const message: ChatMessage = JSON.parse(event.data);
+
+    // Handle authentication response
+    if (message.type === 'auth_success') {
+      console.log('Chat authentication successful');
+      handleOpen();
+      return;
+    }
+
+    if (message.type === 'auth_error') {
+      console.error('Chat authentication failed:', message.content);
+      updateStatus("Authentication failed", "error");
+      if (chatSocket) {
+        chatSocket.close();
+      }
+      return;
+    }
 
     // Handle different message types
     if (message.type === 'game_invitation' || message.type === 'invitation_response') {
