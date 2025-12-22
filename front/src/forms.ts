@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { login, verify2FA, register, enable2FA } from "./api.js";
+=======
+import { login, verify2FA, register, enable2FA, set2FAenabled } from "./api.js";
+>>>>>>> d94f84a (use emp token during 2FA enable process)
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
@@ -57,7 +61,6 @@ export function renderLogin() {
 		if (response.accessToken) {
 			localStorage.setItem("username", username.value);
             localStorage.removeItem("temp");
-	
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
 			} 
@@ -192,6 +195,7 @@ export async function render2FASetup(userId: number, username: string) {
     verifyBtn.addEventListener("click", async () => {
         const success = await verify2FA(userId, tokenInput.value);
         if (success) {
+			set2FAenabled(userId, username);
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "2FA ACTIVE. Redirecting to login...";
             setTimeout(() => renderLogin(), 2000);
@@ -240,6 +244,8 @@ export function render2FA(userId: number) {
 			localStorage.setItem("accessToken", response.accessToken);
 			localStorage.setItem("refreshToken", response.refreshToken);
 			localStorage.setItem("refreshExpiresAt", response.refreshExpiresAt);
+			// localStorage.setItem("username", username.value);
+
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();

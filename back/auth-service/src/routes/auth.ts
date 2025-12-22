@@ -102,13 +102,24 @@ export async function authRoutes(fastify: FastifyInstance) {
 			if (!valid) return reply.status(401).send({ error: "invalid credentials" });
 			console.log("User fetched in login: ", user);
 
-			if (user.two_factor_enabled && user.two_factor_secret) {
+			if (user.two_factor_enabled && user.two_factor_secret && user.two_factor_set) {
 				return reply.send({ twoFactorRequired: true, userId: user.id });
 			}
 			const accessToken = fastify.jwt.sign({ sub: user.id, username: user.username }, { expiresIn: "15m" });
 			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
 			if (user.two_factor_enabled && !user.two_factor_secret) {
+				return reply.send({
+					status: "onboarding_2fa",
+					userId: user.id,
+					accessToken,
+					refreshToken,
+					refreshExpiresAt: expiresAt,
+				});
+			}
+
+			if (user.two_factor_enabled && user.two_factor_secret && !user.two_factor_set) {
+				auth.delete2FAsecret(user.id)
 				return reply.send({
 					status: "onboarding_2fa",
 					userId: user.id,
@@ -190,6 +201,38 @@ export async function authRoutes(fastify: FastifyInstance) {
 		try {
 			const result = await auth.enable2FA(userId, username);
 			return reply.send(result);
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message });
+		}
+	});
+
+	fastify.post("/auth/2fa/deletesecret", async (req, reply) => {
+
+		const gw = (req.headers as any)['x-gateway-secret'];
+		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+
+		const userId = Number((req.headers as any)['x-user-id']);
+		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+
+		try {
+			const result = await auth.delete2FAsecret(userId);
+			return reply.send(result);
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message });
+		}
+	});
+
+	fastify.post("/auth/2fa/set", async (req, reply) => {
+
+		const gw = (req.headers as any)['x-gateway-secret'];
+		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+
+		const userId = Number((req.headers as any)['x-user-id']);
+		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+
+		try {
+			const result = await auth.mark2FAset(userId);
+			return reply.status(201).send(result);
 		} catch (err: any) {
 			return reply.status(400).send({ error: err.message });
 		}

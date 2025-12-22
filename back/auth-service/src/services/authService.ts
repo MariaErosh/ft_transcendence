@@ -193,6 +193,38 @@ export class AuthService {
 		);
 		});
 	}
+
+	async delete2FAsecret(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_secret = ?, two_factor_set = 0 WHERE id = ?",
+			[null, userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to remove 2FA secret");
+				return reject(err);
+			}
+			resolve();
+			}
+		);
+		});
+	}
+
+	async mark2FAset(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_set = 1,  WHERE id = ?",
+			[userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to mark 2FA as set");
+				return reject(err);
+			}
+			resolve();
+			}
+		);
+		});
+	}
 	// verifying the TOTP code on login
 	async verify2FA(userId: number, token: string): Promise<boolean> {
 		return new Promise((resolve, reject) => {
