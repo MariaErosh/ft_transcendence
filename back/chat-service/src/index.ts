@@ -45,17 +45,6 @@ function broadcastMessage(message: any, excludeUsername?: string) {
 }
 
 /**
- * Send direct message to specific user by username
- */
-function sendDirectMessage(recipientUsername: string, message: any): boolean {
-    const recipient = connectedClients.get(recipientUsername);
-    if (recipient && recipient.socket.readyState === WebSocket.OPEN) {
-        recipient.socket.send(JSON.stringify(message));
-        return true;
-    }
-    return false;
-}
-/**
  * Helper wrapper to call sendMessageToUser with connectedClients
  */
 function sendToUser(userId: number, message: any): boolean {
