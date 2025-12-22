@@ -21,7 +21,7 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 		let authenticated = false;
 		let player: PlayerPayload | null = null;
 		let chatSocket: WebSocket | null = null;
-		let messageQueue: any[] = [];
+		let messageQueue: Buffer[] = [];
 
 		// Handle incoming messages
 		const handleMessage = (data: Buffer) => {
@@ -67,7 +67,7 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 					socket.send(JSON.stringify({ type: "auth_success" }));
 
 					// Forward messages: Chat Service → Gateway → Frontend
-					chatSocket.on("message", (msg: any) => {
+					chatSocket.on("message", (msg: Buffer | string) => {
 						if (socket.readyState === WebSocket.OPEN) {
 							// Convert Buffer to string if needed
 							const messageStr = typeof msg === 'string' ? msg : msg.toString();
@@ -106,12 +106,15 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 						console.log("Chat WebSocket: Chat service connection established");
 						// Send any queued messages
 						for (const msg of messageQueue) {
+							if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+								console.error("Chat WebSocket: Chat socket closed during queue processing");
+								break;
+							}
 							try {
-								if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-									chatSocket.send(msg);
-								}
+								chatSocket.send(msg);
 							} catch (err) {
 								console.error("Chat WebSocket: Failed to send queued message:", err);
+								break;
 							}
 						}
 						messageQueue = [];
