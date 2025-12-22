@@ -28,7 +28,7 @@ export function connectChat() {
 
     chatSocket.onopen = () => {
       // Send authentication token as first message
-      if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+      if (chatSocket) {
         chatSocket.send(JSON.stringify({ type: 'auth', token }));
       }
     };
