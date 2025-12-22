@@ -2,6 +2,20 @@ import { Database } from "sqlite3";
 import { Player, PlayerPayload, GamePayload } from "./models";
 import { dbAll, dbGet, dbRunQuery, shuffle } from "./helpers";
 import dotenv from "dotenv";
+import pino from "pino";
+
+const logger = pino({
+	level: 'info',
+	transport: {
+		targets: [
+			{ target: 'pino/file', options: { destination: 1 } },
+			{
+				target: 'pino-socket',
+				options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+			}
+		]
+	}
+});
 
 dotenv.config();
 
@@ -46,7 +60,7 @@ export class MatchService {
 			return matchId;
 		} catch (err) {
 			await dbRunQuery(this.db, "ROLLBACK");
-			console.error("Error creating a new match", err);
+			logger.error({ err }, "Error creating a new match");
 			throw err;
 		}
 	}
@@ -81,14 +95,17 @@ export class MatchService {
 		}
 		const matchId = game.match_id;
 		await this.recordGameResults(gameId, loser.alias, winner.alias);
-		const match = await this.getMatchById(matchId);
+		let match = await this.getMatchById(matchId);
 		let gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		if (gamesLeft.length === 0) {
 			await this.createNewRound(match.id, match.name);
+			match = await this.getMatchById(matchId);
 			gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		}
-		if (match.type === "CONSOLE" && gamesLeft && gamesLeft.length > 0)
-			this.sendNewGame(gamesLeft[0]!, match.name);
+		if (match.type === "CONSOLE" && gamesLeft && gamesLeft.length > 0) {
+			console.log("sending new game in match service backend");
+			this.sendNewGame(matchId, match.round, match.name);
+		}
 	}
 
 	async recordGameResults(gameId: number, loserAlias: string, winnerAlias: string) {
@@ -176,7 +193,7 @@ export class MatchService {
 			await dbRunQuery(this.db, "UPDATE matches SET round = ? WHERE id = ?", [round, matchId]);
 			if (row.type === "REMOTE")
 				await this.sendGames(matchName, games);
-			console.log("games created: ", games);
+			logger.info({ games }, "games created");
 		}
 		if (players.length === 1) {
 			const currentRoundGames = await dbAll(this.db, "SELECT * FROM games WHERE match_id = ? AND round = ? AND status = ?", [matchId, row.round + 1, "OPEN"]);
@@ -185,7 +202,7 @@ export class MatchService {
 			// if (lastGame && lastGame.winner) {
 				this.sendEndOfMatch(matchId, matchName);
 			} else {
-				console.log("Not sending end_match: last game not finished yet");
+				logger.info("Not sending end_match: last game not finished yet");
 			}
 		}
 	}
@@ -209,16 +226,16 @@ export class MatchService {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload)
 			});
-			console.log("End of match sent to gateway");
+			logger.info("End of match sent to gateway");
 		}
 		catch (error) {
-			console.log("Failed to send end of match to gateway: ", error);
+			logger.error({ err: error }, "Failed to send end of match to gateway");
 			throw error;
 		}
 	}
 
 	async sendGames(matchName: string, games: any[]) {
-		console.log("Games of the round: ", games);
+		logger.info({ games }, "Games of the round");
 		await fetch(`${GATEWAY}/newround`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -229,7 +246,7 @@ export class MatchService {
 
 	async sendNewGame(matchId: number, round: number, matchName: string){
 		let gamesLeft = await this.checkGamesLeft(matchId, round);
-		console.log("gamesLeft: ", gamesLeft)
+		logger.info({ gamesLeft }, "gamesLeft");
 		if (gamesLeft.length > 0){
 			const game = gamesLeft[0];
 			await fetch(`${GATEWAY}/newgame`, {

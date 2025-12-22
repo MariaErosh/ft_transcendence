@@ -26,7 +26,7 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		try {
 			player = server.jwt.verify<PlayerPayload>(query.token);
 		} catch {
-			console.log("Returning from registerGameWebsocket: token");
+			server.log.warn("Returning from registerGameWebsocket: invalid token");
 			return frontendWs.close(1008, "Invalid token");
 		}
 
@@ -51,7 +51,7 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 			// store messages that arrive before sockets are all fully open
 			const pendingMessages: string[] = [];
 			engineWs.on("open", () => {
-				console.log("Engine WS open");
+				server.log.info("Engine WS open");
 				pendingMessages.forEach(msg =>
 					engineWs.send(typeof msg === "string" ? msg : JSON.stringify(msg)));
 				pendingMessages.length = 0;
@@ -69,11 +69,11 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 				gameConnections.delete(player.sub);
 			});
 
-			engineWs.on("error", console.error);
+			engineWs.on("error", (err) => server.log.error({ err }, "Engine WS error"));
 		}
 
 		frontendWs.on("message", (msg: Buffer) => {
-			console.log("gateway socket receiving message", msg);
+			server.log.debug({ msg: msg.toString() }, "gateway socket receiving message");
 			if (playerSockets.engineWs.readyState === WebSocket.OPEN) {
 				playerSockets.engineWs.send(msg);
 			} else {

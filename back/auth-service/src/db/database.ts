@@ -1,5 +1,19 @@
 import sqlite3 from "sqlite3";
 import path from "path";
+import pino from "pino";
+
+const logger = pino({
+	level: 'info',
+	transport: {
+		targets: [
+			{ target: 'pino/file', options: { destination: 1 } },
+			{
+				target: 'pino-socket',
+				options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+			}
+		]
+	}
+});
 
 // Enables verbose debug output
 sqlite3.verbose();
@@ -12,9 +26,9 @@ const DBSOURCE = "./data/database.sqlite";
 // Create connection
 export const db = new sqlite3.Database(DBSOURCE, (err) => {
 	  if (err) {
-		console.error("Failed to open database:", err.message);	
+		logger.error({ err }, "Failed to open database");
 	} else {
-		console.log("Connected to SQLite database at", DBSOURCE);
+		logger.info(`Connected to SQLite database at ${DBSOURCE}`);
 	}
 }
 );
@@ -32,9 +46,9 @@ export function initDB() {
 		)
     `, (err) => {
 	  if (err) {
-		console.error('Failed to create "users" table:', err.message);	
+		logger.error({ err }, 'Failed to create "users" table');
 		} else {
-			console.log('"users" table created or already exists');
+			logger.info('"users" table created or already exists');
 		}
 	});
 
@@ -48,24 +62,24 @@ export function initDB() {
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		);
 		`
-		, (err) => {	
+		, (err) => {
 			if (err) {
-			console.error('Failed to create "refresh_tokens" table:', err.message);	
+			logger.error({ err }, 'Failed to create "refresh_tokens" table');
 			} else {
-				console.log('"refresh_tokens" table created or already exists');
-			} 
+				logger.info('"refresh_tokens" table created or already exists');
+			}
 		}
 	);
 
 	db.run(`
 		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 		`
-		, (err) => {	
+		, (err) => {
 			if (err) {
-			console.error('Failed to create index:', err.message);	
+			logger.error({ err }, 'Failed to create index');
 			} else {
-				console.log('Index idx_refresh_tokens_user_id created or already exist');
-			} 
+				logger.info('Index idx_refresh_tokens_user_id created or already exist');
+			}
 		}
 	);
  });

@@ -35,7 +35,20 @@ function getOnlineUsers(): number[] {
 }
 
 async function buildServer() {
-	const server = Fastify({ logger: true });
+	const server = Fastify({
+		logger: {
+			level: 'info',
+			transport: {
+				targets: [
+					{ target: 'pino/file', options: { destination: 1 } },
+					{
+						target: 'pino-socket',
+						options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+					}
+				]
+			}
+		}
+	});
 
 	await server.register(metricsPlugin, { endpoint: '/metrics' });
 	await server.register(cors, { origin: true });
@@ -110,6 +123,8 @@ async function buildServer() {
 		ts: new Date().toISOString(),
 	}));
 
+	server.get("/check", ()=>({ ok: true }));
+
 	await server.register(proxy, {
 		upstream: MATCH_SERVICE_URL,
 		prefix: "/match",
@@ -121,8 +136,6 @@ async function buildServer() {
 		return { matches: getOpenMatches() };
 	})
 
-	server.get("/check", ()=>({ ok: true }));
-
 	server.post("/players", async (req, response) => {
 		let matchName = (req.body as {matchName:string}).matchName;
 		return { players: getMatchPlayers(matchName) };
@@ -133,6 +146,13 @@ async function buildServer() {
 		await notifyAboutNewGame(res.games, res.matchName);
 	})
 
+	server.post("/newgame", async (req, response) => {
+		let res = (req.body as {matchName: string, game: any});
+		server.log.info({ game: res.game }, "New console game received");
+		await notifyAboutNewConsoleGame(res.game, res.matchName);
+	})
+
+
 	server.post("/end_match", async (req, response) => {
 		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winnerId: number});
 		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winnerId);
@@ -142,12 +162,14 @@ async function buildServer() {
 
 
 async function start() {
+	let server;
 	try {
-		const server = await buildServer();
+		server = await buildServer();
 		await server.listen({ port: PORT, host: "0.0.0.0" });
 		server.log.info(`Gateway listening on http://0.0.0.0:${PORT}`);
 	} catch (err) {
-		console.error(err);
+		if (server) server.log.error(err);
+		else console.error(err);
 		process.exit(1);
 	}
 }

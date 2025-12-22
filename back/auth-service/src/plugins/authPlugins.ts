@@ -4,8 +4,9 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import "@fastify/jwt";
 
 export default fp(async function (fastify: FastifyInstance) {
-  //setting up JWT 
-  fastify.register(fastifyJwt, { 
+  fastify.log.info("Initializing Auth Plugin");
+  //setting up JWT
+  fastify.register(fastifyJwt, {
 	//todo: secret key!
 	secret: "!TheLastProjectIn42!"
   });
@@ -17,16 +18,17 @@ export default fp(async function (fastify: FastifyInstance) {
 	  try {
 		await request.jwtVerify();
 	  } catch (err) {
+		request.log.error({ err }, "Authentication failed");
 		reply.status(401).send({ error: "Unauthorized",  details: err});
 	  }
 	}
   );
 });
 
-/* 
+/*
 	Extend Fastify's TypeScript types to include our custom properties and methods.
 	This allows TypeScript to recognize `fastify.authenticate` on the server instance
-	and `request.user` on the request object without type errors 
+	and `request.user` on the request object without type errors
 */
 /*declare module "fastify" {
   interface FastifyInstance {

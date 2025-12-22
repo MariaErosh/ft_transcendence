@@ -1,7 +1,6 @@
 import { lobbySocket, connectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
 import { connectGameWS, gameSocket } from "./gameSocket.js";
-import { renderGameBoard } from "../game_front/gameMenu.js";
 import { renderArena } from "../arena.js";
 
 
@@ -20,7 +19,7 @@ export async function renderNewRemoteTournament() {
     title.className = "text-black text-5xl font-black tracking-tighter mb-2";
 
     const subTitle = document.createElement('div');
-    subTitle.textContent = "SELECT AN ACTIVE MATCH OR START YOUR OWN";
+    subTitle.textContent = "SELECT AN ACTIVE TOURNAMENT OR START YOUR OWN";
     subTitle.className = "text-purple-700 text-sm font-bold tracking-widest uppercase";
 
     headerGroup.appendChild(title);
@@ -38,7 +37,7 @@ export async function renderNewRemoteTournament() {
     `;
 	blackBox.appendChild(listBox);
 	const createButton = document.createElement("button");
-	createButton.textContent = "+ NEW MATCH";
+	createButton.textContent = "+ NEW TOURNAMENT";
     createButton.className = `
         bg-purple-600 text-white font-mono font-black
         text-2xl w-2/5 h-16 border-4 border-black
@@ -49,7 +48,7 @@ export async function renderNewRemoteTournament() {
 	blackBox.appendChild(createButton);
 
 	async function refreshMatches() {
-		listBox.innerHTML = "<div class='text-purple-600 animate-pulse'>SCANNING FOR MATCHES...</div>";
+		listBox.innerHTML = "<div class='text-purple-600 animate-pulse'>SCANNING FOR TOURNAMENTS...</div>";
         try {
             const matches: string[] = await getOpenMatches();
             listBox.innerHTML = "";
@@ -66,9 +65,9 @@ export async function renderNewRemoteTournament() {
                 btn.addEventListener("click", () => joinRoom(match));
                 listBox.appendChild(btn);
             }
-            if (matches.length === 0) listBox.innerHTML = "<div class='text-gray-500 italic uppercase text-sm'>No open matches available.</div>";
+            if (matches.length === 0) listBox.innerHTML = "<div class='text-gray-500 italic uppercase text-sm'>No open tournaments available.</div>";
         } catch (err) {
-            listBox.textContent = "!! ERROR LOADING MATCHES !!";
+            listBox.textContent = "!! ERROR LOADING TOURNAMENTS !!";
         }
 	}
 	refreshMatches();
@@ -81,12 +80,12 @@ export async function renderNewRemoteTournament() {
         formHeader.className = "w-3/5 mb-6";
         formHeader.innerHTML = `
             <div class="text-black text-4xl font-black tracking-tighter uppercase underline decoration-4 underline-offset-8">Create Match</div>
-            <div class="text-purple-700 text-sm font-bold mt-4 uppercase">Designate match identifier</div>
+            <div class="text-purple-700 text-sm font-bold mt-4 uppercase">Designate tournament identifier</div>
         `;
         blackBox.appendChild(formHeader);
 
 		const input = document.createElement("input");
-		input.placeholder = "MATCH NAME...";
+		input.placeholder = "TOURNAMENT NAME...";
         input.className = "p-4 w-3/5 text-black font-bold border-4 border-black focus:outline-none focus:bg-purple-100 mb-6 uppercase";
         blackBox.appendChild(input);
 
@@ -140,7 +139,7 @@ async function joinRoom(matchName: string) {
 		const headerGroup = document.createElement('div');
         headerGroup.className = "w-3/5 mb-6";
         headerGroup.innerHTML = `
-            <div class="text-black text-4xl font-black tracking-tighter uppercase">Match: ${matchName}</div>
+            <div class="text-black text-4xl font-black tracking-tighter uppercase">Tournament: ${matchName}</div>
             <div class="text-purple-700 text-sm font-bold tracking-widest uppercase">Awaiting participants...</div>
         `;
         blackBox.appendChild(headerGroup);
@@ -156,7 +155,7 @@ async function joinRoom(matchName: string) {
 		blackBox.appendChild(playersList);
 
 		const startButton = document.createElement("button");
-		startButton.textContent = "START MATCH";
+		startButton.textContent = "START TOURNAMENT";
 		startButton.disabled = true;
 		startButton.className = `
             bg-gray-400 text-gray-700 font-black
@@ -200,7 +199,8 @@ async function joinRoom(matchName: string) {
 					type:"new_game",
 					gameId:msg.gameId
 				}))
-				await renderGameBoard();
+				//await renderGameBoard();
+				renderArena({ type: "start", matchName: matchName})
 			}
 			if (msg.type == "end_match"){
 				console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);

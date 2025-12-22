@@ -1,5 +1,19 @@
 import { board, GameObject, GameState, whichSide } from "./gameSpecs.js";
 import { gameStates, playerKeys } from "./connectionHandler.js";
+import pino from "pino";
+
+const logger = pino({
+	level: 'info',
+	transport: {
+		targets: [
+			{ target: 'pino/file', options: { destination: 1 } },
+			{
+				target: 'pino-socket',
+				options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+			}
+		]
+	}
+});
 
 let paused = false;
 
@@ -30,6 +44,7 @@ export function updatePos(gameState: GameState): void | number {
 	// score when ball hits left or right walls
 	if (gameState.ball.x - board.BALL_RADIUS / 2 <= 0 || gameState.ball.x + board.BALL_RADIUS / 2 >= board.CANVAS_WIDTH) {
 		gameState.ball.x - board.BALL_RADIUS / 2 <= 0 ? gameState.score.right++ : gameState.score.left++;
+		logger.info({ gameId: gameState.current.gameId, score: gameState.score }, "Point scored");
 		if (gameState.score.right >= 5 || gameState.score.left >= 5) {
 			const rightWins = gameState.score.right >= 5;
 
@@ -110,32 +125,3 @@ export async function serveBall(gameState: GameState) {
 function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-// export function resetSpecs(gameState: GameState, next: GameObject | -1) {
-
-// 	if (next === -1 || next.gameId === -1) {
-// 		console.log("no next game");
-// 		gameState.current.leftPlayer = { alias: 'left', id: -1 };
-// 		gameState.current.rightPlayer = { alias: 'right', id: -2 };
-// 		gameState.current.gameId = -1;
-// 		gameState.current.type = 'none';
-// 	} else
-// 		gameState.current = next;
-// 	// Reset gameState to initial values
-// 	gameState.ball.x = board.CANVAS_WIDTH / 2;
-// 	gameState.ball.y = board.CANVAS_HEIGHT / 2;
-// 	gameState.leftPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
-// 	gameState.rightPaddle.y = board.CANVAS_HEIGHT / 2 - board.PADDLE_HEIGHT / 2;
-// 	gameState.speed.bX = 0;
-// 	gameState.speed.bY = 0;
-// 	gameState.speed.p = 5;
-// 	gameState.score.left = 0;
-// 	gameState.score.right = 0;
-// 	gameState.servingPlayer = whichSide();
-// 	gameState.winner.id = -1;
-// 	gameState.winner.alias = 'none';
-// 	keys.right.up = false;
-// 	keys.right.down = false;
-// 	keys.left.up = false;
-// 	keys.left.down = false;
-// }

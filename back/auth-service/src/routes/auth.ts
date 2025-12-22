@@ -16,15 +16,15 @@ export async function authRoutes(fastify: FastifyInstance) {
 		const { username, password, email } = req.body as { username: string; password: string; email: string };
 		let user: AuthUser | null = null;
 
-		console.log("Auth-service: Login request:", username);
+		req.log.info({ username }, "Auth-service: Login request");
 		//function to rollback a created user in auth-service
 		const rollbackAuthUser = async () => {
 			if (user?.id) {
 				try {
 					await auth.deleteUser(user.id);
-					console.log(`Rollback: deleted Auth user ${user.id}`);
+					req.log.info(`Rollback: deleted Auth user ${user.id}`);
 				} catch (err) {
-					console.error(`Rollback failed for Auth user ${user.id}:`, err);
+					req.log.error({ err }, `Rollback failed for Auth user ${user.id}`);
 				}
 			}
 		};
@@ -33,7 +33,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			//create record in AuthService
 			//todo: update two_factor_auth = true
 			user = await auth.createUser(username, password, false );
-			console.log("create user:", user);
+			req.log.info({ user }, "create user");
 			if (!user || !user.id) throw new Error ("User creation failed");
 
 			const systemToken = fastify.jwt.sign(
@@ -123,7 +123,14 @@ export async function authRoutes(fastify: FastifyInstance) {
 		const { refreshToken } = req.body as any;
 		try {
 			const userId = await auth.consumeRefreshToken(refreshToken);
-			const accessToken = fastify.jwt.sign({ sub: userId }, { expiresIn: "15m" });
+			const user = await auth.findUserById(userId);
+            if (!user) {
+                return reply.status(401).send({ error: "User not found" });
+            }
+			const accessToken = fastify.jwt.sign(
+                { sub: user.id, username: user.username },
+                { expiresIn: "15m" }
+            );
 			const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
 			reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
 		} catch (err: any) {

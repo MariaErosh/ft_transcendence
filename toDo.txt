@@ -5,12 +5,35 @@ TO DO LIST per Module
 		--> make history of the sections - do we have to show the endpoints in the url bar?
 
 - MatchService:
-	- the user should be able to leave the tournament
-	- handle disconnects and logouts before and during the match
+	- the user should be able to leave the tournament(?)
+	- if a participant eaves the matc before start of his game - catch it in the game engine and mark him as loosing (Henrizz)
 
-- Server Side PONG:
-	- API endpoint to show game state updates
-	- should it be possible to have several games through CLI or just 1?
-
-- chat:
+- Chat
 	- List of users and have the option to add as friend and list of friends from the profile
+
+- Setup(Henrizz):
+	- change localhost to alow playing from different machines
+	- change to https
+
+- Authentication (Sasha):
+	- handle disconnection while setting up 2FA
+
+- replace console warnings with just logs(?)
+
+- README (Nastya)
+
+- handle resizing of the window (?)
+
+- Terms of Service and Privacy Policy (Sasha)
+
+- add .env.example in the Git (Nastya)
+
+- SQL injections for signing in (Masha)
+
+- email for signing up and logging in (Masha/Sasha)
+
+- test browser compatibility
+
+- implement spectator mode (?)
+
+- implement healthchecks, backups and disaster recovery (?)

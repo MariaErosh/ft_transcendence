@@ -23,7 +23,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		Body: CreateMatchPayload
 	}>('/match/new', { schema: createMatchSchema }, async (request, reply) => {
 		// if (!ensureFromGateway(request, reply)) return;
-		console.log("In match/new, received: ", request.body);
+		request.log.info({ body: request.body }, "In match/new, received");
 		const match = request.body;
 		const matchId = await matchService.addMatchRow(match.type, match.name, match.owner);
 		for (const player of match.players) {
@@ -38,7 +38,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 	})
 
 	fastify.post<{ Body: resultPayload }>('/match/result', { schema: resultSchema }, async (request, reply) => {
-		console.log("Match service received a post request at /match/result, body: ", request.body);
+		request.log.info({ body: request.body }, "Match service received a post request at /match/result");
 		const { gameId, winner, loser } = request.body;
 		try{
 			matchService.gameResultsHandler(gameId, winner, loser);
@@ -64,7 +64,7 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 			});
 		}
 
-		console.log("fetched game:", game);
+		request.log.info({ game }, "fetched game");
 		let payload: GamePayload = {
 			type: game.type,
 			gameId: game.id,
