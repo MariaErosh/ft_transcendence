@@ -261,6 +261,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 				accessToken,
 				refreshToken,
 				refreshExpiresAt: expiresAt,
+				userName: user.username
 			});
 		} catch (err: any) {
 			return reply.status(500).send({ error: err.message });

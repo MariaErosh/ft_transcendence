@@ -40,9 +40,9 @@ export async function tempTokenRequest<T=any>(url: string, options: ApiRequestOp
   };
 
   let res = await fetch(`${BASE_URL}${url}`, options);
-
+  console.log("Result in tempTokenRequest:", res);
   const data = await res.json();
-  console.log("Result in tempTokenRequest:", data);
+
   return data;
 }
 
@@ -93,7 +93,8 @@ export async function verify2FA(userId: number, token: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, token }),
   });
-  return res.json();
+  const data  = await res.json();
+  return {success: res.ok, data: data};
 }
 
 export async function register(username: string, password: string, tfa: boolean) {

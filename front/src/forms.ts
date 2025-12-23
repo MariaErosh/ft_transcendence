@@ -55,12 +55,12 @@ export function renderLogin() {
         const response = await login(username.value, password.value);
 		console.log("Response to login call: ", response);
 		if (response.accessToken) {
-			localStorage.setItem("username", username.value);
             localStorage.removeItem("temp");
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
 			} 
 			else {
+				localStorage.setItem("username", username.value);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
 				renderCreateTournamentForm();
@@ -189,8 +189,8 @@ export async function render2FASetup(userId: number, username: string) {
     form.appendChild(msg);
 
     verifyBtn.addEventListener("click", async () => {
-        const success = await verify2FA(userId, tokenInput.value);
-        if (success) {
+        const verified = await verify2FA(userId, tokenInput.value);
+        if (verified.success) {
 			set2FAenabled(userId, username);
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "2FA ACTIVE. Redirecting to login...";
@@ -233,20 +233,20 @@ export function render2FA(userId: number) {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const response = await verify2FA(userId, tokenInput.value);
-        if (response.accessToken) {
+        if (response.success) {
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "Verified. Logging in...";
 			localStorage.removeItem("temp");
-			localStorage.setItem("accessToken", response.accessToken);
-			localStorage.setItem("refreshToken", response.refreshToken);
-			localStorage.setItem("refreshExpiresAt", response.refreshExpiresAt);
-			// localStorage.setItem("username", username.value);
+			localStorage.setItem("accessToken", response.data.accessToken);
+			localStorage.setItem("refreshToken", response.data.refreshToken);
+			localStorage.setItem("refreshExpiresAt", response.data.refreshExpiresAt);
+			localStorage.setItem("username", response.data.userName);
 
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
         } else {
-            msg.textContent = `!! ${response.error || "Invalid code"}`;
+            msg.textContent = `!! ${response.data.error || "Invalid code"}`;
         }
     });
 

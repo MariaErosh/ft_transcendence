@@ -213,7 +213,7 @@ export class AuthService {
 	async mark2FAset(userId: number) {
 		return new Promise<void>((resolve, reject) => {
 		db.run(
-			"UPDATE users SET two_factor_set = 1,  WHERE id = ?",
+			"UPDATE users SET two_factor_set = 1 WHERE id = ?",
 			[userId],
 			async err => {
 			if (err) {
