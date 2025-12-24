@@ -31,6 +31,21 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
   return data;
 }
 
+export async function tempTokenRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
+  const accessToken = localStorage.getItem("tempToken");
+
+  options.headers = {
+    ...(options.headers || {}),
+    "Authorization": `Bearer ${accessToken}`,
+  };
+
+  let res = await fetch(`${BASE_URL}${url}`, options);
+  console.log("Result in tempTokenRequest:", res);
+  const data = await res.json();
+
+  return data;
+}
+
 export async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refreshToken");
   if (!refreshToken) return false;
@@ -61,6 +76,10 @@ export async function login(username: string, password: string) {
   });
   const data = await res.json();
   if (data.accessToken) {
+    if (data.status === "onboarding_2fa") {
+      localStorage.setItem("tempToken", data.accessToken);
+      return data;
+    }
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
@@ -74,14 +93,15 @@ export async function verify2FA(userId: number, token: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, token }),
   });
-  return res.json();
+  const data  = await res.json();
+  return {success: res.ok, data: data};
 }
 
-export async function register(username: string, password: string) {
+export async function register(username: string, password: string, tfa: boolean) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, tfa }),
   });
   //return res.json();
   const data = await res.json();
@@ -89,6 +109,23 @@ export async function register(username: string, password: string) {
   return data;
 }
 
+export async function enable2FA(userId: number, username: string) {
+  const res = await tempTokenRequest(`/auth/2fa/enable`, {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId})
+    });
+    return res;
+}
+
+export async function set2FAenabled(userId: number, username: string){
+  const res = await tempTokenRequest(`/auth/2fa/set`, {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId})
+    });
+    return res;
+}
 
 interface CreateMatchPayload{
 	type: string;
