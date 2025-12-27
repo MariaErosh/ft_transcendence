@@ -187,6 +187,10 @@ export function render2FA(userId: number) {
 }
 
 export async function logout() {
+	try {
+		await logoutRequest();
+	} catch {}
+
 	//TODO: remove temp login info
     localStorage.removeItem("username");
     localStorage.removeItem("accessToken");
@@ -195,8 +199,6 @@ export async function logout() {
     localStorage.removeItem("userid");
     disconnectGameWS();
     disconnectWS();
-	
-	await logoutRequest();
 
     renderUserMenu();
     renderCreateTournamentForm();

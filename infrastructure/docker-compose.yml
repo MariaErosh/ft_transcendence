@@ -76,133 +76,133 @@ services:
     networks:
       - internal
 
-  # prometheus:
-  #   image: prom/prometheus:latest
-  #   container_name: prometheus
-  #   volumes:
-  #     - ../observability/monitoring/prometheus/:/etc/prometheus/
-  #     - prometheus_data:/prometheus
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     - '--storage.tsdb.path=/prometheus'
-  #     - '--storage.tsdb.retention.time=15d'
-  #   ports:
-  #     - "9090:9090"
-  #   networks:
-  #     - internal
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ../observability/monitoring/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    ports:
+      - "9090:9090"
+    networks:
+      - internal
 
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   container_name: grafana
-  #   depends_on:
-  #     - prometheus
-  #   ports:
-  #     - "3100:3000"
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #     - ../observability/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
-  #     - ../observability/monitoring/grafana/dashboards/:/etc/grafana/dashboards/
-  #   environment:
-  #     - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-  #   networks:
-  #     - internal
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3100:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../observability/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+      - ../observability/monitoring/grafana/dashboards/:/etc/grafana/dashboards/
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    networks:
+      - internal
 
-  # node_exporter:
-  #   image: prom/node-exporter:latest
-  #   container_name: node_exporter
-  #   command:
-  #     - '--path.procfs=/host/proc'
-  #     - '--path.sysfs=/host/sys'
-  #     - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-  #   volumes:
-  #     - /proc:/host/proc:ro
-  #     - /sys:/host/sys:ro
-  #     - /:/rootfs:ro
-  #   networks:
-  #     - internal
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - internal
 
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
-  #   container_name: elasticsearch
-  #   environment:
-  #     - discovery.type=single-node
-  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-  #     - xpack.security.enabled=true
-  #     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #   ports:
-  #     - "9200:9200"
-  #   networks:
-  #     - internal
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - internal
 
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:7.17.22
-  #   container_name: logstash
-  #   volumes:
-  #     - ../observability/logging/logstash/pipeline:/usr/share/logstash/pipeline
-  #   environment:
-  #     - ELASTIC_USER=${ELASTIC_USER:-elastic}
-  #     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-  #     - XPACK_MONITORING_ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
-  #     - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
-  #     - HTTP_HOST=0.0.0.0
-  #   ports:
-  #     - "5001:5000"
-  #     - "9600:9600"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:9600"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #   depends_on:
-  #     - elasticsearch
-  #   networks:
-  #     - internal
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.22
+    container_name: logstash
+    volumes:
+      - ../observability/logging/logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      - ELASTIC_USER=${ELASTIC_USER:-elastic}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - XPACK_MONITORING_ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
+      - XPACK_MONITORING_ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+      - HTTP_HOST=0.0.0.0
+    ports:
+      - "5001:5000"
+      - "9600:9600"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      - elasticsearch
+    networks:
+      - internal
 
-  # elasticsearch-exporter:
-  #   image: quay.io/prometheuscommunity/elasticsearch-exporter:latest
-  #   container_name: elasticsearch-exporter
-  #   command:
-  #     - '--es.uri=http://elasticsearch:9200'
-  #     - '--es.all'
-  #     - '--es.indices'
-  #   environment:
-  #     - ES_USERNAME=${ELASTIC_USER:-elastic}
-  #     - ES_PASSWORD=${ELASTIC_PASSWORD}
-  #   ports:
-  #     - "9114:9114"
-  #   depends_on:
-  #     - elasticsearch
-  #   networks:
-  #     - internal
+  elasticsearch-exporter:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter:latest
+    container_name: elasticsearch-exporter
+    command:
+      - '--es.uri=http://elasticsearch:9200'
+      - '--es.all'
+      - '--es.indices'
+    environment:
+      - ES_USERNAME=${ELASTIC_USER:-elastic}
+      - ES_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "9114:9114"
+    depends_on:
+      - elasticsearch
+    networks:
+      - internal
 
-  # logstash-exporter:
-  #   image: kuskoman/logstash-exporter:v1.1.0
-  #   container_name: logstash-exporter
-  #   environment:
-  #     - LOGSTASH_URL=http://logstash:9600
-  #   ports:
-  #     - "9198:9198"
-  #   depends_on:
-  #     logstash:
-  #       condition: service_healthy
-  #   networks:
-  #     - internal
+  logstash-exporter:
+    image: kuskoman/logstash-exporter:v1.1.0
+    container_name: logstash-exporter
+    environment:
+      - LOGSTASH_URL=http://logstash:9600
+    ports:
+      - "9198:9198"
+    depends_on:
+      logstash:
+        condition: service_healthy
+    networks:
+      - internal
 
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:7.17.22
-  #   container_name: kibana
-  #   ports:
-  #     - "5601:5601"
-  #   environment:
-  #     - ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
-  #     - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
-  #   depends_on:
-  #     - elasticsearch
-  #   networks:
-  #     - internal
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.22
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_USERNAME=${ELASTIC_USER:-elastic}
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    depends_on:
+      - elasticsearch
+    networks:
+      - internal
 
   frontend:
     build:
@@ -219,7 +219,7 @@ networks:
     driver: bridge
     internal: false
 
-# volumes:
-#   prometheus_data:
-#   grafana_data:
-#   elasticsearch_data:
+volumes:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
