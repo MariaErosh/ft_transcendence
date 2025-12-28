@@ -200,8 +200,13 @@ services:
       context: ../front
       dockerfile: Dockerfile
     container_name: frontend
+    depends_on:
+    - gateway
     ports:
-      - "8080:80"
+      - "443:443"
+      - "80:80"
+    volumes:
+      - frontend_ssl:/etc/nginx/ssl
     networks:
       - internal
 
@@ -214,3 +219,4 @@ volumes:
   prometheus_data:
   grafana_data:
   elasticsearch_data:
+  frontend_ssl:

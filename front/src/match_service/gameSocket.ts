@@ -31,7 +31,7 @@ export async function connectGameWS(): Promise <void> {
     if (!token && !(await refreshAccessToken())) return reject;
   
     token = localStorage.getItem("accessToken");
-    gameSocket = new WebSocket(`${getWSBaseURL()}/game/ws?token=${token}`);
+    gameSocket = new WebSocket(`${getWSBaseURL()}/api/game/ws?token=${token}`);
   
     gameSocket.onopen = () => {
       console.log("gameWs connected");

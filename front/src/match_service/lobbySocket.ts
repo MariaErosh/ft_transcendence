@@ -21,7 +21,7 @@ export async function connectWS(): Promise<void> {
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
 		token = localStorage.getItem("accessToken");
-		lobbySocket = new WebSocket(`${getWSBaseURL()}/ws?token=${token}`);
+		lobbySocket = new WebSocket(`${getWSBaseURL()}/api/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {
 			console.error("WS connection error:", err);
