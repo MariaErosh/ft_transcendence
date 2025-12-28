@@ -108,6 +108,13 @@ export async function loadFriends() {
 export async function openDM(user: User) {
   console.log('Opening DM with:', user);
 
+  // Check if user is blocked
+  const blockedUsers = ChatData.getBlockedUsers();
+  if (user.userId && blockedUsers.includes(user.userId)) {
+    updateStatus(`Cannot open chat with blocked user @${user.username}`, 'error');
+    return;
+  }
+
   // Set the recipient
   ChatData.setCurrentRecipient(user);
 
@@ -142,4 +149,83 @@ export async function goBackToHome() {
 
   // Render home view
   renderHomeView();
+}
+
+/**
+ * Load blocked users list from backend
+ */
+export async function loadBlockedUsers() {
+  try {
+    const response = await authorisedRequest('/chat/blocks');
+    console.log('Blocked users data:', response);
+
+    const blockedUsers = response.blockedUsers || [];
+    ChatData.setBlockedUsers(blockedUsers);
+
+    console.log('Blocked users loaded:', blockedUsers);
+  } catch (err) {
+    console.error('Failed to load blocked users:', err);
+    ChatData.setBlockedUsers([]);
+  }
+}
+
+/**
+ * Block a user
+ * Action: User clicked "Block User" in dropdown menu
+ */
+export async function blockUser(userId: number) {
+  try {
+    console.log('Blocking user:', userId);
+
+    const response = await authorisedRequest('/chat/blocks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blockedId: userId }),
+    });
+
+    if (response.success) {
+      ChatData.addBlockedUser(userId);
+      updateStatus('User blocked successfully', 'success');
+      console.log('User blocked successfully');
+
+      // Go back to home after blocking
+      await goBackToHome();
+    } else {
+      updateStatus(response.error || 'Failed to block user', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to block user:', err);
+    updateStatus('Failed to block user', 'error');
+  }
+}
+
+/**
+ * Unblock a user
+ * Action: User clicked "Unblock User" in dropdown menu or from user list
+ */
+export async function unblockUser(userId: number) {
+  try {
+    console.log('Unblocking user:', userId);
+
+    const response = await authorisedRequest(`/chat/blocks/${userId}`, {
+      method: 'DELETE',
+    });
+
+    if (response.success) {
+      ChatData.removeBlockedUser(userId);
+      updateStatus('User unblocked successfully', 'success');
+      console.log('User unblocked successfully');
+
+      // Only re-render DM view if we're in DM view
+      const currentView = ChatData.getCurrentView();
+      if (currentView === 'dm') {
+        renderDMView();
+      }
+    } else {
+      updateStatus(response.error || 'Failed to unblock user', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to unblock user:', err);
+    updateStatus('Failed to unblock user', 'error');
+  }
 }

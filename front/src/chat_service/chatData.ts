@@ -11,6 +11,7 @@ class ChatDataManager {
     allUsers: [],
     onlineUsers: [],
     friends: [],
+    blockedUsers: [],
     currentRecipient: null,
     isUserListOpen: true,
   };
@@ -52,6 +53,10 @@ class ChatDataManager {
     return this.state.friends;
   }
 
+  getBlockedUsers(): number[] {
+    return this.state.blockedUsers;
+  }
+
   // Setters
   setConnected(value: boolean): void {
     this.state.isConnected = value;
@@ -63,6 +68,20 @@ class ChatDataManager {
 
   setFriends(friends: User[]): void {
     this.state.friends = friends;
+  }
+
+  setBlockedUsers(blockedUsers: number[]): void {
+    this.state.blockedUsers = blockedUsers;
+  }
+
+  addBlockedUser(userId: number): void {
+    if (!this.state.blockedUsers.includes(userId)) {
+      this.state.blockedUsers.push(userId);
+    }
+  }
+
+  removeBlockedUser(userId: number): void {
+    this.state.blockedUsers = this.state.blockedUsers.filter(id => id !== userId);
   }
 
   setChatOpen(value: boolean): void {

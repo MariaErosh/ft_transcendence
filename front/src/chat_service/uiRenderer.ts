@@ -3,7 +3,7 @@
 import type { StatusType } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage } from './websocket.js';
-import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus } from './userManager.js';
+import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 
@@ -49,8 +49,8 @@ export function chatOpened() {
 	ChatData.setCurrentView('home');
 	connectChat();
 
-	// Load users and friends in parallel, then render home view
-	Promise.all([loadUsers(), loadFriends()]).then(() => {
+	// Load users, friends, and blocked users in parallel, then render home view
+	Promise.all([loadUsers(), loadFriends(), loadBlockedUsers()]).then(() => {
 		renderHomeView();
 	});
 }
@@ -99,6 +99,7 @@ export function renderHomeView() {
   const currentUsername = localStorage.getItem("username");
   const friends = ChatData.getFriends();
   const allUsers = ChatData.getAllUsers();
+  const blockedUsers = ChatData.getBlockedUsers();
   const isConnected = ChatData.isConnected();
 
   chatContainer.className = "fixed bottom-6 right-6 z-50";
@@ -152,29 +153,62 @@ export function renderHomeView() {
               ? '<div class="text-xs text-gray-500 italic px-2 py-2">No friends yet</div>'
               : friends
                   .filter((friend) => friend.username !== currentUsername)
-                  .map((friend) => `
-                    <button
-                      data-username="${friend.username}"
-                      data-userid="${friend.userId || ''}"
-                      class="
-                        w-full text-left px-2 py-2
+                  .map((friend) => {
+                    const isBlocked = friend.userId ? blockedUsers.includes(friend.userId) : false;
+                    if (isBlocked) {
+                      return `
+                      <div class="
+                        w-full px-2 py-2
                         text-sm font-mono
-                        text-gray-200
-                        hover:bg-pink-200
-                        hover:text-black
+                        text-red-400 opacity-70
                         flex items-center gap-2
                         border-2 border-transparent
-                        hover:border-black
-                        transition-all
-                      "
-                    >
-                      <span class="
-                        w-2 h-2 rounded-full
-                        ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                      "></span>
-                      <span class="truncate">${escapeHtml(friend.username)}</span>
-                    </button>
-                  `).join('')
+                      ">
+                        <span class="
+                          w-2 h-2 rounded-full
+                          ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                        "></span>
+                        <span class="truncate flex-1">${escapeHtml(friend.username)}</span>
+                        <button
+                          data-action="unblock"
+                          data-userid="${friend.userId || ''}"
+                          class="
+                            px-2 py-1 text-xs font-bold
+                            bg-green-500 hover:bg-green-600
+                            text-white rounded
+                            border-2 border-black
+                          "
+                        >
+                          Unblock
+                        </button>
+                      </div>
+                    `;
+                    } else {
+                      return `
+                      <button
+                        data-username="${friend.username}"
+                        data-userid="${friend.userId || ''}"
+                        class="
+                          w-full text-left px-2 py-2
+                          text-sm font-mono
+                          text-gray-200
+                          hover:bg-pink-200
+                          hover:text-black
+                          flex items-center gap-2
+                          border-2 border-transparent
+                          hover:border-black
+                          transition-all
+                        "
+                      >
+                        <span class="
+                          w-2 h-2 rounded-full
+                          ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                        "></span>
+                        <span class="truncate">${escapeHtml(friend.username)}</span>
+                      </button>
+                    `;
+                    }
+                  }).join('')
             }
           </div>
         </div>
@@ -187,29 +221,62 @@ export function renderHomeView() {
           <div id="all-users-list" class="p-2 space-y-1">
             ${allUsers
               .filter((user) => user.username !== currentUsername)
-              .map((user) => `
-                <button
-                  data-username="${user.username}"
-                  data-userid="${user.userId || ''}"
-                  class="
-                    w-full text-left px-2 py-2
+              .map((user) => {
+                const isBlocked = user.userId ? blockedUsers.includes(user.userId) : false;
+                if (isBlocked) {
+                  return `
+                  <div class="
+                    w-full px-2 py-2
                     text-sm font-mono
-                    text-gray-200
-                    hover:bg-purple-200
-                    hover:text-black
+                    text-red-400 opacity-70
                     flex items-center gap-2
                     border-2 border-transparent
-                    hover:border-black
-                    transition-all
-                  "
-                >
-                  <span class="
-                    w-2 h-2 rounded-full
-                    ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                  "></span>
-                  <span class="truncate">${escapeHtml(user.username)}</span>
-                </button>
-              `).join('')
+                  ">
+                    <span class="
+                      w-2 h-2 rounded-full
+                      ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                    "></span>
+                    <span class="truncate flex-1">${escapeHtml(user.username)}</span>
+                    <button
+                      data-action="unblock"
+                      data-userid="${user.userId || ''}"
+                      class="
+                        px-2 py-1 text-xs font-bold
+                        bg-green-500 hover:bg-green-600
+                        text-white rounded
+                        border-2 border-black
+                      "
+                    >
+                      Unblock
+                    </button>
+                  </div>
+                `;
+                } else {
+                  return `
+                  <button
+                    data-username="${user.username}"
+                    data-userid="${user.userId || ''}"
+                    class="
+                      w-full text-left px-2 py-2
+                      text-sm font-mono
+                      text-gray-200
+                      hover:bg-purple-200
+                      hover:text-black
+                      flex items-center gap-2
+                      border-2 border-transparent
+                      hover:border-black
+                      transition-all
+                    "
+                  >
+                    <span class="
+                      w-2 h-2 rounded-full
+                      ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                    "></span>
+                    <span class="truncate">${escapeHtml(user.username)}</span>
+                  </button>
+                `;
+                }
+              }).join('')
             }
           </div>
         </div>
@@ -245,7 +312,7 @@ export function renderHomeView() {
 
   // Add click handlers for friends
   const friendsList = document.getElementById("friends-list");
-  friendsList?.querySelectorAll('button').forEach((btn) => {
+  friendsList?.querySelectorAll('button[data-username]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const username = btn.getAttribute('data-username') || '';
       if (username) {
@@ -258,9 +325,21 @@ export function renderHomeView() {
     });
   });
 
+  // Add unblock handlers for friends
+  friendsList?.querySelectorAll('button[data-action="unblock"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = parseInt(btn.getAttribute('data-userid') || '0');
+      if (userId) {
+        await unblockUser(userId);
+        await refreshOnlineStatus();
+        renderHomeView();
+      }
+    });
+  });
+
   // Add click handlers for all users
   const allUsersList = document.getElementById("all-users-list");
-  allUsersList?.querySelectorAll('button').forEach((btn) => {
+  allUsersList?.querySelectorAll('button[data-username]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const username = btn.getAttribute('data-username') || '';
       if (username) {
@@ -269,6 +348,18 @@ export function renderHomeView() {
         if (user) {
           openDM(user);
         }
+      }
+    });
+  });
+
+  // Add unblock handlers for all users
+  allUsersList?.querySelectorAll('button[data-action="unblock"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = parseInt(btn.getAttribute('data-userid') || '0');
+      if (userId) {
+        await unblockUser(userId);
+        await refreshOnlineStatus();
+        renderHomeView();
       }
     });
   });
@@ -360,6 +451,7 @@ export function renderDMView() {
                 hover:bg-yellow-200
                 border-b-2 border-black
                 text-black
+                block-btn
               ">
                 🚫 Block User
               </button>
@@ -369,6 +461,7 @@ export function renderDMView() {
                 hover:bg-green-200
                 border-b-2 border-black
                 text-black
+                unblock-btn
               ">
                 ✅ Unblock User
               </button>
@@ -481,6 +574,20 @@ export function renderDMView() {
   const dropdownBtn = document.getElementById("dropdown-menu");
   const dropdownContent = document.getElementById("dropdown-content");
 
+  // Show/hide block/unblock buttons based on blocked status
+  const blockedUsersList = ChatData.getBlockedUsers();
+  const isBlocked = currentRecipient.userId ? blockedUsersList.includes(currentRecipient.userId) : false;
+  const blockBtn = dropdownContent?.querySelector('.block-btn');
+  const unblockBtn = dropdownContent?.querySelector('.unblock-btn');
+
+  if (isBlocked) {
+    blockBtn?.classList.add('hidden');
+    unblockBtn?.classList.remove('hidden');
+  } else {
+    blockBtn?.classList.remove('hidden');
+    unblockBtn?.classList.add('hidden');
+  }
+
   sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
   input?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendMessage(input.value);
@@ -520,12 +627,20 @@ export function renderDMView() {
           // TODO: Implement delete friend
           break;
         case 'block':
-          console.log('Block user:', currentRecipient.username);
-          // TODO: Implement block
+          if (currentRecipient.userId) {
+            blockUser(currentRecipient.userId);
+          } else {
+            console.error('Cannot block user: userId is undefined');
+            updateStatus('Error: Cannot block user', 'error');
+          }
           break;
         case 'unblock':
-          console.log('Unblock user:', currentRecipient.username);
-          // TODO: Implement unblock
+          if (currentRecipient.userId) {
+            unblockUser(currentRecipient.userId);
+          } else {
+            console.error('Cannot unblock user: userId is undefined');
+            updateStatus('Error: Cannot unblock user', 'error');
+          }
           break;
         case 'profile':
           console.log('See profile:', currentRecipient.username);

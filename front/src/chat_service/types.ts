@@ -34,6 +34,7 @@ export interface ChatData {
 	allUsers: User[];
 	onlineUsers: User[];
 	friends: User[];
+	blockedUsers: number[];
 	currentRecipient: User | null;
 	isUserListOpen: boolean;
 }

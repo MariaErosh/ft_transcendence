@@ -51,7 +51,12 @@ async function buildServer() {
 	});
 
 	await server.register(metricsPlugin, { endpoint: '/metrics' });
-	await server.register(cors, { origin: true });
+	await server.register(cors, {
+		origin: true,
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization'],
+		credentials: true
+	});
 	await server.register(jwt, { secret: JWT_SECRET });
 
 	//websocket registration
@@ -64,7 +69,9 @@ async function buildServer() {
 		"/users",
 		"/auth/2fa/enable",
 		"/check",
-		"/chat/messages"  // Protect REST endpoint, but not /chat/ws WebSocket
+		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
+		"/chat/blocks",
+		"/chat/users/online"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {

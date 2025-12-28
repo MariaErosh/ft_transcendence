@@ -146,6 +146,13 @@ export function sendMessage(content: string) {
     return;
   }
 
+  // Prevent sending messages to blocked users
+  const blockedUsers = ChatData.getBlockedUsers();
+  if (blockedUsers.includes(currentRecipient.userId)) {
+    updateStatus("Cannot send messages to blocked users", "error");
+    return;
+  }
+
   try {
     const payload = {
       content: content.trim(),

@@ -13,6 +13,12 @@ export function registerBlockRoutes(app: FastifyInstance) {
             const userId = parseInt((request.headers as any)['x-user-id']);
             const { blockedId } = request.body as any;
 
+            app.log.info({ userId, blockedId, headers: request.headers }, 'Block request details');
+
+            if (!userId || isNaN(userId)) {
+                return reply.code(400).send({ error: 'Invalid user ID' });
+            }
+
             if (!blockedId) {
                 return reply.code(400).send({ error: 'blockedId is required' });
             }
@@ -21,14 +27,15 @@ export function registerBlockRoutes(app: FastifyInstance) {
                 return reply.code(400).send({ error: 'Cannot block yourself' });
             }
 
+            app.log.info({ userId, blockedId: parseInt(blockedId) }, 'Attempting to block user');
             await blockRepo.blockUser(userId, parseInt(blockedId));
             return reply.send({ success: true, message: 'User blocked successfully' });
         } catch (error: any) {
-            app.log.error({ error }, 'Failed to block user');
-            if (error.message.includes('already blocked')) {
+            app.log.error({ error: error.message, stack: error.stack }, 'Failed to block user');
+            if (error.message && error.message.includes('already blocked')) {
                 return reply.code(409).send({ error: error.message });
             }
-            return reply.code(500).send({ error: 'Failed to block user' });
+            return reply.code(500).send({ error: 'Failed to block user', details: error.message });
         }
     });
 
