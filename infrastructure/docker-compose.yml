@@ -211,7 +211,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     depends_on:
-    - gateway
+      - gateway
     ports:
       - "443:443"
       - "80:80"
