@@ -1,17 +1,32 @@
 TO DO LIST per Module
 
-- general Website:
-	- The user should be able to use the Back and Forward buttons of the browser. 
-		--> make history of the sections - do we have to show the endpoints in the url bar? 
-
 - MatchService:
-	- the user should be able to leave the tournament
-	- handle disconnects and logouts before and during the match
+	- the user should be able to leave the tournament(?)
+	- if a participant eaves the matc before start of his game - catch it in the game engine and mark him as loosing (Henrizz)
 
-- Server Side PONG:
-	- API endpoint to start match, stop, move and show game state updates
+- Setup(Henrizz):
+	- change localhost to alow playing from different machines
+	- change to https
 
-- when escape in game, return from all other players as well
-- stop game when othe rplayer leaves game.
+- Authentication (Sasha):
+	- handle disconnection while setting up 2FA
 
-- replace console warnings with just logs
+- replace console warnings with just logs(?)
+
+✅ README (Nastya)
+
+- handle resizing of the window (?)
+
+- Terms of Service and Privacy Policy (Sasha)
+
+✅ add .env.example in the Git (Nastya)
+
+✅ SQL injections for signing in (Masha) --no need!
+
+✅ email for signing up and logging in (Masha/Sasha)
+
+- test browser compatibility
+
+- implement spectator mode (?)
+
+- implement healthchecks, backups and disaster recovery (?)

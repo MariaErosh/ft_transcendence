@@ -49,6 +49,7 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
+		"/auth/2fa/set",
 		"/check"
 	];
 	//validate JWT for protected routes and add x-user-* headers

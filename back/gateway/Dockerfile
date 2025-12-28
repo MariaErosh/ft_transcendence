@@ -5,18 +5,16 @@ WORKDIR /app
 
 COPY package*.json ./
 
+RUN npm ci || echo "No dependencies yet"
+
 # prod stage
 FROM base AS prod
 
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install
-
 COPY . .
 
-RUN npm run build
+RUN npm run build || echo "Build skipped"
 
 EXPOSE 3000
 
