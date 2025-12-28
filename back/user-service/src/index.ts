@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import { db, initDB } from "./db/database";
 import { UserService } from "./services/userService";
 import { userRoutes } from "./routes/user";
-import  authPlugin  from "./plugins/authPlugin";
+//import  authPlugin  from "./plugins/authPlugin";
 import metricsPlugin from "fastify-metrics";
 
 
@@ -26,7 +26,7 @@ async function start() {
 	//todo: store the secret key in normal way
 	//(fastify as any).register(jwt, { secret: "!TheLastProjectIn42!" });
 	// register plugin
-  	await fastify.register(authPlugin);
+  	//await fastify.register(authPlugin);
 
 	initDB();
 

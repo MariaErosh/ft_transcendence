@@ -21,9 +21,9 @@ TO DO LIST per Module
 
 ✅ add .env.example in the Git (Nastya)
 
-- SQL injections for signing in (Masha)
+✅ SQL injections for signing in (Masha) --no need!
 
-- email for signing up and logging in (Masha/Sasha)
+✅ email for signing up and logging in (Masha/Sasha)
 
 - test browser compatibility
 

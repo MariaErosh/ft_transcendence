@@ -1,4 +1,4 @@
-import { login, verify2FA, register } from "./api.js";
+import { login, verify2FA, register, logoutRequest } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
@@ -24,7 +24,7 @@ export function renderLogin() {
     form.appendChild(title);
 
     const username = document.createElement("input");
-    username.placeholder = "USERNAME";
+    username.placeholder = "USERNAME OE EMAIL";
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
@@ -57,7 +57,7 @@ export function renderLogin() {
         if (response.twoFactorRequired) {
             render2FA(response.userId);
         } else if (response.accessToken) {
-            localStorage.setItem("username", username.value);
+            localStorage.setItem("username", response.username);
             localStorage.setItem("refreshToken", response.refreshToken);
             localStorage.removeItem("temp");
             history.pushState({ view: "main"}, "", "/");
@@ -88,6 +88,12 @@ export function renderRegister() {
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
+	const email = document.createElement("input");
+    email.type = "test";
+    email.placeholder = "EMAIL";
+    email.className = INPUT_CLASS;
+    form.appendChild(email);
+
     const password = document.createElement("input");
     password.type = "password";
     password.placeholder = "PASSWORD";
@@ -112,7 +118,20 @@ export function renderRegister() {
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const response = await register(username.value, password.value);
+
+		if (!username.value.trim()) {
+			msg.textContent = "Username cannot be empty";
+			return;
+		}
+		if (!email.value.trim() || !/^\S+@\S+\.\S+$/.test(email.value)) {
+			msg.textContent = "Enter a valid email";
+			return;
+		}
+		if (!password.value || password.value.length < 6) {
+			msg.textContent = "Password must be at least 6 characters";
+			return;
+		}
+        const response = await register(username.value, email.value, password.value);
 
         if (response.auth_user?.id) {
             msg.className = "text-green-600 text-xs font-bold uppercase";
@@ -168,6 +187,10 @@ export function render2FA(userId: number) {
 }
 
 export async function logout() {
+	try {
+		await logoutRequest();
+	} catch {}
+
 	//TODO: remove temp login info
     localStorage.removeItem("username");
     localStorage.removeItem("accessToken");
@@ -176,6 +199,7 @@ export async function logout() {
     localStorage.removeItem("userid");
     disconnectGameWS();
     disconnectWS();
+
     renderUserMenu();
     renderCreateTournamentForm();
 }

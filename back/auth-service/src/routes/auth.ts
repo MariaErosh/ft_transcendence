@@ -32,7 +32,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 		try {
 			//create record in AuthService
 			//todo: update two_factor_auth = true
-			user = await auth.createUser(username, password, false );
+			user = await auth.createUser(username, email, password, false );
 			req.log.info({ user }, "create user");
 			if (!user || !user.id) throw new Error ("User creation failed");
 
@@ -90,12 +90,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 	// Login
 	fastify.post("/auth/login", async (req, reply) => {
 		const { username, password } = req.body as {
-			username: string;
+			username: string; // it may be username or email
 			password: string;
 		};
-		if (!username || !password) return reply.status(400).send({ error: "username and password required" });
+		if (!username|| !password) return reply.status(400).send({ error: "username or email and password required" });
 		try {
-			const user = await auth.findUserByUsername(username);
+			const user = await auth.findUserByIdentifier(username);
 			if (!user) return reply.status(401).send({ error: "invalid credentials" });
 
 			const valid = await auth.validatePassword(password, user.password_hash);
@@ -108,6 +108,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
 			return reply.send({
+				username: user.username,
 				accessToken,
 				refreshToken,
 				refreshExpiresAt: expiresAt,
