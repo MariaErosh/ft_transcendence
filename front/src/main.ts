@@ -13,7 +13,7 @@ const app = document.getElementById("app")!;
 app.innerHTML = `
 	<div id="menu" class="fixed top-4 right-4 z-50"></div>
 	<div id="main" class="w-full h-full flex items-center justify-center"></div>
-	<div id="chat" </div>`;
+	<div id="chat"></div>`;
 
 renderUserMenu();
 renderCreateTournamentForm();

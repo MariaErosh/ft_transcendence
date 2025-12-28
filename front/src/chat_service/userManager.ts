@@ -2,9 +2,9 @@
 
 import { authorisedRequest } from "../api.js";
 import type { User } from './types.js';
-import { ChatState } from './chatState.js';
+import { ChatData } from './chatData.js';
 import { escapeHtml } from './utils.js';
-import { updateStatus, updateChatTitle, updateInputPlaceholder, enableInput } from './uiRenderer.js';
+import { updateStatus, renderDMView, renderHomeView } from './uiRenderer.js';
 import { loadMessageHistory } from './messageHandler.js';
 
 /**
@@ -25,119 +25,121 @@ export async function loadUsers() {
     // Map users with online status
     allUsers = allUsers.map((user: any) => ({
       username: user.username,
+      userId: user.id,
       isOnline: onlineUsernames.has(user.username),
     }));
 
     console.log('Final allUsers array:', allUsers);
-    ChatState.setAllUsers(allUsers);
-    ChatState.setOnlineUsers(onlineData.users || []);
-    renderUserList();
+    ChatData.setAllUsers(allUsers);
+    ChatData.setOnlineUsers(onlineData.users || []);
   } catch (err) {
     console.error('Failed to load users:', err);
   }
 }
 
 /**
- * Render the user list
+ * Refresh online status for all users and friends
+ * Lighter than loadUsers - only updates online status
  */
-export function renderUserList() {
-  const userListEl = document.getElementById("user-list");
-  if (!userListEl) return;
+export async function refreshOnlineStatus() {
+  try {
+    console.log('Refreshing online status...');
 
-  const currentUsername = localStorage.getItem("username");
-  const allUsers = ChatState.getAllUsers();
-  const currentRecipient = ChatState.getCurrentRecipient();
-
-  userListEl.innerHTML = allUsers
-    .filter((user) => user.username !== currentUsername)
-    .map((user) => `
-      <button
-        data-username="${user.username}"
-        class="
-          w-full text-left px-2 py-1
-          text-xs font-mono
-          hover:bg-purple-200
-          ${currentRecipient?.username === user.username ? 'bg-purple-300' : ''}
-          flex items-center gap-1
-        "
-      >
-        <span class="
-          w-2 h-2 rounded-full
-          ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-        "></span>
-        <span class="truncate">${escapeHtml(user.username)}</span>
-      </button>
-    `)
-    .join('');
-
-  // Add click handlers
-  userListEl.querySelectorAll('button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const username = btn.getAttribute('data-username') || '';
-      console.log('User button clicked:', username);
-      if (username) {
-        console.log('Selecting user:', username);
-        selectUser(username);
-      }
-    });
-  });
-}
-
-/**
- * Select a user to DM
- */
-export async function selectUser(username: string) {
-  const currentRecipient = ChatState.getCurrentRecipient();
-
-  if (currentRecipient?.username === username) {
-    // Clicking same user = deselect
-    ChatState.setCurrentRecipient(null);
-  } else {
-    // Get userId from online users if available
+    // Get current online users
     const onlineData = await authorisedRequest('/chat/users/online');
-    const onlineUser = (onlineData.users || []).find((u: any) => u.username === username);
-    ChatState.setCurrentRecipient({
-      username,
-      userId: onlineUser?.userId
-    });
-  }
+    const onlineUsernames = new Set((onlineData.users || []).map((u: any) => u.username));
 
-  // Update UI
-  updateChatTitle();
-  updateInputPlaceholder();
+    // Update allUsers with new online status
+    const allUsers = ChatData.getAllUsers();
+    const updatedUsers = allUsers.map(user => ({
+      ...user,
+      isOnline: onlineUsernames.has(user.username),
+    }));
+    ChatData.setAllUsers(updatedUsers);
 
-  // Update send button
-  const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
-  const isConnected = ChatState.isConnected();
-  const hasRecipient = !!ChatState.getCurrentRecipient();
+    // Update friends with new online status
+    const friends = ChatData.getFriends();
+    const updatedFriends = friends.map(friend => ({
+      ...friend,
+      isOnline: onlineUsernames.has(friend.username),
+    }));
+    ChatData.setFriends(updatedFriends);
 
-  if (sendBtn) {
-    sendBtn.disabled = !hasRecipient || !isConnected;
-  }
-
-  // Update status
-  if (hasRecipient) {
-    updateStatus("Connected", "success");
-  } else {
-    updateStatus("Select user to chat", "info");
-  }
-
-  // Render user list to update selection
-  renderUserList();
-
-  // Load message history for this user
-  if (ChatState.getCurrentRecipient()) {
-    await loadMessageHistory();
-  } else {
-    clearMessages();
+    console.log('Online status refreshed');
+  } catch (err) {
+    console.error('Failed to refresh online status:', err);
   }
 }
 
 /**
- * Clear all messages from UI
+ * Load friends list from backend
  */
-function clearMessages() {
-  const messagesContainer = document.getElementById("chat-messages");
-  if (!messagesContainer) return;
-  messagesContainer.innerHTML = "";
+export async function loadFriends() {
+  try {
+    const friendsData = await authorisedRequest('/interact/friends');
+    console.log('Friends data:', friendsData);
+
+    // Get already loaded users to sync online status
+    const allUsers = ChatData.getAllUsers();
+
+    const friends = (friendsData || []).map((friend: any) => {
+      // Find matching user to get online status
+      const matchingUser = allUsers.find(u => u.username === friend.username);
+      return {
+        username: friend.username,
+        userId: friend.id,
+        isOnline: matchingUser?.isOnline || false,
+      };
+    });
+
+    ChatData.setFriends(friends);
+    console.log('Friends loaded:', friends);
+  } catch (err) {
+    console.error('Failed to load friends:', err);
+    // If endpoint doesn't exist yet, set empty array
+    ChatData.setFriends([]);
+  }
+}
+
+/**
+ * Open DM with a user
+ * Action: User clicked on a friend/user in home view
+ */
+export async function openDM(user: User) {
+  console.log('Opening DM with:', user);
+
+  // Set the recipient
+  ChatData.setCurrentRecipient(user);
+
+  // Switch to DM view
+  ChatData.setCurrentView('dm');
+
+  // Load message history for this conversation
+  await loadMessageHistory();
+
+  // Render DM view
+  renderDMView();
+}
+
+/**
+ * Go back to home view from DM
+ * Action: User clicked back button in DM view
+ */
+export async function goBackToHome() {
+  console.log('Going back to home view');
+
+  // Clear current recipient
+  ChatData.setCurrentRecipient(null);
+
+  // Clear messages
+  ChatData.clearMessages();
+
+  // Switch to home view
+  ChatData.setCurrentView('home');
+
+  // Refresh online status when returning to home
+  await refreshOnlineStatus();
+
+  // Render home view
+  renderHomeView();
 }

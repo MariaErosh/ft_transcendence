@@ -1,7 +1,7 @@
 // WebSocket connection management
 
 import type { ChatMessage } from './types.js';
-import { ChatState } from './chatState.js';
+import { ChatData } from './chatData.js';
 import { displayMessage, loadMessageHistory } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
@@ -14,27 +14,35 @@ let shouldReconnect = false;
  * Connect to the chat WebSocket
  */
 export function connectChat() {
-  const token = localStorage.getItem("accessToken");
+	// Don't reconnect if already connected
+	if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+		console.log("WebSocket already connected");
+		return;
+	}
 
-  if (!token) {
-    updateStatus("Not logged in", "error");
-    console.log("No access token - not connecting to chat");
-    shouldReconnect = false;
-    return;
-  }
+	const token = localStorage.getItem("accessToken");
 
-  try {
-    chatSocket = new WebSocket(`${GATEWAY_WS_URL}?token=${token}`);
+	if (!token) {
+	updateStatus("Not logged in", "error");
+	console.log("No access token - not connecting to chat");
+	shouldReconnect = false;  // Don't reconnect without token
+	return;
+	}
 
-    chatSocket.onopen = handleOpen;
-    chatSocket.onmessage = handleMessage;
-    chatSocket.onclose = handleClose;
-    chatSocket.onerror = handleError;
+	try {
+	// Enable auto-reconnect when we have a valid token
+	shouldReconnect = true;
+	chatSocket = new WebSocket(`${GATEWAY_WS_URL}?token=${token}`);
 
-  } catch (err) {
-    console.error("Failed to connect to chat:", err);
-    updateStatus("Connection failed", "error");
-  }
+	chatSocket.onopen = handleOpen;
+	chatSocket.onmessage = handleMessage;
+	chatSocket.onclose = handleClose;
+	chatSocket.onerror = handleError;
+
+	} catch (err) {
+	console.error("Failed to connect to chat:", err);
+	updateStatus("Connection failed", "error");
+	}
 }
 
 /**
@@ -42,10 +50,10 @@ export function connectChat() {
  */
 function handleOpen() {
   console.log("Chat WebSocket connected");
-  ChatState.setConnected(true);
+  ChatData.setConnected(true);
   updateStatus("Connected", "success");
 
-  const hasRecipient = !!ChatState.getCurrentRecipient();
+  const hasRecipient = !!ChatData.getCurrentRecipient();
   const inputEl = document.getElementById("chat-input") as HTMLInputElement;
   const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
 
@@ -53,14 +61,12 @@ function handleOpen() {
   if (sendBtn) sendBtn.disabled = !hasRecipient;
 
   // Only load history if we have a recipient selected
-  if (ChatState.getCurrentRecipient()) {
+  if (ChatData.getCurrentRecipient()) {
     loadMessageHistory();
   } else {
     clearMessages();
   }
-}
-
-/**
+}/**
  * Handle WebSocket message event
  */
 function handleMessage(event: MessageEvent) {
@@ -73,7 +79,7 @@ function handleMessage(event: MessageEvent) {
       return;
     }
 
-    const currentRecipient = ChatState.getCurrentRecipient();
+    const currentRecipient = ChatData.getCurrentRecipient();
 
     // Only display messages relevant to current conversation
     const isRelevantMessage =
@@ -86,7 +92,7 @@ function handleMessage(event: MessageEvent) {
 
     // Store new messages in history
     if (message.type === 'message') {
-      ChatState.addMessage(message);
+      ChatData.addMessage(message);
     }
 
     // Only display if relevant to current context
@@ -103,7 +109,7 @@ function handleMessage(event: MessageEvent) {
  */
 function handleClose() {
   console.log("Chat WebSocket disconnected");
-  ChatState.setConnected(false);
+  ChatData.setConnected(false);
   updateStatus("Disconnected", "error");
 
   const inputEl = document.getElementById("chat-input") as HTMLInputElement;
@@ -132,9 +138,9 @@ function handleError(error: Event) {
  * Send a chat message
  */
 export function sendMessage(content: string) {
-  if (!content.trim() || !chatSocket || !ChatState.isConnected()) return;
+  if (!content.trim() || !chatSocket || !ChatData.isConnected()) return;
 
-  const currentRecipient = ChatState.getCurrentRecipient();
+  const currentRecipient = ChatData.getCurrentRecipient();
   if (!currentRecipient || !currentRecipient.userId) {
     updateStatus("Select a user to chat with", "error");
     return;
@@ -166,9 +172,9 @@ export function disconnectChat() {
     chatSocket.close();
     chatSocket = null;
   }
-  ChatState.clearMessages();
-  ChatState.setConnected(false);
-  ChatState.setChatOpen(false);
+  ChatData.clearMessages();
+  ChatData.setConnected(false);
+  ChatData.setChatOpen(false);
 }
 
 /**
@@ -176,8 +182,7 @@ export function disconnectChat() {
  */
 export function reconnectChat() {
   disconnectChat();
-  shouldReconnect = true;
-  connectChat();
+  connectChat();  // connectChat will set shouldReconnect=true if token exists
 }
 
 /**
@@ -187,11 +192,4 @@ function clearMessages() {
   const messagesContainer = document.getElementById("chat-messages");
   if (!messagesContainer) return;
   messagesContainer.innerHTML = "";
-}
-
-/**
- * Set reconnect behavior
- */
-export function setShouldReconnect(value: boolean) {
-  shouldReconnect = value;
 }

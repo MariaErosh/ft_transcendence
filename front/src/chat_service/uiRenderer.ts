@@ -1,9 +1,9 @@
 // UI rendering functions
 
 import type { StatusType } from './types.js';
-import { ChatState } from './chatState.js';
-import { sendMessage } from './websocket.js';
-import { loadUsers, selectUser, renderUserList } from './userManager.js';
+import { ChatData } from './chatData.js';
+import { connectChat, sendMessage } from './websocket.js';
+import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 
@@ -38,210 +38,29 @@ export function renderChatBubble() {
 	</button>
 	`;
 	const bubble = document.getElementById("chat-bubble");
-	bubble?.addEventListener("click", openChat);
-}
-
-// Render the full chat window (expanded state)
-export function renderChatWindow() {
-  if (!chatContainer) return;
-
-  const currentRecipient = ChatState.getCurrentRecipient();
-  const isUserListOpen = ChatState.isUserListOpen();
-
-  chatContainer.className = "fixed bottom-6 right-6 z-50";
-  chatContainer.innerHTML = `
-    <div class="
-        bg-gray-200
-        border-4 border-black
-        w-96 h-[500px] flex
-        shadow-[8px_8px_0_0_#000000]
-        transition-all duration-150
-    ">
-      <!-- User List Panel -->
-      <div id="user-list-panel" class="
-        ${isUserListOpen ? 'w-32' : 'w-0'}
-        border-r-4 border-black
-        bg-gray-100
-        overflow-hidden
-        transition-all duration-200
-      ">
-        <div class="h-full overflow-y-auto p-2">
-          <div id="user-list" class="space-y-1"></div>
-        </div>
-      </div>
-
-      <!-- Chat Panel -->
-      <div class="flex-1 flex flex-col">
-        <div class="
-          bg-purple-600
-          text-white
-          px-4 py-3
-          border-b-4 border-black
-          flex justify-between items-center
-        ">
-          <div class="flex items-center gap-2">
-            <button id="toggle-users" class="
-              text-lg hover:text-pink-400
-              leading-none
-            ">
-              👥
-            </button>
-            <h3 id="chat-title" class="font-bold uppercase tracking-wider text-sm">
-              ${currentRecipient ? `DM: @${currentRecipient.username}` : 'SELECT A USER'}
-            </h3>
-          </div>
-          <button id="chat-minimize" class="
-            text-xl font-extrabold
-            hover:text-pink-400
-            leading-none
-            px-2
-          ">
-            ✕
-          </button>
-        </div>
-
-        <div id="chat-messages" class="
-          flex-1
-          overflow-y-auto
-          p-4
-          space-y-3
-          bg-black/90
-          font-mono
-          text-sm
-        ">
-          <div class="text-center text-green-400">
-            > ESTABLISHING CONNECTION...
-          </div>
-        </div>
-
-        <div class="
-          border-t-4 border-black
-          p-3
-          bg-gray-300
-        ">
-          <div class="flex gap-2">
-            <input
-              id="chat-input"
-              type="text"
-              placeholder="${currentRecipient ? `Message @${currentRecipient.username}...` : 'Select a user first...'}"
-              class="
-                text-sm
-                text-black
-                flex-1
-                px-3 py-2
-                border-2 border-black
-                bg-white
-                focus:outline-none
-                focus:border-purple-600
-                font-mono
-              "
-              ${!currentRecipient ? 'disabled' : ''}
-            />
-            <button
-              id="chat-send"
-              class="
-                text-sm
-                px-4 py-2
-                bg-pink-500
-                text-black
-                uppercase font-bold
-                border-2 border-black
-                shadow-[2px_2px_0_0_#000000]
-                hover:bg-pink-400
-                active:shadow-none active:translate-x-[2px] active:translate-y-[2px]
-                disabled:bg-gray-400
-              "
-              disabled
-            >
-              SEND
-            </button>
-          </div>
-          <div id="chat-status" class="
-            text-xs
-            text-red-500
-            mt-1
-            font-mono
-            font-bold
-          ">
-            // DISCONNECTED
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Setup event listeners
-  setupEventListeners();
-
-  // Load users
-  loadUsers();
-
-  // Update UI based on connection state
-  if (ChatState.isConnected()) {
-    const hasRecipient = !!currentRecipient;
-    enableInput(hasRecipient);
-    updateStatus(hasRecipient ? "Connected" : "Select user to chat", hasRecipient ? "success" : "info");
-
-    // Display stored message history
-    displayStoredMessages();
-  } else {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      updateStatus("Not logged in", "error");
-    } else {
-      updateStatus("Disconnected", "error");
-    }
-  }
-}
-
-/**
- * Setup event listeners for chat window
- */
-function setupEventListeners() {
-  const input = document.getElementById("chat-input") as HTMLInputElement;
-  const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
-  const minimizeBtn = document.getElementById("chat-minimize") as HTMLButtonElement;
-  const toggleUsersBtn = document.getElementById("toggle-users") as HTMLButtonElement;
-
-  sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
-  input?.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") sendMessage(input.value);
-  });
-  minimizeBtn?.addEventListener("click", closeChat);
-  toggleUsersBtn?.addEventListener("click", toggleUserListUI);
+	bubble?.addEventListener("click", chatOpened);
 }
 
 /**
  * Open chat window from bubble
  */
-export function openChat() {
-  ChatState.setChatOpen(true);
-  renderChatWindow();
+export function chatOpened() {
+	ChatData.setChatOpen(true);
+	ChatData.setCurrentView('home');
+	connectChat();
+
+	// Load users and friends in parallel, then render home view
+	Promise.all([loadUsers(), loadFriends()]).then(() => {
+		renderHomeView();
+	});
 }
 
 /**
  * Close chat window back to bubble
  */
 export function closeChat() {
-  ChatState.setChatOpen(false);
+  ChatData.setChatOpen(false);
   renderChatBubble();
-}
-
-/**
- * Toggle user list panel
- */
-function toggleUserListUI() {
-  ChatState.toggleUserList();
-  const panel = document.getElementById("user-list-panel");
-  if (panel) {
-    panel.className = `
-      ${ChatState.isUserListOpen() ? 'w-32' : 'w-0'}
-      border-r-4 border-black
-      bg-gray-100
-      overflow-hidden
-      transition-all duration-200
-    `;
-  }
 }
 
 /**
@@ -271,30 +90,455 @@ export function enableInput(enabled: boolean) {
 }
 
 /**
- * Update chat title
+ * Render Home View
+ * Shows friends list at top and all users list below
  */
-export function updateChatTitle() {
-  const titleEl = document.getElementById("chat-title");
-  const currentRecipient = ChatState.getCurrentRecipient();
+export function renderHomeView() {
+  if (!chatContainer) return;
 
-  if (titleEl) {
-    titleEl.textContent = currentRecipient
-      ? `DM: @${currentRecipient.username}`
-      : 'SELECT A USER';
-  }
+  const currentUsername = localStorage.getItem("username");
+  const friends = ChatData.getFriends();
+  const allUsers = ChatData.getAllUsers();
+  const isConnected = ChatData.isConnected();
+
+  chatContainer.className = "fixed bottom-6 right-6 z-50";
+  chatContainer.innerHTML = `
+    <div class="
+        bg-gray-200
+        border-4 border-black
+        w-96 h-[500px] flex flex-col
+        shadow-[8px_8px_0_0_#000000]
+        transition-all duration-150
+    ">
+      <!-- Header -->
+      <div class="
+        bg-purple-600
+        text-white
+        px-4 py-3
+        border-b-4 border-black
+        flex justify-between items-center
+      ">
+        <h3 class="font-bold uppercase tracking-wider text-sm">
+          📨 CHAT
+        </h3>
+        <div class="flex items-center gap-2">
+          <button id="refresh-status" class="
+            text-lg hover:text-pink-400
+            leading-none
+            px-2
+          " title="Refresh online status">
+            ↻
+          </button>
+          <button id="chat-minimize" class="
+            text-xl font-extrabold
+            hover:text-pink-400
+            leading-none
+            px-2
+          ">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Home Content -->
+      <div class="flex-1 overflow-y-auto bg-gray-800">
+        <!-- Friends Section -->
+        <div class="border-b-4 border-black bg-pink-100">
+          <div class="px-3 py-2 bg-pink-500 text-black font-bold text-xs uppercase tracking-wide">
+            💜 Friends
+          </div>
+          <div id="friends-list" class="p-2 space-y-1">
+            ${friends.length === 0
+              ? '<div class="text-xs text-gray-500 italic px-2 py-2">No friends yet</div>'
+              : friends
+                  .filter((friend) => friend.username !== currentUsername)
+                  .map((friend) => `
+                    <button
+                      data-username="${friend.username}"
+                      data-userid="${friend.userId || ''}"
+                      class="
+                        w-full text-left px-2 py-2
+                        text-sm font-mono
+                        text-gray-200
+                        hover:bg-pink-200
+                        hover:text-black
+                        flex items-center gap-2
+                        border-2 border-transparent
+                        hover:border-black
+                        transition-all
+                      "
+                    >
+                      <span class="
+                        w-2 h-2 rounded-full
+                        ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                      "></span>
+                      <span class="truncate">${escapeHtml(friend.username)}</span>
+                    </button>
+                  `).join('')
+            }
+          </div>
+        </div>
+
+        <!-- All Users Section -->
+        <div class="bg-gray-700">
+          <div class="px-3 py-2 bg-purple-400 text-black font-bold text-xs uppercase tracking-wide">
+            🌐 All Users
+          </div>
+          <div id="all-users-list" class="p-2 space-y-1">
+            ${allUsers
+              .filter((user) => user.username !== currentUsername)
+              .map((user) => `
+                <button
+                  data-username="${user.username}"
+                  data-userid="${user.userId || ''}"
+                  class="
+                    w-full text-left px-2 py-2
+                    text-sm font-mono
+                    text-gray-200
+                    hover:bg-purple-200
+                    hover:text-black
+                    flex items-center gap-2
+                    border-2 border-transparent
+                    hover:border-black
+                    transition-all
+                  "
+                >
+                  <span class="
+                    w-2 h-2 rounded-full
+                    ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
+                  "></span>
+                  <span class="truncate">${escapeHtml(user.username)}</span>
+                </button>
+              `).join('')
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Status -->
+      <div class="
+        border-t-4 border-black
+        p-3
+        bg-gray-300
+      ">
+        <div id="chat-status" class="
+          text-xs
+          font-mono
+          font-bold
+          ${isConnected ? 'text-green-600' : 'text-red-600'}
+        ">
+          ${isConnected ? '// CONNECTED' : '// DISCONNECTED'}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Setup event listeners
+  const minimizeBtn = document.getElementById("chat-minimize");
+  const refreshBtn = document.getElementById("refresh-status");
+
+  minimizeBtn?.addEventListener("click", closeChat);
+  refreshBtn?.addEventListener("click", async () => {
+    await refreshOnlineStatus();
+    renderHomeView(); // Re-render to show updated status
+  });
+
+  // Add click handlers for friends
+  const friendsList = document.getElementById("friends-list");
+  friendsList?.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const username = btn.getAttribute('data-username') || '';
+      if (username) {
+        // Find the full user object from friends list
+        const user = friends.find(f => f.username === username);
+        if (user) {
+          openDM(user);
+        }
+      }
+    });
+  });
+
+  // Add click handlers for all users
+  const allUsersList = document.getElementById("all-users-list");
+  allUsersList?.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const username = btn.getAttribute('data-username') || '';
+      if (username) {
+        // Find the full user object from all users list
+        const user = allUsers.find(u => u.username === username);
+        if (user) {
+          openDM(user);
+        }
+      }
+    });
+  });
 }
 
 /**
- * Update input placeholder
+ * Render DM View
+ * Shows conversation with a specific user, includes back button and dropdown menu
  */
-export function updateInputPlaceholder() {
-  const inputEl = document.getElementById("chat-input") as HTMLInputElement;
-  const currentRecipient = ChatState.getCurrentRecipient();
+export function renderDMView() {
+  if (!chatContainer) return;
 
-  if (inputEl) {
-    inputEl.placeholder = currentRecipient
-      ? `Message @${currentRecipient.username}...`
-      : 'Select a user first...';
-    inputEl.disabled = !currentRecipient;
+  const currentRecipient = ChatData.getCurrentRecipient();
+  const isConnected = ChatData.isConnected();
+
+  if (!currentRecipient) {
+    // Fallback to home view if no recipient
+    renderHomeView();
+    return;
   }
+
+  chatContainer.className = "fixed bottom-6 right-6 z-50";
+  chatContainer.innerHTML = `
+    <div class="
+        bg-gray-200
+        border-4 border-black
+        w-96 h-[500px] flex flex-col
+        shadow-[8px_8px_0_0_#000000]
+        transition-all duration-150
+    ">
+      <!-- Header -->
+      <div class="
+        bg-purple-600
+        text-white
+        px-4 py-3
+        border-b-4 border-black
+        flex justify-between items-center
+      ">
+        <div class="flex items-center gap-2">
+          <button id="back-button" class="
+            text-lg hover:text-pink-400
+            leading-none
+          ">
+            ←
+          </button>
+          <h3 class="font-bold tracking-wider text-sm">
+            CHAT WITH @${escapeHtml(currentRecipient.username)}
+          </h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <button id="dropdown-menu" class="
+              text-xl hover:text-pink-400
+              leading-none
+              px-2
+            ">
+              ⋮
+            </button>
+            <div id="dropdown-content" class="
+              hidden
+              absolute right-0 top-8
+              bg-white
+              border-4 border-black
+              shadow-[4px_4px_0_0_#000000]
+              min-w-[180px]
+              z-50
+            ">
+              <button data-action="add-friend" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-green-200
+                border-b-2 border-black
+                text-black
+              ">
+                ➕ Add Friend
+              </button>
+              <button data-action="delete-friend" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-red-200
+                border-b-2 border-black
+                text-black
+              ">
+                ➖ Delete Friend
+              </button>
+              <button data-action="block" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-yellow-200
+                border-b-2 border-black
+                text-black
+              ">
+                🚫 Block User
+              </button>
+              <button data-action="unblock" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-green-200
+                border-b-2 border-black
+                text-black
+              ">
+                ✅ Unblock User
+              </button>
+              <button data-action="profile" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-blue-200
+                border-b-2 border-black
+                text-black
+              ">
+                👤 See Profile
+              </button>
+              <button data-action="game" class="
+                w-full text-left px-3 py-2
+                text-xs font-bold uppercase
+                hover:bg-purple-200
+                text-black
+              ">
+                🎮 Game Invitation
+              </button>
+            </div>
+          </div>
+          <button id="chat-minimize" class="
+            text-xl font-extrabold
+            hover:text-pink-400
+            leading-none
+            px-2
+          ">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Container -->
+      <div id="chat-messages" class="
+        flex-1
+        overflow-y-auto
+        p-4
+        space-y-3
+        bg-black/90
+        font-mono
+        text-sm
+      ">
+        <div class="text-center text-green-400">
+          > LOADING CONVERSATION...
+        </div>
+      </div>
+
+      <!-- Input Footer -->
+      <div class="
+        border-t-4 border-black
+        p-3
+        bg-gray-300
+      ">
+        <div class="flex gap-2">
+          <input
+            id="chat-input"
+            type="text"
+            placeholder="Message @${escapeHtml(currentRecipient.username)}..."
+            class="
+              text-sm
+              text-black
+              flex-1
+              px-3 py-2
+              border-2 border-black
+              bg-white
+              focus:outline-none
+              focus:border-purple-600
+              font-mono
+            "
+            ${!isConnected ? 'disabled' : ''}
+          />
+          <button
+            id="chat-send"
+            class="
+              text-sm
+              px-4 py-2
+              bg-pink-500
+              text-black
+              uppercase font-bold
+              border-2 border-black
+              shadow-[2px_2px_0_0_#000000]
+              hover:bg-pink-400
+              active:shadow-none active:translate-x-[2px] active:translate-y-[2px]
+              disabled:bg-gray-400
+            "
+            ${!isConnected ? 'disabled' : ''}
+          >
+            SEND
+          </button>
+        </div>
+        <div id="chat-status" class="
+          text-xs
+          mt-1
+          font-mono
+          font-bold
+          ${isConnected ? 'text-green-600' : 'text-red-600'}
+        ">
+          ${isConnected ? '// CONNECTED' : '// DISCONNECTED'}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Setup event listeners
+  const input = document.getElementById("chat-input") as HTMLInputElement;
+  const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
+  const minimizeBtn = document.getElementById("chat-minimize");
+  const backBtn = document.getElementById("back-button");
+  const dropdownBtn = document.getElementById("dropdown-menu");
+  const dropdownContent = document.getElementById("dropdown-content");
+
+  sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
+  input?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage(input.value);
+  });
+  minimizeBtn?.addEventListener("click", closeChat);
+  backBtn?.addEventListener("click", () => {
+    goBackToHome();
+    renderHomeView();
+  });
+
+  // Dropdown menu toggle
+  dropdownBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdownContent?.classList.toggle('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdownContent?.contains(e.target as Node) && e.target !== dropdownBtn) {
+      dropdownContent?.classList.add('hidden');
+    }
+  });
+
+  // Dropdown menu actions
+  dropdownContent?.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.getAttribute('data-action');
+      dropdownContent?.classList.add('hidden');
+
+      switch (action) {
+        case 'add-friend':
+          console.log('Add friend:', currentRecipient.username);
+          // TODO: Implement add friend
+          break;
+        case 'delete-friend':
+          console.log('Delete friend:', currentRecipient.username);
+          // TODO: Implement delete friend
+          break;
+        case 'block':
+          console.log('Block user:', currentRecipient.username);
+          // TODO: Implement block
+          break;
+        case 'unblock':
+          console.log('Unblock user:', currentRecipient.username);
+          // TODO: Implement unblock
+          break;
+        case 'profile':
+          console.log('See profile:', currentRecipient.username);
+          // TODO: Implement view profile
+          break;
+        case 'game':
+          console.log('Game invitation to:', currentRecipient.username);
+          // TODO: Implement game invitation
+          break;
+      }
+    });
+  });
+
+  // Display stored messages
+  displayStoredMessages();
 }

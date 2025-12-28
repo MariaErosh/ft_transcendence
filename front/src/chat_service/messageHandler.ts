@@ -2,7 +2,7 @@
 
 import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
-import { ChatState } from './chatState.js';
+import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
 
 /**
@@ -10,7 +10,7 @@ import { escapeHtml, formatTime } from './utils.js';
  */
 export async function loadMessageHistory() {
   try {
-    const currentRecipient = ChatState.getCurrentRecipient();
+    const currentRecipient = ChatData.getCurrentRecipient();
 
     // Don't load history if no recipient is selected
     if (!currentRecipient || !currentRecipient.userId) {
@@ -36,10 +36,10 @@ export async function loadMessageHistory() {
         created_at: msg.created_at,
       }));
 
-      ChatState.setMessageHistory(messages);
+      ChatData.setMessageHistory(messages);
 
       // If chat is open, display them immediately
-      const isChatOpen = ChatState.isChatOpen();
+      const isChatOpen = ChatData.isChatOpen();
       if (isChatOpen) {
         clearMessages();
         messages.forEach((msg: ChatMessage) => displayMessage(msg));
@@ -88,7 +88,7 @@ export function displayMessage(message: ChatMessage) {
  */
 export function displayStoredMessages() {
   clearMessages();
-  const messageHistory = ChatState.getMessageHistory();
+  const messageHistory = ChatData.getMessageHistory();
   messageHistory.forEach(msg => displayMessage(msg));
 }
 

@@ -24,12 +24,16 @@ export interface User {
 
 export type StatusType = "success" | "error" | "info";
 
-export interface ChatState {
+export type ChatView = 'home' | 'dm';
+
+export interface ChatData {
 	isConnected: boolean;
 	isChatOpen: boolean;
+	currentView: ChatView;
 	messageHistory: ChatMessage[];
 	allUsers: User[];
 	onlineUsers: User[];
+	friends: User[];
 	currentRecipient: User | null;
 	isUserListOpen: boolean;
 }

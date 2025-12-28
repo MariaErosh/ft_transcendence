@@ -1,14 +1,16 @@
-// Centralized chat state management
+// Centralized chat data management
 
-import type { ChatMessage, User, ChatState as IChatState } from './types.js';
+import type { ChatMessage, User, ChatData as IChatData, ChatView } from './types.js';
 
-class ChatStateManager {
-  private state: IChatState = {
+class ChatDataManager {
+  private state: IChatData = {
     isConnected: false,
     isChatOpen: false,
+    currentView: 'home',
     messageHistory: [],
     allUsers: [],
     onlineUsers: [],
+    friends: [],
     currentRecipient: null,
     isUserListOpen: true,
   };
@@ -42,9 +44,25 @@ class ChatStateManager {
     return this.state.isUserListOpen;
   }
 
+  getCurrentView(): ChatView {
+    return this.state.currentView;
+  }
+
+  getFriends(): User[] {
+    return this.state.friends;
+  }
+
   // Setters
   setConnected(value: boolean): void {
     this.state.isConnected = value;
+  }
+
+  setCurrentView(view: ChatView): void {
+    this.state.currentView = view;
+  }
+
+  setFriends(friends: User[]): void {
+    this.state.friends = friends;
   }
 
   setChatOpen(value: boolean): void {
@@ -85,4 +103,4 @@ class ChatStateManager {
 }
 
 // Export singleton instance
-export const ChatState = new ChatStateManager();
+export const ChatData = new ChatDataManager();
