@@ -24,8 +24,6 @@ const server = Fastify({
 server.register(authPlugin);
 server.register(metricsPlugin, { endpoint: '/metrics' });
 server.register(cors, { origin: true });
-//todo: store the secret key in normal way
-//server.register(jwt, { secret: "!TheLastProjectIn42!" });
 
 initDB();
 
