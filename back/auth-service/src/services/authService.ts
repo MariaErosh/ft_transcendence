@@ -52,8 +52,8 @@ export class AuthService {
 		const hash = await bcrypt.hash(password, 10);
 		return new Promise((resolve, reject) => {
 		db.run(
-			"INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
-			[username, email, hash],
+			"INSERT INTO users (username,  email, password_hash, two_factor_enabled) VALUES (?, ?, ?, ?)",
+			[username,email, hash, two_factor_enabled],
 			function (err) {
 				if (err) {
 					logger.error({ err }, "Failed to create user");
@@ -197,6 +197,38 @@ export class AuthService {
 			const otpauth = authenticator.keyuri(username, "FT_Transcendence", secret);
 			const qrCodeDataURL = await QRCode.toDataURL(otpauth);
 			resolve({ secret, qrCodeDataURL });
+			}
+		);
+		});
+	}
+
+	async delete2FAsecret(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_secret = ?, two_factor_set = 0 WHERE id = ?",
+			[null, userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to remove 2FA secret");
+				return reject(err);
+			}
+			resolve();
+			}
+		);
+		});
+	}
+
+	async mark2FAset(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_set = 1 WHERE id = ?",
+			[userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to mark 2FA as set");
+				return reject(err);
+			}
+			resolve();
 			}
 		);
 		});

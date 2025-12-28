@@ -21,7 +21,7 @@ function generateRandomCredentials() {
 async function createTempUser(){
 	const {username, email, password} = generateRandomCredentials();
 	try {
-		const data = await register(username, email, password);
+		const data = await register(username, email, password, false);
 		localStorage.setItem("userid", data.id);
 		localStorage.setItem("username", username);
 	}

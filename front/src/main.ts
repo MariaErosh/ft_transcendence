@@ -6,6 +6,7 @@ import { renderNewConsoleTournament } from "./match_service/render_console.js";
 import { renderGameBoard } from "./game_front/gameMenu.js";
 import { setStop } from "./game_front/gamePlay.js"
 import { renderArena } from "./arena.js";
+import { renderFooterLinks } from "./policies/render_footer_links.js";
 
 const app = document.getElementById("app")!;
 
@@ -13,6 +14,7 @@ app.innerHTML = `
 	<div id="menu" class="fixed top-4 right-4 z-50"></div>
 	<div id="main" class="w-full h-full flex items-center justify-center"></div>`;
 
+renderFooterLinks();
 renderUserMenu();
 renderCreateTournamentForm();
 
@@ -20,6 +22,7 @@ window.addEventListener("DOMContentLoaded", () => {
 	// if user refreshed on a sub-page (like /game), redirect to "/"
 	if (location.pathname !== "/") {
 		history.replaceState({ view: "main" }, "", "/");
+		renderFooterLinks();
 		renderUserMenu();
 		renderCreateTournamentForm();
 	}
@@ -32,6 +35,7 @@ window.addEventListener("popstate", (event) => {
 		history.replaceState({ view: "main" }, "", "/"); // make URL home
 		setStop();
 		renderUserMenu();
+		renderFooterLinks();
 		renderCreateTournamentForm();
 		return;
 	}
@@ -62,12 +66,14 @@ window.addEventListener("popstate", (event) => {
 		case "main":
 			setStop();
 			renderUserMenu();
+			renderFooterLinks();
 			renderCreateTournamentForm();
 			break;
 		default: 
 			//history.replaceState({ view: "main" }, "", "/"); // fallback URL to home
 			setStop();
 			renderUserMenu();
+			renderFooterLinks();
 			renderCreateTournamentForm();
 	}
 });
