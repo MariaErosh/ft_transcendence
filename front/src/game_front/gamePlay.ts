@@ -1,7 +1,7 @@
 import { gameState, GameState, board } from "./gameSpecs.js";
 import { disconnectGameWS } from "../match_service/gameSocket.js";
 import { draw, drawNumber, drawText } from "./draw.js";
-import { renderCreateTournamentForm } from "../match_service/start_page.js"
+import { renderStartView } from "../match_service/start_page.js"
 import { gameSocket } from "../match_service/gameSocket.js";
 import { renderArena } from "../arena.js";
 
@@ -107,7 +107,7 @@ function loop(overlay: HTMLElement, canvas: HTMLCanvasElement) {
 export function toMatchMenu() {
 	for (const key in keys) keys[key] = false;
 	cleanup();
-	renderCreateTournamentForm();
+	renderStartView();
 }
 
 export function cleanup() {

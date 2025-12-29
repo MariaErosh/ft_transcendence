@@ -1,6 +1,6 @@
 import { gameSocket } from "./match_service/gameSocket.js";
 // import { draw, drawText } from "./game_front/draw.js";
-import { renderCreateTournamentForm } from "./match_service/start_page.js";
+import { renderStartView } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
 export 	type ArenaState =
@@ -112,7 +112,7 @@ export function renderArena(state: ArenaState) {
 				backBtn.addEventListener("click", () => {
 					arena.innerHTML = "";
 					renderUserMenu();
-					renderCreateTournamentForm();
+					renderStartView();
 				});
 			break;
 

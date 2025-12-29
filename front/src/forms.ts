@@ -1,6 +1,6 @@
 import { login, verify2FA, register, logoutRequest, enable2FA, set2FAenabled  } from "./api.js";
 import { renderUserMenu } from "./ui.js";
-import { renderCreateTournamentForm } from "./match_service/start_page.js"
+import { renderStartView } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
 import { disconnectWS } from "./match_service/lobbySocket.js";
 
@@ -69,7 +69,7 @@ export function renderLogin() {
 				localStorage.setItem("username", username.value);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
-				renderCreateTournamentForm();
+				renderStartView();
 			}
 		} 
 		else if (response.twoFactorRequired) {
@@ -269,7 +269,7 @@ export function render2FA(userId: number) {
 
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
-			renderCreateTournamentForm();
+			renderStartView();
         } else {
             msg.textContent = `!! ${response.data.error || "Invalid code"}`;
         }
@@ -293,5 +293,5 @@ export async function logout() {
     disconnectWS();
 
     renderUserMenu();
-    renderCreateTournamentForm();
+    renderStartView();
 }

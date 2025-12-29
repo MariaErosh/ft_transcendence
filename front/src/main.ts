@@ -1,12 +1,12 @@
 import { renderUserMenu } from "./ui.js";
-import { renderCreateTournamentForm } from "./match_service/start_page.js";
+import { renderChooseMode, renderStartView } from "./match_service/start_page.js";
 import { renderLogin, renderRegister } from "./forms.js"
 import { renderNewRemoteTournament,  } from "./match_service/render_remote.js";
 import { renderNewConsoleTournament } from "./match_service/render_console.js";
 import { renderGameBoard } from "./game_front/gameMenu.js";
 import { setStop } from "./game_front/gamePlay.js"
 import { renderArena } from "./arena.js";
-import { renderFooterLinks } from "./policies/render_footer_links.js";
+import { renderFooterLinks, renderPrivacyPolicy, renderTermsOfService } from "./policies/render_footer_links.js";
 
 const app = document.getElementById("app")!;
 
@@ -16,7 +16,7 @@ app.innerHTML = `
 
 renderFooterLinks();
 renderUserMenu();
-renderCreateTournamentForm();
+renderStartView();
 
 window.addEventListener("DOMContentLoaded", () => {
 	// if user refreshed on a sub-page (like /game), redirect to "/"
@@ -24,7 +24,7 @@ window.addEventListener("DOMContentLoaded", () => {
 		history.replaceState({ view: "main" }, "", "/");
 		renderFooterLinks();
 		renderUserMenu();
-		renderCreateTournamentForm();
+		renderStartView();
 	}
 });
 
@@ -36,7 +36,7 @@ window.addEventListener("popstate", (event) => {
 		setStop();
 		renderUserMenu();
 		renderFooterLinks();
-		renderCreateTournamentForm();
+		renderStartView();
 		return;
 	}
 
@@ -63,17 +63,26 @@ window.addEventListener("popstate", (event) => {
 				console.warn("No arena state in history, cannot render");
 			}
 			break;
+		case "privacy":
+			renderPrivacyPolicy();
+			break;
+		case "terms":
+			renderTermsOfService();
+			break;
+		case "mode":
+			renderChooseMode();
+			break;
 		case "main":
 			setStop();
 			renderUserMenu();
 			renderFooterLinks();
-			renderCreateTournamentForm();
+			renderStartView();
 			break;
 		default: 
 			//history.replaceState({ view: "main" }, "", "/"); // fallback URL to home
 			setStop();
 			renderUserMenu();
 			renderFooterLinks();
-			renderCreateTournamentForm();
+			renderStartView();
 	}
 });
