@@ -1,7 +1,7 @@
 // Chat type definitions
 
 export interface ChatMessage {
-  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "typing";
+  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "typing" | "read_receipt";
   id?: number;
   conversation_id?: number;
   sender_id?: number;
@@ -10,6 +10,9 @@ export interface ChatMessage {
   username?: string; // Legacy support
   content?: string;
   isTyping?: boolean;
+  read_by_user_id?: number;
+  is_read?: number;
+  read_at?: string;
   created_at?: string | number;
   timestamp?: number;
   recipient_id?: number | null;

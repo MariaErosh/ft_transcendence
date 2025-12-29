@@ -124,3 +124,45 @@ export function getUserRecentMessages(userId: number, limit: number = 50): Promi
         });
     });
 }
+
+export function markMessageAsRead(messageId: number): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const query = `
+			UPDATE messages
+			SET is_read = 1,
+				read_at = CURRENT_TIMESTAMP
+			WHERE id = ?
+		`;
+		db.run(query, [messageId], function(err) {
+			if (err) {
+				reject(new Error(`Failed to mark message as read: ${err.message}`));
+			} else {
+				resolve();
+			}
+		});
+	});
+}
+
+/**
+ * Mark all unread messages in a conversation as read for a specific user
+ * (conversation-level approach - more efficient)
+ */
+export function markConversationAsRead(conversationId: number, userId: number): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const query = `
+			UPDATE messages
+			SET is_read = 1,
+				read_at = CURRENT_TIMESTAMP
+			WHERE conversation_id = ?
+				AND sender_id != ?
+				AND is_read = 0
+		`;
+		db.run(query, [conversationId, userId], function(err) {
+			if (err) {
+				reject(new Error(`Failed to mark conversation as read: ${err.message}`));
+			} else {
+				resolve();
+			}
+		});
+	});
+}

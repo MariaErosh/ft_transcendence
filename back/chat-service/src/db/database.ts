@@ -95,7 +95,9 @@ function createMessagesTable(): Promise<void> {
 			conversation_id INTEGER NOT NULL,
 			sender_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
-			created_at TEXT DEFAULT CURRENT_TIMESTAMP
+			created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+			is_read INTEGER DEFAULT 0,
+			read_at TEXT
 		)
 	`;
 	return executeQuery(query, 'messages');

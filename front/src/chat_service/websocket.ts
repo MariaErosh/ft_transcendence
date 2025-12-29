@@ -1,7 +1,7 @@
 // WebSocket connection management
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
-import { displayMessage, loadMessageHistory } from './messageHandler.js';
+import { displayMessage, loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
 const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
@@ -89,6 +89,13 @@ function handleMessage(event: MessageEvent) {
 			return;
 		}
 
+		// Handle read receipt
+		if (message.type === 'read_receipt') {
+			console.log('Read receipt received:', message);
+			handleReadReceipt(message);
+			return;
+		}
+
 		const currentRecipient = ChatData.getCurrentRecipient();
 
 		// Only display messages relevant to current conversation
@@ -102,7 +109,15 @@ function handleMessage(event: MessageEvent) {
 
 		// Store new messages in history
 		if (message.type === 'message') {
+			console.log('Storing new message:', { id: message.id, is_read: message.is_read, delivered: message.delivered });
 			ChatData.addMessage(message);
+
+			// Mark as read if message is from current open conversation
+			if (currentRecipient &&
+				message.sender_id === currentRecipient.userId &&
+				message.conversation_id) {
+				markConversationAsRead(message.conversation_id);
+			}
 		}
 
 	// Only display if relevant to current context
@@ -130,6 +145,88 @@ function updateTypingIndicator() {
 	} else {
 		typingIndicator.classList.add('hidden');
 	}
+}
+
+/**
+ * Handle read receipt - mark messages in conversation as read
+ */
+function handleReadReceipt(message: ChatMessage) {
+	console.log('Processing read receipt:', message);
+	
+	if (!message.conversation_id) {
+		console.log('No conversation_id in read receipt');
+		return;
+	}
+
+	const currentRecipient = ChatData.getCurrentRecipient();
+	
+	// Get current user ID from localStorage or stored state
+	const currentUserId = getCurrentUserId();
+	if (!currentUserId) {
+		console.log('Cannot determine current user ID');
+		return;
+	}
+
+	// Update messages in history - mark messages sent by current user as read
+	const messages = ChatData.getMessageHistory();
+	let updatedCount = 0;
+	const updatedMessages = messages.map(msg => {
+		// Mark as read if: same conversation AND sent by current user (not the reader)
+		if (msg.conversation_id === message.conversation_id && 
+			msg.sender_id === currentUserId) {
+			updatedCount++;
+			return { ...msg, is_read: 1, read_at: new Date().toISOString() };
+		}
+		return msg;
+	});
+
+	console.log(`Updated ${updatedCount} messages to read status`);
+	ChatData.setMessageHistory(updatedMessages);
+
+	// If we're currently viewing this conversation, update the UI
+	if (currentRecipient) {
+		// Check if any message in the current view matches this conversation
+		const isCurrentConversation = messages.some(msg => 
+			msg.conversation_id === message.conversation_id
+		);
+		
+		if (isCurrentConversation) {
+			console.log('Updating UI for current conversation');
+			updateMessageReadIndicators();
+		}
+	}
+}
+
+/**
+ * Get current user ID from token or stored state
+ */
+function getCurrentUserId(): number | null {
+	const token = localStorage.getItem('accessToken');
+	if (!token) return null;
+	
+	try {
+		// Decode JWT token to get user ID
+		const payload = JSON.parse(atob(token.split('.')[1]));
+		return payload.userId || payload.sub || null;
+	} catch (err) {
+		console.error('Failed to decode token:', err);
+		return null;
+	}
+}
+
+/**
+ * Update read indicators in the UI
+ */
+function updateMessageReadIndicators() {
+	const messages = ChatData.getMessageHistory();
+	const messagesContainer = document.getElementById('chat-messages');
+	if (!messagesContainer) return;
+
+	// Re-render all messages to update read indicators
+	messagesContainer.innerHTML = '';
+	messages.forEach(msg => {
+		displayMessage(msg);
+	});
 }
 
 /**

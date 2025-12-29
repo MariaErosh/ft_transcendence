@@ -71,6 +71,7 @@ async function buildServer() {
 		"/check",
 		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
 		"/chat/blocks",
+		"/chat/conversations",
 		"/chat/users/online",
 		"/interact"
 	];

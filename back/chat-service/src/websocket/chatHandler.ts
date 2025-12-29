@@ -71,6 +71,8 @@ export async function handleChatMessage(
             sender_username: username,
             content: savedMessage.content,
             created_at: savedMessage.created_at,
+            is_read: 0, // New messages are unread by default
+            read_at: null,
         };
 
         logger.info({ userId, recipientId, conversationId }, 'Message saved');

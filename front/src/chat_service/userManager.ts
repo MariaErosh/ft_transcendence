@@ -4,7 +4,7 @@ import { authorisedRequest } from "../api.js";
 import type { User } from './types.js';
 import { ChatData } from './chatData.js';
 import { updateStatus, renderDMView, renderHomeView } from './uiRenderer.js';
-import { loadMessageHistory } from './messageHandler.js';
+import { loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { clearTypingIndicator } from './websocket.js';
 
 /**
@@ -126,7 +126,12 @@ export async function openDM(user: User) {
   ChatData.setCurrentView('dm');
 
   // Load message history for this conversation
-  await loadMessageHistory();
+  const conversationId = await loadMessageHistory();
+
+  // Mark messages as read if conversation exists
+  if (conversationId) {
+    await markConversationAsRead(conversationId);
+  }
 
   // Render DM view
   renderDMView();

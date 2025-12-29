@@ -197,7 +197,7 @@ async function start() {
 
     // Register route modules
     registerMessageRoutes(app);
-    registerConversationRoutes(app);
+    registerConversationRoutes(app, sendToUser);
     registerBlockRoutes(app);
     registerInvitationRoutes(app, sendToUser);
     registerNotificationRoutes(app);

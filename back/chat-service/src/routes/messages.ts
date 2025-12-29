@@ -7,6 +7,18 @@ const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user:3002';
 const GATEWAY_SECRET = process.env.GATEWAY_SECRET;
 
 /**
+ * Validate gateway authentication and extract user ID
+ */
+function validateGatewayAuth(request: any, reply: any): number | null {
+    const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+    if (gatewaySecret !== GATEWAY_SECRET) {
+        reply.code(401).send({ error: 'Unauthorized' });
+        return null;
+    }
+    return parseInt((request.headers as any)['x-user-id']);
+}
+
+/**
  * Fetch username for a given user ID from user-service
  */
 async function getUsernameById(userId: number): Promise<string | null> {
@@ -58,13 +70,10 @@ export function registerMessageRoutes(app: FastifyInstance) {
     // Get message history
     app.get('/chat/messages', async (request: any, reply: any) => {
         try {
-            // Verify request is from gateway with valid authentication
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
+            // Verify authentication
+            const userId = validateGatewayAuth(request, reply);
+            if (userId === null) return; // Reply already sent by validateGatewayAuth
 
-            const userId = parseInt((request.headers as any)['x-user-id']);
             const recipientId = (request.query as any).recipientId;
 
             if (recipientId) {
