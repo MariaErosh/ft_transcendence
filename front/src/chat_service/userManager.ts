@@ -3,9 +3,9 @@
 import { authorisedRequest } from "../api.js";
 import type { User } from './types.js';
 import { ChatData } from './chatData.js';
-import { escapeHtml } from './utils.js';
 import { updateStatus, renderDMView, renderHomeView } from './uiRenderer.js';
 import { loadMessageHistory } from './messageHandler.js';
+import { clearTypingIndicator } from './websocket.js';
 
 /**
  * Load all users and online users
@@ -108,6 +108,10 @@ export async function loadFriends() {
 export async function openDM(user: User) {
   console.log('Opening DM with:', user);
 
+  // Clear typing indicator from previous conversation
+  clearTypingIndicator();
+  ChatData.setRecipientIsTyping(false);
+
   // Check if user is blocked
   const blockedUsers = ChatData.getBlockedUsers();
   if (user.userId && blockedUsers.includes(user.userId)) {
@@ -134,6 +138,10 @@ export async function openDM(user: User) {
  */
 export async function goBackToHome() {
   console.log('Going back to home view');
+
+  // Clear typing indicator before switching
+  clearTypingIndicator();
+  ChatData.setRecipientIsTyping(false);
 
   // Clear current recipient
   ChatData.setCurrentRecipient(null);

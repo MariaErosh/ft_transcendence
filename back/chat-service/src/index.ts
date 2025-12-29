@@ -9,7 +9,7 @@ import { registerBlockRoutes } from './routes/blocks';
 import { registerInvitationRoutes } from './routes/invitations';
 import { registerNotificationRoutes } from './routes/notifications';
 import { registerMessageRoutes } from './routes/messages';
-import { sendMessageToUser, handleIncomingMessage } from './websocket/chatHandler';
+import { sendMessageToUser, handleIncomingMessage, clearUserTypingTimeouts } from './websocket/chatHandler';
 
 dotenv.config();
 
@@ -107,8 +107,13 @@ function notifyUserLeft(username: string) {
 /**
  * Handle WebSocket connection close
  */
-function handleDisconnect(username: string, logger: any) {
+function handleDisconnect(userId: number, username: string, logger: any) {
     logger.info(`WebSocket disconnected: ${username}`);
+    
+    // Clear any pending typing timeouts
+    clearUserTypingTimeouts(userId);
+    
+    // Remove from connected clients
     connectedClients.delete(username);
     notifyUserLeft(username);
 }
@@ -148,7 +153,7 @@ function registerChatWebSocket(app: any) {
 
             // Handle disconnect
             socket.on('close', () => {
-                handleDisconnect(username, app.log);
+                handleDisconnect(userId, username, app.log);
             });
 
             // Handle errors

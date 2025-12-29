@@ -62,17 +62,17 @@ export function displayMessage(message: ChatMessage) {
 
   if (message.type === "system") {
     messageEl.className = "text-center text-gray-500 text-xs italic";
-    messageEl.textContent = message.content;
+    messageEl.textContent = message.content || "";
   } else if (message.type === "error") {
     messageEl.className = "text-center text-red-500 text-xs";
-    messageEl.textContent = `Error: ${message.content}`;
+    messageEl.textContent = `Error: ${message.content || "Unknown error"}`;
   } else {
     messageEl.className = "bg-white p-2 rounded-lg shadow-sm";
     messageEl.innerHTML = `
       <div class="flex justify-between items-start gap-2">
         <div class="flex-1">
           <span class="font-semibold text-sm text-blue-600">${escapeHtml(message.sender_username || message.username || "Unknown")}</span>
-          <p class="text-gray-800 text-sm mt-1">${escapeHtml(message.content)}</p>
+          <p class="text-gray-800 text-sm mt-1">${escapeHtml(message.content || "")}</p>
         </div>
         <span class="text-xs text-gray-400">${time}</span>
       </div>

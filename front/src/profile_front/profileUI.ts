@@ -2,6 +2,7 @@
 
 import type { UserProfile } from './types.js';
 import { getProfile, getOwnProfile, updateProfile } from './profileApi.js';
+import { escapeHtml } from '../chat_service/utils.js';
 
 let profileContainer: HTMLElement | null = null;
 let currentProfile: UserProfile | null = null;
@@ -70,8 +71,8 @@ export function closeProfile() {
 function renderProfile(canEdit: boolean = false) {
   if (!profileContainer || !currentProfile) return;
 
-  const winRate = currentProfile.games_played > 0 
-    ? Math.round((currentProfile.games_won / currentProfile.games_played) * 100) 
+  const winRate = currentProfile.games_played > 0
+    ? Math.round((currentProfile.games_won / currentProfile.games_played) * 100)
     : 0;
 
   profileContainer.innerHTML = `
@@ -122,7 +123,7 @@ function renderProfile(canEdit: boolean = false) {
               text-5xl
               mb-4
             ">
-              ${currentProfile.avatar_url 
+              ${currentProfile.avatar_url
                 ? `<img src="${currentProfile.avatar_url}" class="w-full h-full rounded-full object-cover" />`
                 : '👤'
               }
@@ -305,13 +306,4 @@ function showSuccess(message: string) {
 function showError(message: string) {
   // TODO: Implement toast notification
   console.error('❌', message);
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }

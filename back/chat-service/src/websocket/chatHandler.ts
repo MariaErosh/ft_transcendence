@@ -3,6 +3,9 @@ import * as conversationRepo from '../repositories/conversationRepository';
 import * as messageRepo from '../repositories/messageRepository';
 import * as blockRepo from '../repositories/blockRepository';
 
+// Track typing status: Map<userId, Map<recipientId, timeoutId>>
+const typingTimeouts = new Map<number, Map<number, NodeJS.Timeout>>();
+
 /**
  * Send message to user by ID
  */
@@ -96,6 +99,95 @@ export async function handleChatMessage(
 }
 
 /**
+ * Handle typing indicator
+ */
+export async function handleTypingIndicator(
+    userId: number,
+    username: string,
+    recipientId: number,
+    isTyping: boolean,
+    logger: any,
+    connectedClients: Map<string, any>
+) {
+    try {
+        // Check if users have blocked each other
+        const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
+        if (blocked) {
+            return; // Silently ignore typing from blocked users
+        }
+
+        // Clear existing timeout for this user->recipient pair
+        const userTimeouts = typingTimeouts.get(userId);
+        if (userTimeouts) {
+            const existingTimeout = userTimeouts.get(recipientId);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+            }
+        }
+
+        // Send typing indicator to recipient
+        const sent = sendMessageToUser(connectedClients, recipientId, {
+            type: 'typing',
+            sender_id: userId,
+            sender_username: username,
+            isTyping: isTyping,  // Use the actual parameter value
+            timestamp: Date.now(),
+        });
+
+        if (sent) {
+            logger.debug({ userId, recipientId, isTyping }, 'Typing indicator sent');
+        }
+
+        // If user is typing, set timeout to auto-stop after 5 seconds
+        if (isTyping) {
+            const timeout = setTimeout(() => {
+                // Auto-stop typing after timeout
+                sendMessageToUser(connectedClients, recipientId, {
+                    type: 'typing',
+                    sender_id: userId,
+                    sender_username: username,
+                    isTyping: false,
+                    timestamp: Date.now(),
+                });
+
+                // Clean up timeout reference
+                const timeouts = typingTimeouts.get(userId);
+                if (timeouts) {
+                    timeouts.delete(recipientId);
+                }
+            }, 5000); // 5 second timeout
+
+            // Store timeout
+            if (!typingTimeouts.has(userId)) {
+                typingTimeouts.set(userId, new Map());
+            }
+            typingTimeouts.get(userId)!.set(recipientId, timeout);
+        } else {
+            // User stopped typing, clean up
+            if (userTimeouts) {
+                userTimeouts.delete(recipientId);
+            }
+        }
+    } catch (error: any) {
+        logger.error({ error }, 'Failed to handle typing indicator');
+    }
+}
+
+/**
+ * Clear all typing timeouts for a user (called on disconnect)
+ */
+export function clearUserTypingTimeouts(userId: number) {
+    const userTimeouts = typingTimeouts.get(userId);
+    if (userTimeouts) {
+        // Clear all timeouts
+        for (const timeout of userTimeouts.values()) {
+            clearTimeout(timeout);
+        }
+        typingTimeouts.delete(userId);
+    }
+}
+
+/**
  * Handle incoming WebSocket message
  */
 export async function handleIncomingMessage(
@@ -110,6 +202,20 @@ export async function handleIncomingMessage(
         const message = JSON.parse(data.toString());
         logger.info({ username, message }, 'Received message from client');
 
+        // Handle typing indicator
+        if (message.type === 'typing' && message.recipientId !== undefined && message.isTyping !== undefined) {
+            await handleTypingIndicator(
+                userId,
+                username,
+                message.recipientId,
+                message.isTyping,
+                logger,
+                connectedClients
+            );
+            return;
+        }
+
+        // Handle chat message
         if (message.content && message.content.trim() && message.recipientId) {
             await handleChatMessage(
                 userId,

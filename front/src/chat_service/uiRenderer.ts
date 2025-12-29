@@ -2,7 +2,7 @@
 
 import type { StatusType } from './types.js';
 import { ChatData } from './chatData.js';
-import { connectChat, sendMessage } from './websocket.js';
+import { connectChat, sendMessage, typingHandler } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
@@ -511,6 +511,19 @@ export function renderDMView() {
         </div>
       </div>
 
+      <!-- Typing Indicator -->
+      <div id="typing-indicator" class="
+        hidden
+        px-4 py-2
+        bg-black/80
+        border-t-2 border-gray-700
+        text-green-400
+        text-xs
+        italic
+        font-mono
+      ">
+      </div>
+
       <!-- Input Footer -->
       <div class="
         border-t-4 border-black
@@ -591,6 +604,7 @@ export function renderDMView() {
 
   sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
   input?.addEventListener("keypress", (e) => {
+	typingHandler();
     if (e.key === "Enter") sendMessage(input.value);
   });
   minimizeBtn?.addEventListener("click", closeChat);

@@ -18,9 +18,9 @@ class ChatDataManager {
     lastTypingTime: 0,
     recipientIsTyping: false,
   };  // Getters
-	isConnected(): boolean {
-		return this.state.isConnected;
-	}
+  isConnected(): boolean {
+    return this.state.isConnected;
+  }
 
   isChatOpen(): boolean {
     return this.state.isChatOpen;

@@ -1,14 +1,15 @@
 // Chat type definitions
 
 export interface ChatMessage {
-  type: "message" | "system" | "error" | "game_invitation" | "invitation_response";
+  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "typing";
   id?: number;
   conversation_id?: number;
   sender_id?: number;
   sender_username?: string;
   user_id?: number; // Legacy support
   username?: string; // Legacy support
-  content: string;
+  content?: string;
+  isTyping?: boolean;
   created_at?: string | number;
   timestamp?: number;
   recipient_id?: number | null;
@@ -37,4 +38,7 @@ export interface ChatData {
 	blockedUsers: number[];
 	currentRecipient: User | null;
 	isUserListOpen: boolean;
+	isTyping: boolean;
+	lastTypingTime: number;
+	recipientIsTyping: boolean;
 }

@@ -39,7 +39,7 @@ export async function updateProfile(updates: { bio?: string; avatar_url?: string
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    
+
     return response.success === true;
   } catch (err) {
     console.error('Failed to update profile:', err);
