@@ -71,7 +71,8 @@ async function buildServer() {
 		"/check",
 		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
 		"/chat/blocks",
-		"/chat/users/online"
+		"/chat/users/online",
+		"/interact"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -122,6 +123,13 @@ async function buildServer() {
 		upstream: CHAT_URL,
 		prefix: "/chat",
 		rewritePrefix: "/chat",
+		http2: false,
+	});
+
+	await server.register(proxy, {
+		upstream: process.env.INTERACT_URL || "http://interact:3006",
+		prefix: "/interact",
+		rewritePrefix: "/interact",
 		http2: false,
 	});
 

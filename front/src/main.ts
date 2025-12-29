@@ -7,17 +7,20 @@ import { renderGameBoard } from "./game_front/gameMenu.js";
 import { setStop } from "./game_front/gamePlay.js"
 import { renderArena } from "./arena.js";
 import { renderChat } from "./chat_service/chat.js";
+import { initializeProfileUI } from "./profile_front/profile.js";
 
 const app = document.getElementById("app")!;
 
 app.innerHTML = `
 	<div id="menu" class="fixed top-4 right-4 z-50"></div>
 	<div id="main" class="w-full h-full flex items-center justify-center"></div>
-	<div id="chat"></div>`;
+	<div id="chat"></div>
+	<div id="profile-window" class="hidden"></div>`;
 
 renderUserMenu();
 renderCreateTournamentForm();
 renderChat();
+initializeProfileUI();
 
 
 window.addEventListener("popstate", (event) => {

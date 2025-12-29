@@ -6,6 +6,7 @@ import { connectChat, sendMessage } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
+import { showProfile } from '../profile_front/profile.js';
 
 let chatContainer: HTMLElement | null = null;
 
@@ -643,8 +644,12 @@ export function renderDMView() {
           }
           break;
         case 'profile':
-          console.log('See profile:', currentRecipient.username);
-          // TODO: Implement view profile
+          if (currentRecipient?.userId) {
+            showProfile(currentRecipient.userId);
+          } else {
+            console.error('Cannot show profile: userId is undefined');
+            updateStatus('Error: Cannot show profile', 'error');
+          }
           break;
         case 'game':
           console.log('Game invitation to:', currentRecipient.username);

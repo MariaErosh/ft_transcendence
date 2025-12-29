@@ -73,6 +73,20 @@ services:
     networks:
       - internal
 
+  interact:
+    build:
+      context: ../back/interact-service
+      dockerfile: Dockerfile
+    container_name: interact
+    expose:
+      - 3006
+    volumes:
+      - ../back/interact-service/data/:/app/data
+    env_file:
+      - ../back/interact-service/.env
+    networks:
+      - internal
+
   gateway:
     build:
       context: ../back/gateway
@@ -85,6 +99,7 @@ services:
       - auth
       - user
       - chat
+      - interact
     env_file:
     - ../back/gateway/.env
     networks:
