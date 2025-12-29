@@ -106,7 +106,7 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 
 
 await server.listen({ port: PORT, host: "0.0.0.0" });
-server.log.info(`Game Engine API and WS running on http://localhost:${PORT}`);
+server.log.info(`Game Engine API and WS running on 0.0.0.0:${PORT}`);
 
 async function handleMessage(player: PlayerSocket, message: any) {
 	server.log.info({ message, player: player.alias }, 'Parsed message received');

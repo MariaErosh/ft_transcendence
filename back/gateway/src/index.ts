@@ -14,10 +14,10 @@ import { registerGameWebSocket } from "./gameSockets";
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
-const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
-const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
-const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
-const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
+const AUTH_URL = process.env.AUTH_URL!;
+const USER_URL = process.env.USER_URL!;
+const GENGINE_URL = process.env.GENGINE_URL!;
+const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
 
 
 

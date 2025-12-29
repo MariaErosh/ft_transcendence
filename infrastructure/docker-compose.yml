@@ -185,6 +185,7 @@ services:
       - LOGSTASH_URL=http://logstash:9600
     ports:
       - "9198:9198"
+    platform: linux/amd64
     depends_on:
       logstash:
         condition: service_healthy
@@ -209,8 +210,15 @@ services:
       context: ../front
       dockerfile: Dockerfile
     container_name: frontend
+    depends_on:
+      - gateway
     ports:
-      - "8080:80"
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./ssl:/etc/nginx/ssl
+    env_file:
+      - ../front/.env
     networks:
       - internal
 

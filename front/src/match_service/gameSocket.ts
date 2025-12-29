@@ -2,6 +2,7 @@ import { refreshAccessToken } from "../api.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { board, gameState } from "../game_front/gameSpecs.js"
 import { applyGameBootstrap, gameBootstrapped, setGameBootstrapped } from "../game_front/runtimeImports.js"
+import { getWSBaseURL } from "./lobbySocket.js"
 
 export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
@@ -30,7 +31,7 @@ export async function connectGameWS(): Promise <void> {
     if (!token && !(await refreshAccessToken())) return reject;
   
     token = localStorage.getItem("accessToken");
-    gameSocket = new WebSocket(`ws://localhost:3000/game/ws?token=${token}`);
+    gameSocket = new WebSocket(`${getWSBaseURL()}/api/game/ws?token=${token}`);
   
     gameSocket.onopen = () => {
       console.log("gameWs connected");
