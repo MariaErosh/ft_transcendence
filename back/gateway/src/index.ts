@@ -15,24 +15,26 @@ import { registerChatWebSocket } from "./chatSockets";
 const PORT = Number(process.env.PORT || 3000);
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
-const AUTH_URL = process.env.AUTH_URL ?? "http://localhost:3001";
-const USER_URL = process.env.USER_URL ?? "http://localhost:3002";
-const GENGINE_URL = process.env.GENGINE_URL ?? "http://localhost:3003";
-const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL ?? "http://localhost:3004";
-const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3005";
-const onlineUsers = new Map<number, number>();
+const AUTH_URL = process.env.AUTH_URL!;
+const USER_URL = process.env.USER_URL!;
+const GENGINE_URL = process.env.GENGINE_URL!;
+const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
+const CHAT_URL = process.env.CHAT_URL!;
 
-function markUserOnline(userId: number) {
-	onlineUsers.set(userId, Date.now());
-}
+// const onlineUsers = new Map<number, number>(); TODO in interact?
 
-function getOnlineUsers(): number[] {
-	const cutoff = Date.now() - 120_000; // 2 minutes timeout
-	for (const [id, lastSeen] of onlineUsers.entries()) {
-		if (lastSeen < cutoff) onlineUsers.delete(id);
-	}
-	return [...onlineUsers.keys()];
-}
+// function markUserOnline(userId: number) {
+// 	onlineUsers.set(userId, Date.now());
+// }
+
+// function getOnlineUsers(): number[] {
+// 	const cutoff = Date.now() - 120_000; // 2 minutes timeout
+// 	for (const [id, lastSeen] of onlineUsers.entries()) {
+// 		if (lastSeen < cutoff) onlineUsers.delete(id);
+// 	}
+// 	return [...onlineUsers.keys()];
+// }
+
 
 async function buildServer() {
 	const server = Fastify({
@@ -68,8 +70,9 @@ async function buildServer() {
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
+		"/auth/2fa/set",
 		"/check",
-		"/chat/messages",  // Protect REST endpoint, but not /chat/ws WebSocket
+		"/chat/messages",
 		"/chat/blocks",
 		"/chat/conversations",
 		"/chat/users/online",

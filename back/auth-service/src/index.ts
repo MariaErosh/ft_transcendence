@@ -24,8 +24,6 @@ const server = Fastify({
 server.register(authPlugin);
 server.register(metricsPlugin, { endpoint: '/metrics' });
 server.register(cors, { origin: true });
-//todo: store the secret key in normal way
-//server.register(jwt, { secret: "!TheLastProjectIn42!" });
 
 initDB();
 
@@ -36,7 +34,7 @@ const start = async () => {
 
   try {
     await server.listen({ port: 3001, host: "0.0.0.0" });
-    server.log.info("Auth service running on http://localhost:3001");
+    server.log.info("Auth service running on http://0.0.0.0:3001");
   } catch (err) {
     server.log.error(err);
     process.exit(1);

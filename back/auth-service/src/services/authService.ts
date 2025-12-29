@@ -41,21 +41,26 @@ export interface AuthUser {
   two_factor_enabled: boolean;
 }
 
+function isValidEmail(email: string) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
 export class AuthService {
 
-	async createUser(username: string, password: string, two_factor_enabled: boolean): Promise<AuthUser> {
+	async createUser(username: string, email: string, password: string, two_factor_enabled: boolean): Promise<AuthUser> {
 		const hash = await bcrypt.hash(password, 10);
 		return new Promise((resolve, reject) => {
 		db.run(
-			"INSERT INTO users (username, password_hash) VALUES (?, ?)",
-			[username, hash],
+			"INSERT INTO users (username,  email, password_hash, two_factor_enabled) VALUES (?, ?, ?, ?)",
+			[username,email, hash, two_factor_enabled],
 			function (err) {
-			if (err) {
-				logger.error({ err }, "Failed to create user");
-				return reject(err);
-			}
-			logger.info({ userId: this.lastID, username }, "User created successfully");
-			resolve({ id: this.lastID, username, two_factor_enabled });
+				if (err) {
+					logger.error({ err }, "Failed to create user");
+					return reject(err);
+				}
+				logger.info({ userId: this.lastID, username }, "User created successfully");
+				resolve({ id: this.lastID, username, two_factor_enabled });
 			}
 		);
 		});
@@ -82,6 +87,17 @@ export class AuthService {
 			}
 			resolve(row ?? undefined);
 		});
+		});
+	}
+
+	async findUserByIdentifier(identifier: string): Promise<UserRow | undefined> {
+		return new Promise((resolve, reject) => {
+			const query = isValidEmail(identifier)	? "SELECT * FROM users WHERE email = ?"
+													: "SELECT * FROM users WHERE username = ?";
+			db.get<UserRow>(query, [identifier], (err, row) => {
+				if (err) return reject(err);
+				resolve(row ?? undefined);
+			});
 		});
 	}
 
@@ -134,14 +150,6 @@ export class AuthService {
 				return reject(new Error("No refresh tokens found"));
 			}
 
-			//casting to type RefreshTokenRow
-			/*const tokenRows: RefreshTokenRow[] = rows.map(row => ({
-				id: row.id,
-				user_id: row.user_id,
-				token_hash: row.token_hash,
-				expires_at: row.expires_at,
-				created_at: row.created_at
-			}));*/
 
 			for (const r of rows) {
 			const match = await bcrypt.compare(rawToken, r.token_hash);
@@ -189,6 +197,38 @@ export class AuthService {
 			const otpauth = authenticator.keyuri(username, "FT_Transcendence", secret);
 			const qrCodeDataURL = await QRCode.toDataURL(otpauth);
 			resolve({ secret, qrCodeDataURL });
+			}
+		);
+		});
+	}
+
+	async delete2FAsecret(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_secret = ?, two_factor_set = 0 WHERE id = ?",
+			[null, userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to remove 2FA secret");
+				return reject(err);
+			}
+			resolve();
+			}
+		);
+		});
+	}
+
+	async mark2FAset(userId: number) {
+		return new Promise<void>((resolve, reject) => {
+		db.run(
+			"UPDATE users SET two_factor_set = 1 WHERE id = ?",
+			[userId],
+			async err => {
+			if (err) {
+				logger.error({ err, userId }, "Failed to mark 2FA as set");
+				return reject(err);
+			}
+			resolve();
 			}
 		);
 		});

@@ -8,6 +8,7 @@ import { setStop } from "./game_front/gamePlay.js"
 import { renderArena } from "./arena.js";
 import { renderChat } from "./chat_service/chat.js";
 import { initializeProfileUI } from "./profile_front/profile.js";
+import { renderFooterLinks } from "./policies/render_footer_links.js";
 
 const app = document.getElementById("app")!;
 
@@ -17,10 +18,21 @@ app.innerHTML = `
 	<div id="chat"></div>
 	<div id="profile-window" class="hidden"></div>`;
 
+renderFooterLinks();
 renderUserMenu();
 renderCreateTournamentForm();
-renderChat();
-initializeProfileUI();
+
+window.addEventListener("DOMContentLoaded", () => {
+	// if user refreshed on a sub-page (like /game), redirect to "/"
+	if (location.pathname !== "/") {
+		history.replaceState({ view: "main" }, "", "/");
+		renderFooterLinks();
+		renderUserMenu();
+		renderCreateTournamentForm();
+		renderChat();
+		initializeProfileUI();
+	}
+});
 
 
 window.addEventListener("popstate", (event) => {
@@ -29,6 +41,7 @@ window.addEventListener("popstate", (event) => {
 		history.replaceState({ view: "main" }, "", "/"); // make URL home
 		setStop();
 		renderUserMenu();
+		renderFooterLinks();
 		renderCreateTournamentForm();
 		return;
 	}
@@ -59,11 +72,13 @@ window.addEventListener("popstate", (event) => {
 		case "main":
 			setStop();
 			renderUserMenu();
+			renderFooterLinks();
 			renderCreateTournamentForm();
 			break;
 		default:
 			setStop();
 			renderUserMenu();
+			renderFooterLinks();
 			renderCreateTournamentForm();
 	}
 });

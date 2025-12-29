@@ -10,20 +10,26 @@ interface UserRow {
   games_won: number;
 }
 
+function isValidEmail(email: string) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
 
 export class UserService {
 	constructor(private db_inst: Database) {}
 
-	async createUser(auth_user_id: number, username: string, email: string, displayName?: string) {
+	async createUser(auth_user_id: number, username: string, email: string) {
+		if (!isValidEmail(email)) throw new Error("Invalid email");
+		
 		return new Promise<{ id: number; username: string; email: string}>((resolve, reject) => {
-		this.db_inst.run(
-			"INSERT INTO users (auth_user_id, username, email) VALUES (?, ?, ?)",
-			[auth_user_id, username, email],
-			function (err) {
-			if (err) return reject(err);
-			resolve({ id: this.lastID, username, email });
-			}
-		);
+			this.db_inst.run(
+				"INSERT INTO users (auth_user_id, username, email) VALUES (?, ?, ?)",
+				[auth_user_id, username, email],
+				function (err) {
+					if (err) return reject(err);
+					resolve({ id: this.lastID, username, email });
+				}
+			);
 		});
 	}
 

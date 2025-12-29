@@ -99,7 +99,7 @@ export async function userRoutes(fastify: FastifyInstance, service: UserService)
 		const auth_user_id = authUserIdHeader ? Number(authUserIdHeader) : null;
 
 		//if the call originates from auth-service, x-user-service is 'auth'
-		if (authUserService !== 'auth' && !auth_user_id) {
+		if (authUserService !== 'auth' || !auth_user_id) {
 			 req.log.warn({ authUserService, auth_user_id }, "User-service: forbidden request");
 			return reply.status(403).send({ error: "Forbidden" });
 		}
@@ -111,7 +111,7 @@ export async function userRoutes(fastify: FastifyInstance, service: UserService)
 			return reply.code(201).send(created);
 		} catch (err: any) {
 			req.log.error({ err }, "User-service: error creating user");
-			return reply.status(500).send({ error: err.message });
+			return reply.status(400).send({ error: err.message });
 		}
  	});
 

@@ -12,8 +12,8 @@ TO DO LIST per Module
 	- List of users and have the option to add as friend and list of friends from the profile
 
 - Setup(Henrizz):
-	- change localhost to alow playing from different machines
-	- change to https
+✅	- change localhost to alow playing from different machines
+✅	- change to https
 
 - Authentication (Sasha):
 	- handle disconnection while setting up 2FA
@@ -28,9 +28,9 @@ TO DO LIST per Module
 
 ✅ add .env.example in the Git (Nastya)
 
-- SQL injections for signing in (Masha)
+✅ SQL injections for signing in (Masha) --no need!
 
-- email for signing up and logging in (Masha/Sasha)
+✅ email for signing up and logging in (Masha/Sasha)
 
 - test browser compatibility
 

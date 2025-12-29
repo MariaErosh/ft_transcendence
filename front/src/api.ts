@@ -1,5 +1,4 @@
-//todo: rewrite via http://gateway:4000"
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "/api";
 
 interface ApiRequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -20,7 +19,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
     "Authorization": `Bearer ${accessToken}`,
   };
 
-  let res = await fetch(`${BASE_URL}${url}`, options);
+  let res = await fetch(url, options);
 
   if (res.status === 401 && localStorage.getItem("refreshToken")) {
     const refreshed = await refreshAccessToken();
@@ -28,6 +27,21 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
   }
   const data = await res.json();
   console.log("Result in authorisedRequest:", data);
+  return data;
+}
+
+export async function tempTokenRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
+  const accessToken = localStorage.getItem("tempToken");
+
+  options.headers = {
+    ...(options.headers || {}),
+    "Authorization": `Bearer ${accessToken}`,
+  };
+
+  let res = await fetch(`${BASE_URL}${url}`, options);
+  console.log("Result in tempTokenRequest:", res);
+  const data = await res.json();
+
   return data;
 }
 
@@ -61,11 +75,27 @@ export async function login(username: string, password: string) {
   });
   const data = await res.json();
   if (data.accessToken) {
+    if (data.status === "onboarding_2fa") {
+      localStorage.setItem("tempToken", data.accessToken);
+      return data;
+    }
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
     localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
   }
   return data;
+}
+
+export async function logoutRequest() {
+  const token = localStorage.getItem("accessToken");
+  if (!token) return;
+
+  await fetch(`${BASE_URL}/auth/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }
 
 export async function verify2FA(userId: number, token: string) {
@@ -74,21 +104,38 @@ export async function verify2FA(userId: number, token: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId, token }),
   });
-  return res.json();
+  const data  = await res.json();
+  return {success: res.ok, data: data};
 }
 
-export async function register(username: string, password: string) {
+export async function register(username: string,  email: string, password: string, tfa: boolean) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username,  email, password, tfa }),
   });
-  //return res.json();
   const data = await res.json();
   console.log("Register response:", data);
   return data;
 }
 
+export async function enable2FA(userId: number, username: string) {
+  const res = await authorisedRequest(`${BASE_URL}/auth/2fa/enable`, {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId})
+    });
+    return res;
+}
+
+export async function set2FAenabled(userId: number, username: string){
+  const res = await tempTokenRequest(`${BASE_URL}/auth/2fa/set`, {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, userId})
+    });
+    return res;
+}
 
 interface CreateMatchPayload{
 	type: string;
@@ -170,9 +217,8 @@ export async function getMatchPlayers(matchName: string): Promise <string[]>{
 	}
 }
 
-
 export async function sendGameToGameEngine(game:GameInstance){
-	const res = await fetch (`http://localhost:3003/game/start`, {
+  await authorisedRequest(`${BASE_URL}/game/start`, {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify(game)
@@ -180,7 +226,18 @@ export async function sendGameToGameEngine(game:GameInstance){
 	console.log("Data sent to game engine");
 }
 
+
+
+// export async function sendGameToGameEngine(game:GameInstance){
+// 	const res = await fetch (`http://localhost:3003/game/start`, {
+// 		method: "POST",
+// 		headers: {"Content-Type": "application/json" },
+// 		body: JSON.stringify(game)
+// 	});
+// 	console.log("Data sent to game engine");
+// }
+
 export async function userLoggedIn(){
-  const res = await authorisedRequest("/check", {method: "GET"});
+  const res = await authorisedRequest(`${BASE_URL}/check`, {method: "GET"});
   return res.ok;
 }

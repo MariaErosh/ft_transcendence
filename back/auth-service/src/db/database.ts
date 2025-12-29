@@ -39,10 +39,12 @@ export function initDB() {
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE NOT NULL,
+			email TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			two_factor_secret TEXT,
-			two_factor_enabled BOOLEAN DEFAULT 0
+			two_factor_enabled BOOLEAN DEFAULT 0,
+			two_factor_set BOOLEAN DEFAULT 0
 		)
     `, (err) => {
 	  if (err) {

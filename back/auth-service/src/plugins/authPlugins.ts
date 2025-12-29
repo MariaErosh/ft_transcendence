@@ -2,13 +2,19 @@ import fp from "fastify-plugin";
 import fastifyJwt from "@fastify/jwt";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import "@fastify/jwt";
+import dotenv from "dotenv";
+dotenv.config();
 
 export default fp(async function (fastify: FastifyInstance) {
   fastify.log.info("Initializing Auth Plugin");
+  
   //setting up JWT
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error("JWT_SECRET is not defined in environment variables");
+  } 
   fastify.register(fastifyJwt, {
-	//todo: secret key!
-	secret: "!TheLastProjectIn42!"
+	secret: jwtSecret
   });
 
   //new method for the Fastify instance to check JWT in preHandler

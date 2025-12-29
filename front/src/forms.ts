@@ -1,4 +1,4 @@
-import { login, verify2FA, register } from "./api.js";
+import { login, verify2FA, register, logoutRequest, enable2FA, set2FAenabled  } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
@@ -25,7 +25,7 @@ export function renderLogin() {
     form.appendChild(title);
 
     const username = document.createElement("input");
-    username.placeholder = "USERNAME";
+    username.placeholder = "USERNAME OE EMAIL";
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
@@ -55,16 +55,18 @@ export function renderLogin() {
         e.preventDefault();
         const response = await login(username.value, password.value);
 
-        if (response.twoFactorRequired) {
-            render2FA(response.userId);
-        } else if (response.accessToken) {
-            localStorage.setItem("username", username.value);
-            localStorage.setItem("refreshToken", response.refreshToken);
+       // if (response.twoFactorRequired) {
+       //     render2FA(response.userId);
+       // } else if (response.accessToken) {
+       //     localStorage.setItem("username", username.value);
+       //     localStorage.setItem("refreshToken", response.refreshToken);
+	   console.log("Response to login call: ", response);
+	   if (response.accessToken) {
             localStorage.removeItem("temp");
             history.pushState({ view: "main"}, "", "/");
             renderUserMenu();
             renderCreateTournamentForm();
-			reconnectChat(); // TODO should go here?
+			reconnectChat();
         } else {
             msg.textContent = `!! ${response.error || "Login failed"}`;
         }
@@ -90,11 +92,36 @@ export function renderRegister() {
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
+	const email = document.createElement("input");
+    email.type = "test";
+    email.placeholder = "EMAIL";
+    email.className = INPUT_CLASS;
+    form.appendChild(email);
+
     const password = document.createElement("input");
     password.type = "password";
     password.placeholder = "PASSWORD";
     password.className = INPUT_CLASS;
     form.appendChild(password);
+
+	// --- 2FA Checkbox Section ---
+    const tfaContainer = document.createElement("div");
+    tfaContainer.className = "flex items-center gap-3 cursor-pointer group";
+
+    const tfaCheckbox = document.createElement("input");
+    tfaCheckbox.type = "checkbox";
+    tfaCheckbox.id = "enable-2fa";
+    tfaCheckbox.className = "w-5 h-5 border-2 border-black accent-purple-600 cursor-pointer";
+
+    const tfaLabel = document.createElement("label");
+    tfaLabel.htmlFor = "enable-2fa";
+    tfaLabel.textContent = "ENABLE 2FA AUTH";
+    tfaLabel.className = "text-xs font-black uppercase cursor-pointer group-hover:text-purple-600 transition-colors";
+
+    tfaContainer.appendChild(tfaCheckbox);
+    tfaContainer.appendChild(tfaLabel);
+    form.appendChild(tfaContainer);
+    // ----------------------------
 
     const btn = document.createElement("button");
     btn.type = "submit";
@@ -114,13 +141,79 @@ export function renderRegister() {
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const response = await register(username.value, password.value);
+        if (!username.value.trim()) {
+			msg.textContent = "Username cannot be empty";
+			return;
+		}
+		if (!email.value.trim() || !/^\S+@\S+\.\S+$/.test(email.value)) {
+			msg.textContent = "Enter a valid email";
+			return;
+		}
+		if (!password.value || password.value.length < 6) {
+			msg.textContent = "Password must be at least 6 characters";
+			return;
+		}
+		const response = await register(username.value,  email.value, password.value, tfaCheckbox.checked);
 
         if (response.auth_user?.id) {
-            msg.className = "text-green-600 text-xs font-bold uppercase";
-            msg.textContent = "Account created! Proceed to login.";
+			msg.className = "text-green-600 text-xs font-bold uppercase";
+			msg.textContent = "Account created! Proceed to login.";
         } else {
             msg.textContent = `!! ${response.error || "Registration failed"}`;
+        }
+    });
+
+    main.appendChild(form);
+}
+
+export async function render2FASetup(userId: number, username: string) {
+    const main = document.getElementById("main")!;
+    main.innerHTML = "";
+
+    const { qrCodeDataURL, secret } = await enable2FA(userId, username);
+
+    const form = document.createElement("div");
+    form.className = FORM_CONTAINER_CLASS;
+
+    const title = document.createElement("h1");
+    title.textContent = ">> SECURE ACCOUNT";
+    title.className = "text-xl font-black uppercase border-b-4 border-black pb-2 mb-2";
+    form.appendChild(title);
+
+    const instruction = document.createElement("p");
+    instruction.className = "text-xs font-bold uppercase mb-4";
+    instruction.textContent = "Scan this QR with Google Authenticator:";
+    form.appendChild(instruction);
+
+    // QR Image Container
+    const qrImg = document.createElement("img");
+    qrImg.src = qrCodeDataURL;
+    qrImg.className = "border-4 border-black mb-4 w-48 h-48 self-center bg-white p-2";
+    form.appendChild(qrImg);
+
+    const tokenInput = document.createElement("input");
+    tokenInput.placeholder = "000000";
+    tokenInput.className = INPUT_CLASS;
+    form.appendChild(tokenInput);
+
+    const verifyBtn = document.createElement("button");
+    verifyBtn.textContent = "VERIFY & ACTIVATE";
+    verifyBtn.className = PRIMARY_BTN_CLASS;
+    form.appendChild(verifyBtn);
+
+    const msg = document.createElement("div");
+    msg.className = "text-red-600 text-xs font-bold uppercase mt-2";
+    form.appendChild(msg);
+
+    verifyBtn.addEventListener("click", async () => {
+        const verified = await verify2FA(userId, tokenInput.value);
+        if (verified.success) {
+			set2FAenabled(userId, username);
+            msg.className = "text-green-600 text-xs font-bold uppercase";
+            msg.textContent = "2FA ACTIVE. Redirecting to login...";
+            setTimeout(() => renderLogin(), 2000);
+        } else {
+            msg.textContent = "!! INVALID CODE. TRY AGAIN !!";
         }
     });
 
@@ -157,13 +250,21 @@ export function render2FA(userId: number) {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const response = await verify2FA(userId, tokenInput.value);
-        if (response.accessToken) {
+        if (response.success) {
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "Verified. Logging in...";
-            localStorage.removeItem("temp");
+			localStorage.removeItem("temp");
+			localStorage.setItem("accessToken", response.data.accessToken);
+			localStorage.setItem("refreshToken", response.data.refreshToken);
+			localStorage.setItem("refreshExpiresAt", response.data.refreshExpiresAt);
+			localStorage.setItem("username", response.data.userName);
+
+			history.pushState({ view: "main"}, "", "/");
+			renderUserMenu();
+			renderCreateTournamentForm();
 			reconnectChat();
         } else {
-            msg.textContent = `!! ${response.error || "Invalid code"}`;
+            msg.textContent = `!! ${response.data.error || "Invalid code"}`;
         }
     });
 
@@ -171,6 +272,10 @@ export function render2FA(userId: number) {
 }
 
 export async function logout() {
+	try {
+		await logoutRequest();
+	} catch {}
+
 	//TODO: remove temp login info
     localStorage.removeItem("username");
     localStorage.removeItem("accessToken");
@@ -179,6 +284,7 @@ export async function logout() {
     localStorage.removeItem("userid");
     disconnectGameWS();
     disconnectWS();
+
     renderUserMenu();
     renderCreateTournamentForm();
 }

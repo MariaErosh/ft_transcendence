@@ -9,11 +9,11 @@ const GATEWAY_URL = process.env.GATEWAY_URL;
 const USER_URL = process.env.USER_URL;
 
 export async function authRoutes(fastify: FastifyInstance) {
-  const auth = new AuthService();
+	const auth = new AuthService();
 
-  	// Registration
+	// Registration
 	fastify.post("/auth/register", async (req, reply) => {
-		const { username, password, email } = req.body as { username: string; password: string; email: string };
+		const { username, password, tfa, email } = req.body as { username: string; password: string; tfa: boolean, email: string };
 		let user: AuthUser | null = null;
 
 		req.log.info({ username }, "Auth-service: Login request");
@@ -32,36 +32,35 @@ export async function authRoutes(fastify: FastifyInstance) {
 		try {
 			//create record in AuthService
 			//todo: update two_factor_auth = true
-			user = await auth.createUser(username, password, false );
+			user = await auth.createUser(username, email, password, tfa);
 			req.log.info({ user }, "create user");
-			if (!user || !user.id) throw new Error ("User creation failed");
-
+			if (!user || !user.id) throw new Error("User creation failed");
 			const systemToken = fastify.jwt.sign(
-					{ service: "auth", sub: user.id },
-      				{ expiresIn: "1m" } );
+				{ service: "auth", sub: user.id },
+				{ expiresIn: "1m" });
 
 
 			//create record in UserSrvice
 			//console.log("sending to UserService:", { auth_user_id: user.id, username, email, token: systemToken });
-			let response : Response;
+			let response: Response;
 			try {
 				//response = await fetch(`${GATEWAY_URL}/users`, {
 				response = await fetch(`${USER_URL}/users`, {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-									//"Authorization": `Bearer ${systemToken}`
-									"x-gateway-secret": process.env.GATEWAY_SECRET!, // чтобы user-service пропустил
-									"x-user-service": "auth",
-									"x-user-id": user.id.toString()
-									},
-								body: JSON.stringify({
-										auth_user_id: user.id,
-										username: username,
-										email: email
-								}),
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						//"Authorization": `Bearer ${systemToken}`
+						"x-gateway-secret": process.env.GATEWAY_SECRET!, // чтобы user-service пропустил
+						"x-user-service": "auth",
+						"x-user-id": user.id.toString()
+					},
+					body: JSON.stringify({
+						auth_user_id: user.id,
+						username: username,
+						email: email
+					}),
 				});
-			} catch (userServErr){
+			} catch (userServErr) {
 				await rollbackAuthUser();
 				throw new Error(`Failed to contact UserService: ${(userServErr as Error).message}`);
 
@@ -90,30 +89,53 @@ export async function authRoutes(fastify: FastifyInstance) {
 	// Login
 	fastify.post("/auth/login", async (req, reply) => {
 		const { username, password } = req.body as {
-			username: string;
+			username: string; // it may be username or email
 			password: string;
 		};
-		if (!username || !password) return reply.status(400).send({ error: "username and password required" });
+		if (!username|| !password) return reply.status(400).send({ error: "username or email and password required" });
 		try {
-			const user = await auth.findUserByUsername(username);
+			const user = await auth.findUserByIdentifier(username);
 			if (!user) return reply.status(401).send({ error: "invalid credentials" });
 
 			const valid = await auth.validatePassword(password, user.password_hash);
 			if (!valid) return reply.status(401).send({ error: "invalid credentials" });
+			console.log("User fetched in login: ", user);
 
-			if (user.two_factor_enabled) {
+			if (user.two_factor_enabled && user.two_factor_secret && user.two_factor_set) {
 				return reply.send({ twoFactorRequired: true, userId: user.id });
 			}
 			const accessToken = fastify.jwt.sign({ sub: user.id, username: user.username }, { expiresIn: "15m" });
 			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
+			if (user.two_factor_enabled && !user.two_factor_secret) {
+				return reply.send({
+					status: "onboarding_2fa",
+					userId: user.id,
+					accessToken,
+					refreshToken,
+					refreshExpiresAt: expiresAt,
+				});
+			}
+
+			if (user.two_factor_enabled && user.two_factor_secret && !user.two_factor_set) {
+				auth.delete2FAsecret(user.id)
+				return reply.send({
+					status: "onboarding_2fa",
+					userId: user.id,
+					accessToken,
+					refreshToken,
+					refreshExpiresAt: expiresAt,
+				});
+			}
+
 			return reply.send({
+				username: user.username,
 				accessToken,
 				refreshToken,
 				refreshExpiresAt: expiresAt,
 			});
 		} catch (err: any) {
-			return reply.status(500).send({ error: "Internal server error"})
+			return reply.status(500).send({ error: "Internal server error" })
 		}
 	});
 
@@ -124,17 +146,17 @@ export async function authRoutes(fastify: FastifyInstance) {
 		try {
 			const userId = await auth.consumeRefreshToken(refreshToken);
 			const user = await auth.findUserById(userId);
-            if (!user) {
-                return reply.status(401).send({ error: "User not found" });
-            }
+			if (!user) {
+				return reply.status(401).send({ error: "User not found" });
+			}
 			const accessToken = fastify.jwt.sign(
-                { sub: user.id, username: user.username },
-                { expiresIn: "15m" }
-            );
+				{ sub: user.id, username: user.username },
+				{ expiresIn: "15m" }
+			);
 			const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
 			reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
 		} catch (err: any) {
-		reply.status(401).send({ error: err.message });
+			reply.status(401).send({ error: err.message });
 		}
 	});
 
@@ -155,67 +177,95 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/auth/logout", async (req, reply) => {
 		// expects Authorization: Bearer <accessToken>
 		try {
-		const authHeader = req.headers.authorization as string | undefined;
-		if (!authHeader) return reply.status(401).send({ error: "missing auth" });
-		const token = authHeader.split(" ")[1];
-		const payload: any = fastify.jwt.verify(token);
-		await auth.revokeAllForUser(payload.sub);
-		return reply.send({ ok: true });
+			const authHeader = req.headers.authorization as string | undefined;
+			if (!authHeader) return reply.status(401).send({ error: "missing auth" });
+			const token = authHeader.split(" ")[1];
+			const payload: any = fastify.jwt.verify(token);
+			await auth.revokeAllForUser(payload.sub);
+			return reply.send({ ok: true });
 		} catch (err: any) {
-		return reply.status(401).send({ error: err.message });
+			return reply.status(401).send({ error: err.message });
 		}
 	});
 
 	// Setting up 2FA and generating a QR code
 	fastify.post("/auth/2fa/enable", async (req, reply) => {
-	/*try {
-		const authHeader = req.headers.authorization as string;
-		if (!authHeader) return reply.status(401).send({ error: "missing auth" });
-		const token = authHeader.split(" ")[1];
-		const payload: any = fastify.jwt.verify(token);
 
-		const result = await auth.enable2FA(payload.sub, payload.username);
-		// return a QR-code for scanning in the Authenticator app
-		return reply.send(result);
-	} catch (err: any) {
-		return reply.status(400).send({ error: err.message });
-	}*/
-	const gw = (req.headers as any)['x-gateway-secret'];
-	if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "missing auth" });
+		const gw = (req.headers as any)['x-gateway-secret'];
+		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
 
-	const userId = Number((req.headers as any)['x-user-id']);
-	const username = String((req.headers as any)['x-username'] || "");
-	const result = await auth.enable2FA(userId, username);
-	return reply.send(result);
+		const userId = Number((req.headers as any)['x-user-id']);
+		const username = String((req.headers as any)['x-username'] || "");
+		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+
+		try {
+			const result = await auth.enable2FA(userId, username);
+			return reply.send(result);
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message });
+		}
+	});
+
+	fastify.post("/auth/2fa/deletesecret", async (req, reply) => {
+
+		const gw = (req.headers as any)['x-gateway-secret'];
+		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+
+		const userId = Number((req.headers as any)['x-user-id']);
+		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+
+		try {
+			const result = await auth.delete2FAsecret(userId);
+			return reply.send(result);
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message });
+		}
+	});
+
+	fastify.post("/auth/2fa/set", async (req, reply) => {
+
+		const gw = (req.headers as any)['x-gateway-secret'];
+		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+
+		const userId = Number((req.headers as any)['x-user-id']);
+		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+
+		try {
+			const result = await auth.mark2FAset(userId);
+			return reply.status(201).send(result);
+		} catch (err: any) {
+			return reply.status(400).send({ error: err.message });
+		}
 	});
 
 	// Verify 2FA token
 	fastify.post("/auth/2fa/verify", async (req, reply) => {
-	const { userId, token } = req.body as { userId: number; token: string };
-	if (!userId || !token) return reply.status(400).send({ error: "userId and token required" });
+		const { userId, token } = req.body as { userId: number; token: string };
+		if (!userId || !token) return reply.status(400).send({ error: "userId and token required" });
 
-	try {
-		const isValid = await auth.verify2FA(userId, token);
-		if (!isValid) return reply.status(401).send({ error: "Invalid 2FA token" });
+		try {
+			const isValid = await auth.verify2FA(userId, token);
+			if (!isValid) return reply.status(401).send({ error: "Invalid 2FA token" });
 
-		// for valid token respond JWT and refresh token
-		const user = await auth.findUserById(userId);
-		if (!user) return reply.status(404).send({ error: "User not found" });
+			// for valid token respond JWT and refresh token
+			const user = await auth.findUserById(userId);
+			if (!user) return reply.status(404).send({ error: "User not found" });
 
-		const accessToken = fastify.jwt.sign(
-			{ sub: user.id, username: user.username },
-			{ expiresIn: "15m" }
-		);
-		const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
+			const accessToken = fastify.jwt.sign(
+				{ sub: user.id, username: user.username },
+				{ expiresIn: "15m" }
+			);
+			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
-		return reply.send({
-			accessToken,
-			refreshToken,
-			refreshExpiresAt: expiresAt,
-		});
-	} catch (err: any) {
-		return reply.status(500).send({ error: err.message });
-	}
+			return reply.send({
+				accessToken,
+				refreshToken,
+				refreshExpiresAt: expiresAt,
+				userName: user.username
+			});
+		} catch (err: any) {
+			return reply.status(500).send({ error: err.message });
+		}
 	});
 
 

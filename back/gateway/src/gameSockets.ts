@@ -49,7 +49,8 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 			playerSockets.engineWs = engineWs;
 
 			// store messages that arrive before sockets are all fully open
-			const pendingMessages: string[] = [];
+			//const pendingMessages: string[] = [];
+			const pendingMessages = playerSockets.pendingMessages;
 			engineWs.on("open", () => {
 				server.log.info("Engine WS open");
 				pendingMessages.forEach(msg =>
