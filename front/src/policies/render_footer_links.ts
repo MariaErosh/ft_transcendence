@@ -60,7 +60,7 @@ export function renderFooterLinks() {
 	app.appendChild(footer);
 }
 
-function renderPrivacyPolicy() {
+export function renderPrivacyPolicy() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 	
@@ -127,11 +127,12 @@ function renderPrivacyPolicy() {
 	
 	// Close button handler
 	document.getElementById("close-privacy")!.addEventListener("click", () => {
+		wrapper.innerHTML = "";
 		history.back();
 	});
 }
 
-function renderTermsOfService() {
+export function renderTermsOfService() {
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
 	
@@ -203,6 +204,7 @@ function renderTermsOfService() {
 	
 	// Close button handler
 	document.getElementById("close-terms")!.addEventListener("click", () => {
+		wrapper.innerHTML = "";
 		history.back();
 	});
 }

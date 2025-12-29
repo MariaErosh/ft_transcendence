@@ -1,13 +1,13 @@
 import { createConsoleMatch, login, register, sendGameToGameEngine, userLoggedIn } from "../api.js";
 import { renderArena } from "../arena.js";
-import { renderGameBoard } from "../game_front/gameMenu.js";
+import { renderBlackBox, renderMatchMenu } from "./elements.js";
 import { connectGameWS, disconnectGameWS, gameSocket } from "./gameSocket.js";
 import { connectWS, disconnectWS, lobbySocket } from "./lobbySocket.js";
 
-function generateMatchName(){
+function generateMatchName() {
 	const random = Math.random().toString(36).slice(2, 10); // 8 chars
 	const matchName = "match_" + random;
-	return matchName ;
+	return matchName;
 }
 
 function generateRandomCredentials() {
@@ -17,14 +17,14 @@ function generateRandomCredentials() {
 	return { username, password };
 }
 
-async function createTempUser(){
-	const {username, password} = generateRandomCredentials();
+async function createTempUser() {
+	const { username, password } = generateRandomCredentials();
 	try {
 		const data = await register(username, password, false);
 		localStorage.setItem("userid", data.id);
 		localStorage.setItem("username", username);
 	}
-	catch (err){
+	catch (err) {
 		console.log("Didn't register temp user: ", err);
 	}
 	await login(username, password);
@@ -38,24 +38,34 @@ export async function renderNewConsoleTournament() {
 		await createTempUser();
 	await connectWS();
 	const matchName = generateMatchName();
-	const blackBox = document.getElementById("black-box")!;
+	let blackBox = document.getElementById("black-box");
+	if (!blackBox) {
+		blackBox = renderBlackBox();
+		let wrapper = document.getElementById("match-menu") as HTMLElement | null;
+		if (!wrapper) {
+			wrapper = renderMatchMenu();
+		}
+		wrapper!.appendChild(blackBox);
+	} else {
+		blackBox.innerHTML = "";
+	}
 	blackBox.innerHTML = "";
 	blackBox.className = "bg-gray-200 w-2/3 h-2/3 border-8 border-black shadow-[16px_16px_0_0_#000000] flex flex-col items-center justify-center z-40 font-mono p-8";
 
 	const headerGroup = document.createElement('div');
-    headerGroup.className = "w-3/5 mb-6 flex flex-col items-start";
+	headerGroup.className = "w-3/5 mb-6 flex flex-col items-start";
 
-    const title = document.createElement('div');
-    title.textContent = ">> TOURNAMENT SETUP";
-    title.className = "text-black text-5xl font-black tracking-tighter mb-2";
+	const title = document.createElement('div');
+	title.textContent = ">> TOURNAMENT SETUP";
+	title.className = "text-black text-5xl font-black tracking-tighter mb-2";
 
-    const subTitle = document.createElement('div');
-    subTitle.textContent = "REGISTER AT LEAST TWO OPERATORS";
-    subTitle.className = "text-purple-700 text-sm font-bold tracking-widest uppercase";
+	const subTitle = document.createElement('div');
+	subTitle.textContent = "REGISTER AT LEAST TWO OPERATORS";
+	subTitle.className = "text-purple-700 text-sm font-bold tracking-widest uppercase";
 
-    headerGroup.appendChild(title);
-    headerGroup.appendChild(subTitle);
-    blackBox.appendChild(headerGroup);
+	headerGroup.appendChild(title);
+	headerGroup.appendChild(subTitle);
+	blackBox.appendChild(headerGroup);
 
 	const playersBox = document.createElement('div');
 	playersBox.className = `
@@ -106,31 +116,31 @@ export async function renderNewConsoleTournament() {
 
 	//--LOGIC--
 	lobbySocket?.addEventListener("message", async (ev) => {
-				const msg = JSON.parse(ev.data);
-				console.log ("Message: ", msg);
-				if (msg.type === "game_ready"){
-					console.log(`Game ready, game id: ${msg.gameId}`)
-					gameSocket?.send(JSON.stringify({
-						type:"new_game",
-						gameId:msg.gameId
-					}))
-					renderArena({ type: "start", matchName: "Console" });
-					//await renderGameBoard();
-				}
-				if (msg.type == "end_match"){
-					console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-					renderArena({ type: "end", matchName: "Console", winner: msg.winner });
-				}
-			})
+		const msg = JSON.parse(ev.data);
+		console.log("Message: ", msg);
+		if (msg.type === "game_ready") {
+			console.log(`Game ready, game id: ${msg.gameId}`)
+			gameSocket?.send(JSON.stringify({
+				type: "new_game",
+				gameId: msg.gameId
+			}))
+			renderArena({ type: "start", matchName: "Console" });
+			//await renderGameBoard();
+		}
+		if (msg.type == "end_match") {
+			console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
+			renderArena({ type: "end", matchName: "Console", winner: msg.winner });
+		}
+	})
 	const players: string[] = [];
 	startButton.addEventListener('click', async () => {
 		try {
 			lobbySocket?.send(JSON.stringify({
 				type: "join_match",
-				match_type:"CONSOLE",
+				match_type: "CONSOLE",
 				name: matchName
 			}))
-			if (!localStorage.getItem("username")) throw new Error ("No username stored");
+			if (!localStorage.getItem("username")) throw new Error("No username stored");
 			await createConsoleMatch(players, matchName, localStorage.getItem("username")!);
 			blackBox.innerHTML = "";
 		} catch (error) {
@@ -146,17 +156,17 @@ export async function renderNewConsoleTournament() {
 		playersBox.innerHTML = '';
 		for (const p of players) {
 			const row = document.createElement('div');
-            row.className = 'text-xl font-bold border-b-2 border-black/10 py-1 flex justify-between items-center';
-            row.innerHTML = `
+			row.className = 'text-xl font-bold border-b-2 border-black/10 py-1 flex justify-between items-center';
+			row.innerHTML = `
                 <span class="text-black">> ${p.toUpperCase()}</span>
                 <span class="bg-black text-green-400 px-2 py-0.5 text-xs">READY</span>
             `;
-            playersBox.appendChild(row);
+			playersBox.appendChild(row);
 		}
 
 		if (players.length > 1) {
 			startButton.disabled = false;
-            startButton.className = `
+			startButton.className = `
                 bg-pink-500 text-black font-mono font-black
                 w-2/5 h-16 text-2xl border-4 border-black
                 shadow-[6px_6px_0_0_#000000]
