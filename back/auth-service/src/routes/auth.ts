@@ -35,7 +35,6 @@ export async function authRoutes(fastify: FastifyInstance) {
 			user = await auth.createUser(username, email, password, tfa);
 			req.log.info({ user }, "create user");
 			if (!user || !user.id) throw new Error("User creation failed");
-
 			const systemToken = fastify.jwt.sign(
 				{ service: "auth", sub: user.id },
 				{ expiresIn: "1m" });

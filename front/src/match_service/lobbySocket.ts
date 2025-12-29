@@ -4,6 +4,11 @@ export let lobbySocket: WebSocket | null = null;
 let reconnecting = false;
 let manualClose = false;
 
+export function getWSBaseURL(): string {
+	const protocol = window.location.protocol === "https:" ? "wss": "ws";
+	return `${protocol}://${window.location.host}`;
+}
+
 export async function connectWS(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
 		if (lobbySocket && lobbySocket.readyState === WebSocket.OPEN) {
@@ -16,7 +21,7 @@ export async function connectWS(): Promise<void> {
 		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
 
 		token = localStorage.getItem("accessToken");
-		lobbySocket = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+		lobbySocket = new WebSocket(`${getWSBaseURL()}/api/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {
 			console.error("WS connection error:", err);
