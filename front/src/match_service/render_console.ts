@@ -13,14 +13,15 @@ function generateMatchName() {
 function generateRandomCredentials() {
 	const random = Math.random().toString(36).slice(2, 10); // 8 chars
 	const username = "temp_" + random;
+	const email = `${username}@temp.local`;
 	const password = "pw_" + random + Math.random().toString(36).slice(2, 6);
-	return { username, password };
+	return { username, email, password };
 }
 
-async function createTempUser() {
-	const { username, password } = generateRandomCredentials();
+async function createTempUser(){
+	const {username, email, password} = generateRandomCredentials();
 	try {
-		const data = await register(username, password, false);
+		const data = await register(username, email, password, false);
 		localStorage.setItem("userid", data.id);
 		localStorage.setItem("username", username);
 	}

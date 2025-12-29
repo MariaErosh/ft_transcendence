@@ -87,6 +87,18 @@ export async function login(username: string, password: string) {
   return data;
 }
 
+export async function logoutRequest() {
+  const token = localStorage.getItem("accessToken");
+  if (!token) return;
+
+  await fetch(`${BASE_URL}/auth/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export async function verify2FA(userId: number, token: string) {
   const res = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: "POST",
@@ -97,13 +109,12 @@ export async function verify2FA(userId: number, token: string) {
   return {success: res.ok, data: data};
 }
 
-export async function register(username: string, password: string, tfa: boolean) {
+export async function register(username: string,  email: string, password: string, tfa: boolean) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password, tfa }),
+    body: JSON.stringify({ username,  email, password, tfa }),
   });
-  //return res.json();
   const data = await res.json();
   console.log("Register response:", data);
   return data;

@@ -1,4 +1,4 @@
-import { login, verify2FA, register, enable2FA, set2FAenabled } from "./api.js";
+import { login, verify2FA, register, logoutRequest, enable2FA, set2FAenabled  } from "./api.js";
 import { renderUserMenu } from "./ui.js";
 import { renderStartView } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
@@ -24,7 +24,7 @@ export function renderLogin() {
     form.appendChild(title);
 
     const username = document.createElement("input");
-    username.placeholder = "USERNAME";
+    username.placeholder = "USERNAME OE EMAIL";
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
@@ -53,8 +53,14 @@ export function renderLogin() {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const response = await login(username.value, password.value);
-		console.log("Response to login call: ", response);
-		if (response.accessToken) {
+
+       // if (response.twoFactorRequired) {
+       //     render2FA(response.userId);
+       // } else if (response.accessToken) {
+       //     localStorage.setItem("username", username.value);
+       //     localStorage.setItem("refreshToken", response.refreshToken);
+	   console.log("Response to login call: ", response);
+	   if (response.accessToken) {
             localStorage.removeItem("temp");
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
@@ -93,6 +99,12 @@ export function renderRegister() {
     username.placeholder = "USERNAME";
     username.className = INPUT_CLASS;
     form.appendChild(username);
+
+	const email = document.createElement("input");
+    email.type = "test";
+    email.placeholder = "EMAIL";
+    email.className = INPUT_CLASS;
+    form.appendChild(email);
 
     const password = document.createElement("input");
     password.type = "password";
@@ -137,7 +149,20 @@ export function renderRegister() {
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const response = await register(username.value, password.value, tfaCheckbox.checked);
+        if (!username.value.trim()) {
+			msg.textContent = "Username cannot be empty";
+			return;
+		}
+		if (!email.value.trim() || !/^\S+@\S+\.\S+$/.test(email.value)) {
+			msg.textContent = "Enter a valid email";
+			return;
+		}
+		if (!password.value || password.value.length < 6) {
+			msg.textContent = "Password must be at least 6 characters";
+			return;
+		}
+		const response = await register(username.value,  email.value, password.value, tfaCheckbox.checked);
+
         if (response.auth_user?.id) {
 			msg.className = "text-green-600 text-xs font-bold uppercase";
 			msg.textContent = "Account created! Proceed to login.";
@@ -254,6 +279,10 @@ export function render2FA(userId: number) {
 }
 
 export async function logout() {
+	try {
+		await logoutRequest();
+	} catch {}
+
 	//TODO: remove temp login info
     localStorage.removeItem("username");
     localStorage.removeItem("accessToken");
@@ -262,6 +291,7 @@ export async function logout() {
     localStorage.removeItem("userid");
     disconnectGameWS();
     disconnectWS();
+
     renderUserMenu();
     renderStartView();
 }
