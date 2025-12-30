@@ -8,6 +8,7 @@ import metricsPlugin from "fastify-metrics";
 dotenv.config();
 import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWebSocket, notifyEndMatch, notifyAboutNewConsoleGame } from "./lobbySockets";
 import { registerGameWebSocket } from "./gameSockets";
+import { registerChatWebSocket } from "./chatSockets";
 
 
 
@@ -18,7 +19,21 @@ const AUTH_URL = process.env.AUTH_URL!;
 const USER_URL = process.env.USER_URL!;
 const GENGINE_URL = process.env.GENGINE_URL!;
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
+const CHAT_URL = process.env.CHAT_URL!;
 
+// const onlineUsers = new Map<number, number>(); TODO in interact?
+
+// function markUserOnline(userId: number) {
+// 	onlineUsers.set(userId, Date.now());
+// }
+
+// function getOnlineUsers(): number[] {
+// 	const cutoff = Date.now() - 120_000; // 2 minutes timeout
+// 	for (const [id, lastSeen] of onlineUsers.entries()) {
+// 		if (lastSeen < cutoff) onlineUsers.delete(id);
+// 	}
+// 	return [...onlineUsers.keys()];
+// }
 
 
 async function buildServer() {
@@ -38,19 +53,30 @@ async function buildServer() {
 	});
 
 	await server.register(metricsPlugin, { endpoint: '/metrics' });
-	await server.register(cors, { origin: true });
+	await server.register(cors, {
+		origin: true,
+		methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+		allowedHeaders: ['Content-Type', 'Authorization'],
+		credentials: true
+	});
 	await server.register(jwt, { secret: JWT_SECRET });
 
 	//websocket registration
 	await registerGatewayWebSocket(server);
 	await registerGameWebSocket(server);
+	await registerChatWebSocket(server);
 
 	// helper:list, where gateway must validate access token
 	const PROTECTED_PREFIXES = [
 		"/users",
 		"/auth/2fa/enable",
 		"/auth/2fa/set",
-		"/check"
+		"/check",
+		"/chat/messages",
+		"/chat/blocks",
+		"/chat/conversations",
+		"/chat/users/online",
+		"/interact"
 	];
 	//validate JWT for protected routes and add x-user-* headers
 	server.addHook("onRequest", async (request, reply) => {
@@ -97,11 +123,25 @@ async function buildServer() {
 		http2: false,
 	});
 
+	await server.register(proxy, {
+		upstream: CHAT_URL,
+		prefix: "/chat",
+		rewritePrefix: "/chat",
+		http2: false,
+	});
+
+	await server.register(proxy, {
+		upstream: process.env.INTERACT_URL || "http://interact:3006",
+		prefix: "/interact",
+		rewritePrefix: "/interact",
+		http2: false,
+	});
+
 	server.get("/health", async () => ({
 		status: "ok",
 		ts: new Date().toISOString(),
 	}));
-	
+
 	server.get("/check", ()=>({ ok: true }));
 
 	await server.register(proxy, {

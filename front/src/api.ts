@@ -19,7 +19,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
     "Authorization": `Bearer ${accessToken}`,
   };
 
-  let res = await fetch(url, options);
+  let res = await fetch(`${BASE_URL}${url}`, options);
 
   if (res.status === 401 && localStorage.getItem("refreshToken")) {
     const refreshed = await refreshAccessToken();
