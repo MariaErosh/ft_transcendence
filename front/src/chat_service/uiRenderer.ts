@@ -411,18 +411,27 @@ function setupFriendHandlers(friends: User[]) {
 }
 
 function setupUserHandlers(users: User[]) {
-  const usersList = document.getElementById("all-users-list");
+	const usersList = document.getElementById("all-users-list");
 
-  usersList?.querySelectorAll('button[data-username]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const username = btn.getAttribute("data-username");
-      const user = users.find(u => u.username === username);
-      if (user) {
-        openDM(user);
-        //renderDMView();
-      }
-    });
-  });
+	usersList?.querySelectorAll('button[data-username]').forEach(btn => {
+	btn.addEventListener("click", () => {
+		const username = btn.getAttribute("data-username");
+		const user = users.find(u => u.username === username);
+		if (user) {
+		openDM(user);
+		}
+	});
+	});
+
+	usersList?.querySelectorAll('button[data-action="unblock"]').forEach(btn => {
+		btn.addEventListener("click", async () => {
+		const userId = Number(btn.getAttribute("data-userid"));
+		if (!userId) return;
+		await unblockUser(userId);
+		await refreshOnlineStatus();
+		renderHomeView();
+		});
+	});
 }
 
 /**
