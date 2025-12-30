@@ -12,36 +12,43 @@ let shouldReconnect = false;
 /**
  * Connect to the chat WebSocket
  */
-export function connectChat() {
-	// Don't reconnect if already connected
-	if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-		console.log("WebSocket already connected");
-		return;
-	}
+export function connectChat(): Promise<boolean> {
+	return new Promise((resolve) => {
+		if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+			console.log("WebSocket already connected");
+			resolve(true);
+			return;
+		}
 
-	const token = localStorage.getItem("accessToken");
+		const token = localStorage.getItem("accessToken");
+		if (!token) {
+			updateStatus("Not logged in", "error");
+			console.log("No access token - not connecting to chat");
+			shouldReconnect = false;
+			resolve(false);
+			return;
+		}
 
-	if (!token) {
-	updateStatus("Not logged in", "error");
-	console.log("No access token - not connecting to chat");
-	shouldReconnect = false;  // Don't reconnect without token
-	return;
-	}
+		try {
+			shouldReconnect = true;
+			chatSocket = new WebSocket(`${GATEWAY_WS_URL}?token=${token}`);
 
-	try {
-	// Enable auto-reconnect when we have a valid token
-	shouldReconnect = true;
-	chatSocket = new WebSocket(`${GATEWAY_WS_URL}?token=${token}`);
-
-	chatSocket.onopen = handleOpen;
-	chatSocket.onmessage = handleMessage;
-	chatSocket.onclose = handleClose;
-	chatSocket.onerror = handleError;
-
-	} catch (err) {
-	console.error("Failed to connect to chat:", err);
-	updateStatus("Connection failed", "error");
-	}
+			chatSocket.onopen = () => {
+				handleOpen();
+				resolve(true);
+			};
+			chatSocket.onmessage = handleMessage;
+			chatSocket.onclose = handleClose;
+			chatSocket.onerror = (err) => {
+				handleError(err);
+				resolve(false);
+			};
+		} catch (err) {
+			console.error("Failed to connect to chat:", err);
+			updateStatus("Connection failed", "error");
+			resolve(false);
+		}
+	});
 }
 
 /**
@@ -152,14 +159,14 @@ function updateTypingIndicator() {
  */
 function handleReadReceipt(message: ChatMessage) {
 	console.log('Processing read receipt:', message);
-	
+
 	if (!message.conversation_id) {
 		console.log('No conversation_id in read receipt');
 		return;
 	}
 
 	const currentRecipient = ChatData.getCurrentRecipient();
-	
+
 	// Get current user ID from localStorage or stored state
 	const currentUserId = getCurrentUserId();
 	if (!currentUserId) {
@@ -172,7 +179,7 @@ function handleReadReceipt(message: ChatMessage) {
 	let updatedCount = 0;
 	const updatedMessages = messages.map(msg => {
 		// Mark as read if: same conversation AND sent by current user (not the reader)
-		if (msg.conversation_id === message.conversation_id && 
+		if (msg.conversation_id === message.conversation_id &&
 			msg.sender_id === currentUserId) {
 			updatedCount++;
 			return { ...msg, is_read: 1, read_at: new Date().toISOString() };
@@ -186,10 +193,10 @@ function handleReadReceipt(message: ChatMessage) {
 	// If we're currently viewing this conversation, update the UI
 	if (currentRecipient) {
 		// Check if any message in the current view matches this conversation
-		const isCurrentConversation = messages.some(msg => 
+		const isCurrentConversation = messages.some(msg =>
 			msg.conversation_id === message.conversation_id
 		);
-		
+
 		if (isCurrentConversation) {
 			console.log('Updating UI for current conversation');
 			updateMessageReadIndicators();
@@ -203,7 +210,7 @@ function handleReadReceipt(message: ChatMessage) {
 function getCurrentUserId(): number | null {
 	const token = localStorage.getItem('accessToken');
 	if (!token) return null;
-	
+
 	try {
 		// Decode JWT token to get user ID
 		const payload = JSON.parse(atob(token.split('.')[1]));

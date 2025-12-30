@@ -25,7 +25,7 @@ export function renderLogin() {
     form.appendChild(title);
 
     const username = document.createElement("input");
-    username.placeholder = "USERNAME OE EMAIL";
+    username.placeholder = "USERNAME OR EMAIL";
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
@@ -62,6 +62,8 @@ export function renderLogin() {
        //     localStorage.setItem("refreshToken", response.refreshToken);
 	   console.log("Response to login call: ", response);
 	   if (response.accessToken) {
+		localStorage.setItem("username", username.value);// I added this two lines because the login wasn't storing username, but not sure if we wanted to be different. Att: Steph
+		localStorage.setItem("refreshToken", response.refreshToken);
             localStorage.removeItem("temp");
             history.pushState({ view: "main"}, "", "/");
             renderUserMenu();

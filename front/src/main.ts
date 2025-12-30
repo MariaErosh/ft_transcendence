@@ -21,6 +21,8 @@ app.innerHTML = `
 renderFooterLinks();
 renderUserMenu();
 renderCreateTournamentForm();
+renderChat();
+initializeProfileUI();
 
 window.addEventListener("DOMContentLoaded", () => {
 	// if user refreshed on a sub-page (like /game), redirect to "/"
@@ -43,6 +45,7 @@ window.addEventListener("popstate", (event) => {
 		renderUserMenu();
 		renderFooterLinks();
 		renderCreateTournamentForm();
+		renderChat();
 		return;
 	}
 
@@ -74,11 +77,13 @@ window.addEventListener("popstate", (event) => {
 			renderUserMenu();
 			renderFooterLinks();
 			renderCreateTournamentForm();
+			renderChat();
 			break;
 		default:
 			setStop();
 			renderUserMenu();
 			renderFooterLinks();
 			renderCreateTournamentForm();
+			renderChat();
 	}
 });

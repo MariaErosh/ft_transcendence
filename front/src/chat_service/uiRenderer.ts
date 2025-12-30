@@ -1,12 +1,13 @@
 // UI rendering functions
 
-import type { StatusType } from './types.js';
+import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
+import { renderLogin } from '../forms.js';
 
 let chatContainer: HTMLElement | null = null;
 
@@ -45,15 +46,17 @@ export function renderChatBubble() {
 /**
  * Open chat window from bubble
  */
-export function chatOpened() {
+export async function chatOpened() {
 	ChatData.setChatOpen(true);
 	ChatData.setCurrentView('home');
-	connectChat();
-
-	// Load users, friends, and blocked users in parallel, then render home view
-	Promise.all([loadUsers(), loadFriends(), loadBlockedUsers()]).then(() => {
+	const connected = await connectChat();
+	if (connected) {
+		Promise.all([loadUsers(), loadFriends(), loadBlockedUsers()]).then(() => {
+			renderHomeView();
+		});
+	} else {
 		renderHomeView();
-	});
+	}
 }
 
 /**
@@ -95,22 +98,33 @@ export function enableInput(enabled: boolean) {
  * Shows friends list at top and all users list below
  */
 export function renderHomeView() {
-  if (!chatContainer) return;
+	if (!chatContainer) return;
 
-  const currentUsername = localStorage.getItem("username");
-  const friends = ChatData.getFriends();
-  const allUsers = ChatData.getAllUsers();
-  const blockedUsers = ChatData.getBlockedUsers();
-  const isConnected = ChatData.isConnected();
+	const username = localStorage.getItem("username");
 
-  chatContainer.className = "fixed bottom-6 right-6 z-50";
-  chatContainer.innerHTML = `
+	chatContainer.className = "fixed bottom-6 right-6 z-50";
+
+	if (!username) {
+		chatContainer.innerHTML = renderLoggedOutView();
+		setupLoggedOutHandlers();
+		return;
+	}
+
+	const data = getChatViewData();
+	chatContainer.innerHTML = renderChatLayout(data);
+
+	setupHeaderHandlers();
+	setupFriendHandlers(data.friends);
+	setupUserHandlers(data.allUsers);
+}
+
+function renderLoggedOutView(): string {
+  return `
     <div class="
-        bg-gray-200
-        border-4 border-black
-        w-96 h-[500px] flex flex-col
-        shadow-[8px_8px_0_0_#000000]
-        transition-all duration-150
+      bg-gray-200
+      border-4 border-black
+      w-96 h-[500px] flex flex-col
+      shadow-[8px_8px_0_0_#000000]
     ">
       <!-- Header -->
       <div class="
@@ -123,244 +137,289 @@ export function renderHomeView() {
         <h3 class="font-bold uppercase tracking-wider text-sm">
           📨 CHAT
         </h3>
-        <div class="flex items-center gap-2">
-          <button id="refresh-status" class="
-            text-lg hover:text-pink-400
-            leading-none
-            px-2
-          " title="Refresh online status">
-            ↻
-          </button>
-          <button id="chat-minimize" class="
-            text-xl font-extrabold
-            hover:text-pink-400
-            leading-none
-            px-2
-          ">
-            ✕
+        <button
+          id="chat-close"
+          class="text-xl font-extrabold hover:text-pink-400 leading-none px-2"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="
+        flex-1
+        bg-gray-800
+        flex flex-col items-center justify-center
+        text-center
+        px-6
+      ">
+        <div class="
+          bg-gray-200
+          border-4 border-black
+          shadow-[6px_6px_0_0_#000000]
+          p-6
+          max-w-xs
+        ">
+          <h4 class="font-black uppercase mb-2">
+            🔒 Locked
+          </h4>
+          <p class="text-sm font-mono mb-4">
+            Log in to have access to the chat.
+          </p>
+          <button
+            id="go-login"
+            class="
+              px-4 py-2
+              bg-purple-600
+              text-white
+              font-bold
+              border-2 border-black
+              hover:bg-purple-700
+              transition
+            "
+          >
+            Login
           </button>
         </div>
       </div>
 
-      <!-- Home Content -->
-      <div class="flex-1 overflow-y-auto bg-gray-800">
-        <!-- Friends Section -->
-        <div class="border-b-4 border-black bg-pink-100">
-          <div class="px-3 py-2 bg-pink-500 text-black font-bold text-xs uppercase tracking-wide">
-            💜 Friends
-          </div>
-          <div id="friends-list" class="p-2 space-y-1">
-            ${friends.length === 0
-              ? '<div class="text-xs text-gray-500 italic px-2 py-2">No friends yet</div>'
-              : friends
-                  .filter((friend) => friend.username !== currentUsername)
-                  .map((friend) => {
-                    const isBlocked = friend.userId ? blockedUsers.includes(friend.userId) : false;
-                    if (isBlocked) {
-                      return `
-                      <div class="
-                        w-full px-2 py-2
-                        text-sm font-mono
-                        text-red-400 opacity-70
-                        flex items-center gap-2
-                        border-2 border-transparent
-                      ">
-                        <span class="
-                          w-2 h-2 rounded-full
-                          ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                        "></span>
-                        <span class="truncate flex-1">${escapeHtml(friend.username)}</span>
-                        <button
-                          data-action="unblock"
-                          data-userid="${friend.userId || ''}"
-                          class="
-                            px-2 py-1 text-xs font-bold
-                            bg-green-500 hover:bg-green-600
-                            text-white rounded
-                            border-2 border-black
-                          "
-                        >
-                          Unblock
-                        </button>
-                      </div>
-                    `;
-                    } else {
-                      return `
-                      <button
-                        data-username="${friend.username}"
-                        data-userid="${friend.userId || ''}"
-                        class="
-                          w-full text-left px-2 py-2
-                          text-sm font-mono
-                          text-gray-200
-                          hover:bg-pink-200
-                          hover:text-black
-                          flex items-center gap-2
-                          border-2 border-transparent
-                          hover:border-black
-                          transition-all
-                        "
-                      >
-                        <span class="
-                          w-2 h-2 rounded-full
-                          ${friend.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                        "></span>
-                        <span class="truncate">${escapeHtml(friend.username)}</span>
-                      </button>
-                    `;
-                    }
-                  }).join('')
-            }
-          </div>
-        </div>
-
-        <!-- All Users Section -->
-        <div class="bg-gray-700">
-          <div class="px-3 py-2 bg-purple-400 text-black font-bold text-xs uppercase tracking-wide">
-            🌐 All Users
-          </div>
-          <div id="all-users-list" class="p-2 space-y-1">
-            ${allUsers
-              .filter((user) => user.username !== currentUsername)
-              .map((user) => {
-                const isBlocked = user.userId ? blockedUsers.includes(user.userId) : false;
-                if (isBlocked) {
-                  return `
-                  <div class="
-                    w-full px-2 py-2
-                    text-sm font-mono
-                    text-red-400 opacity-70
-                    flex items-center gap-2
-                    border-2 border-transparent
-                  ">
-                    <span class="
-                      w-2 h-2 rounded-full
-                      ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                    "></span>
-                    <span class="truncate flex-1">${escapeHtml(user.username)}</span>
-                    <button
-                      data-action="unblock"
-                      data-userid="${user.userId || ''}"
-                      class="
-                        px-2 py-1 text-xs font-bold
-                        bg-green-500 hover:bg-green-600
-                        text-white rounded
-                        border-2 border-black
-                      "
-                    >
-                      Unblock
-                    </button>
-                  </div>
-                `;
-                } else {
-                  return `
-                  <button
-                    data-username="${user.username}"
-                    data-userid="${user.userId || ''}"
-                    class="
-                      w-full text-left px-2 py-2
-                      text-sm font-mono
-                      text-gray-200
-                      hover:bg-purple-200
-                      hover:text-black
-                      flex items-center gap-2
-                      border-2 border-transparent
-                      hover:border-black
-                      transition-all
-                    "
-                  >
-                    <span class="
-                      w-2 h-2 rounded-full
-                      ${user.isOnline ? 'bg-green-500' : 'bg-gray-400'}
-                    "></span>
-                    <span class="truncate">${escapeHtml(user.username)}</span>
-                  </button>
-                `;
-                }
-              }).join('')
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Footer Status -->
+      <!-- Footer -->
       <div class="
         border-t-4 border-black
         p-3
         bg-gray-300
+        text-xs font-mono font-bold text-red-600
       ">
-        <div id="chat-status" class="
-          text-xs
-          font-mono
-          font-bold
-          ${isConnected ? 'text-green-600' : 'text-red-600'}
-        ">
-          ${isConnected ? '// CONNECTED' : '// DISCONNECTED'}
-        </div>
+        // DISCONNECTED
       </div>
     </div>
   `;
+}
 
-  // Setup event listeners
-  const minimizeBtn = document.getElementById("chat-minimize");
-  const refreshBtn = document.getElementById("refresh-status");
+function setupLoggedOutHandlers() {
+  document
+    .getElementById("go-login")
+    ?.addEventListener("click", renderLogin);
 
-  minimizeBtn?.addEventListener("click", closeChat);
-  refreshBtn?.addEventListener("click", async () => {
-    await refreshOnlineStatus();
-    renderHomeView(); // Re-render to show updated status
-  });
+  document
+    .getElementById("chat-close")
+    ?.addEventListener("click", closeChat);
+}
 
-  // Add click handlers for friends
-  const friendsList = document.getElementById("friends-list");
-  friendsList?.querySelectorAll('button[data-username]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const username = btn.getAttribute('data-username') || '';
-      if (username) {
-        // Find the full user object from friends list
-        const user = friends.find(f => f.username === username);
-        if (user) {
-          openDM(user);
+function getChatViewData() {
+	return {
+		currentUsername: localStorage.getItem("username"),
+		friends: ChatData.getFriends(),
+		allUsers: ChatData.getAllUsers(),
+		blockedUsers: ChatData.getBlockedUsers(),
+		isConnected: ChatData.isConnected(),
+	};
+}
+
+function renderChatLayout(data: ReturnType<typeof getChatViewData>): string {
+	return `
+	<div class="
+		bg-gray-200
+		border-4 border-black
+		w-96 h-[500px] flex flex-col
+		shadow-[8px_8px_0_0_#000000]
+	">
+		${renderHeader()}
+		${renderHomeContent(data)}
+		${renderFooter(data.isConnected)}
+	</div>
+	`;
+}
+
+function renderHeader(): string {
+	return `
+		<div class="bg-purple-600 text-white px-4 py-3 border-b-4 border-black flex justify-between items-center">
+			<h3 class="font-bold uppercase tracking-wider text-sm">📨 CHAT</h3>
+			<div class="flex gap-2">
+			<button id="refresh-status" class="px-2 hover:text-pink-400">↻</button>
+			<button id="chat-minimize" class="px-2 hover:text-pink-400">✕</button>
+			</div>
+		</div>
+	`;
+}
+
+function renderFooter(isConnected: boolean): string {
+	return `
+		<div class="border-t-4 border-black p-3 bg-gray-300">
+		<div class="text-xs font-mono font-bold ${
+			isConnected ? "text-green-600" : "text-red-600"
+		}">
+			${isConnected ? "// CONNECTED" : "// DISCONNECTED"}
+		</div>
+		</div>
+	`;
+}
+
+function renderHomeContent(data: ReturnType<typeof getChatViewData>): string {
+	return `
+		<div class="flex-1 overflow-y-auto bg-gray-800">
+		${renderFriendsSection(data)}
+		${renderAllUsersSection(data)}
+		</div>
+	`;
+}
+
+function renderFriendsSection(data: {
+  friends: User[];
+  blockedUsers: number[];
+  currentUsername: string | null;
+}): string {
+  const { friends, blockedUsers, currentUsername } = data;
+
+  return `
+    <div class="border-b-4 border-black bg-pink-100">
+      <div class="px-3 py-2 bg-pink-500 text-black font-bold text-xs uppercase tracking-wide">
+        💜 Friends
+      </div>
+      <div id="friends-list" class="p-2 space-y-1">
+        ${
+          friends.length === 0
+            ? `<div class="text-xs text-gray-500 italic px-2 py-2">No friends yet</div>`
+            : friends
+                .filter(u => u.username !== currentUsername)
+                .map(u => renderUserRow(u, blockedUsers, "friend"))
+                .join("")
         }
-      }
-    });
-  });
+      </div>
+    </div>
+  `;
+}
 
-  // Add unblock handlers for friends
-  friendsList?.querySelectorAll('button[data-action="unblock"]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const userId = parseInt(btn.getAttribute('data-userid') || '0');
-      if (userId) {
-        await unblockUser(userId);
-        await refreshOnlineStatus();
-        renderHomeView();
-      }
-    });
-  });
+function renderAllUsersSection(data: {
+  allUsers: User[];
+  blockedUsers: number[];
+  currentUsername: string | null;
+}): string {
+  const { allUsers, blockedUsers, currentUsername } = data;
 
-  // Add click handlers for all users
-  const allUsersList = document.getElementById("all-users-list");
-  allUsersList?.querySelectorAll('button[data-username]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const username = btn.getAttribute('data-username') || '';
-      if (username) {
-        // Find the full user object from all users list
-        const user = allUsers.find(u => u.username === username);
-        if (user) {
-          openDM(user);
+  return `
+    <div class="bg-gray-700">
+      <div class="px-3 py-2 bg-purple-400 text-black font-bold text-xs uppercase tracking-wide">
+        🌐 All Users
+      </div>
+      <div id="all-users-list" class="p-2 space-y-1">
+        ${
+          allUsers
+            .filter(u => u.username !== currentUsername)
+            .map(u => renderUserRow(u, blockedUsers, "all"))
+            .join("")
         }
-      }
-    });
-  });
+      </div>
+    </div>
+  `;
+}
 
-  // Add unblock handlers for all users
-  allUsersList?.querySelectorAll('button[data-action="unblock"]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const userId = parseInt(btn.getAttribute('data-userid') || '0');
-      if (userId) {
-        await unblockUser(userId);
-        await refreshOnlineStatus();
-        renderHomeView();
+function renderUserRow(
+  user: User,
+  blockedUsers: number[],
+  context: "friend" | "all"
+): string {
+  const isBlocked =
+    typeof user.userId === "number" && blockedUsers.includes(user.userId);
+
+  const isOnline = user.isOnline ?? false;
+  const statusColor = isOnline ? "bg-green-500" : "bg-gray-400";
+
+  if (isBlocked) {
+    return `
+      <div class="
+        w-full px-2 py-2
+        text-sm font-mono
+        text-red-400 opacity-70
+        flex items-center gap-2
+      ">
+        <span class="w-2 h-2 rounded-full ${statusColor}"></span>
+        <span class="truncate flex-1">${escapeHtml(user.username)}</span>
+        ${
+          user.userId !== undefined
+            ? `
+              <button
+                data-action="unblock"
+                data-userid="${user.userId}"
+                class="
+                  px-2 py-1 text-xs font-bold
+                  bg-green-500 hover:bg-green-600
+                  text-white rounded
+                  border-2 border-black
+                "
+              >
+                Unblock
+              </button>
+            `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  return `
+    <button
+      data-username="${user.username}"
+      data-userid="${user.userId ?? ""}"
+      class="
+        w-full text-left px-2 py-2
+        text-sm font-mono
+        text-gray-200
+        hover:${context === "friend" ? "bg-pink-200" : "bg-purple-200"}
+        hover:text-black
+        flex items-center gap-2
+        border-2 border-transparent
+        hover:border-black
+        transition-all
+      "
+    >
+      <span class="w-2 h-2 rounded-full ${statusColor}"></span>
+      <span class="truncate">${escapeHtml(user.username)}</span>
+    </button>
+  `;
+}
+
+function setupHeaderHandlers() {
+	document.getElementById("chat-minimize")?.addEventListener("click", closeChat);
+
+	document.getElementById("refresh-status")?.addEventListener("click", async () => {
+		await refreshOnlineStatus();
+		renderHomeView();
+	});
+}
+
+function setupFriendHandlers(friends: User[]) {
+	const friendsList = document.getElementById("friends-list");
+
+	friendsList?.querySelectorAll('button[data-username]').forEach(btn => {
+		btn.addEventListener("click", () => {
+		const username = btn.getAttribute("data-username");
+		const user = friends.find(f => f.username === username);
+		if (user) openDM(user);
+		});
+	});
+
+	friendsList?.querySelectorAll('button[data-action="unblock"]').forEach(btn => {
+		btn.addEventListener("click", async () => {
+		const userId = Number(btn.getAttribute("data-userid"));
+		if (!userId) return;
+		await unblockUser(userId);
+		await refreshOnlineStatus();
+		renderHomeView();
+		});
+	});
+}
+
+function setupUserHandlers(users: User[]) {
+  const usersList = document.getElementById("all-users-list");
+
+  usersList?.querySelectorAll('button[data-username]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const username = btn.getAttribute("data-username");
+      const user = users.find(u => u.username === username);
+      if (user) {
+        openDM(user);
+        //renderDMView();
       }
     });
   });
