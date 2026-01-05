@@ -3,12 +3,14 @@ import { gameSocket } from "./match_service/gameSocket.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
+
 export 	type ArenaState =
 		| { type: "winner"; name: string }
 		| { type: "waiting"; match: string }
 		| { type: "end"; matchName: string, winner: string }
 		| { type: "start"; matchName: string }
 		| { type: "winner_console"; name: string; }
+		| { type: "player left"; loser: string; winner: string; }
 
 export function renderArena(state: ArenaState) {
 	const main = document.getElementById("main") as HTMLElement;
@@ -60,6 +62,21 @@ export function renderArena(state: ArenaState) {
                 <div class="flex flex-col gap-6">
                     <h1 class="text-6xl font-black uppercase tracking-tighter bg-purple-600 text-white p-4 border-4 border-black shadow-[8px_8px_0_0_#000000]">
                         VICTORY: ${state.name}!
+                    </h1>
+                    <p class="text-xl font-bold uppercase max-w-md">
+                        > STAND BY FOR SUBSEQUENT ROUNDS <br>
+                        > SYNCING TOURNAMENT DATA...
+                    </p>
+                    <div class="animate-pulse text-purple-700 font-black">SYSTEM WAITING...</div>
+                </div>
+            `;
+		break;
+
+		case "player left":
+			contentDiv.innerHTML = `
+                <div class="flex flex-col gap-6">
+                    <h1 class="text-6xl font-black uppercase tracking-tighter bg-purple-600 text-white p-4 border-4 border-black shadow-[8px_8px_0_0_#000000]">
+                        PLAYER ${state.loser} LEFT THE GAME. VICTORY FOR: ${state.winner}!
                     </h1>
                     <p class="text-xl font-bold uppercase max-w-md">
                         > STAND BY FOR SUBSEQUENT ROUNDS <br>
@@ -125,10 +142,11 @@ export function renderArena(state: ArenaState) {
                         TOURNAMENT: ${state.match}
                     </div>
                     <p class="text-xl font-medium italic">
-                        "OPPONENT IS INITIALIZING HARDWARE..."
+                        "WAITING FOR OPPONENT'S GAME TO END..."
                     </p>
                 </div>
             `;
+			gameSocket?.send(JSON.stringify({ type: "current match", matchName: state.match }));
 		break;
 		}
 

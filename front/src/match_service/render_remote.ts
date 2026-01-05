@@ -197,7 +197,8 @@ async function joinRoom(matchName: string) {
 				// await connectGameWS();
 				gameSocket?.send(JSON.stringify({
 					type:"new_game",
-					gameId:msg.gameId
+					gameId: msg.gameId,
+					matchName: msg.matchName
 				}))
 				//await renderGameBoard();
 				renderArena({ type: "start", matchName: matchName})

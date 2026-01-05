@@ -43,6 +43,7 @@ export const games = new Map<number, GameObject>();
 const gameSockets = new Map<number, Set<PlayerSocket>>();
 const playerSockets = new Map<string, Set<PlayerSocket>>();
 const gameIntervals = new Map<number, NodeJS.Timeout>();
+const absentByMatch = new Map<string, Set<string>>();
 
 function deleteInterval(gameId: number) {
 	if (gameIntervals.get(gameId)) {
@@ -66,7 +67,7 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 		ws.close();
 		return;
 	}
-	const playerSocket: PlayerSocket = { ws, alias: player, ready: false};
+	const playerSocket: PlayerSocket = { ws, alias: player, ready: false, current_match: null};
 	if (!playerSockets.has(player))
 		playerSockets.set(player, new Set());
 	playerSockets.get(player)!.add(playerSocket);
@@ -80,27 +81,38 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 		}
 	});
 	ws.on("close", () => {
-		const gameId = playerSocket.gameId;
-		if (!gameId) {
-			playerSockets.get(player)?.delete(playerSocket);
-			return server.log.info(`Player ${player} disconnected`);
+		
+		// if (!gameId) {
+		// 	playerSockets.get(player)?.delete(playerSocket);
+		// 	return server.log.info(`Player ${player} disconnected`);
+		// }
+		const matchName = playerSocket.current_match;
+		if (matchName) {
+			if (!absentByMatch.has(matchName))
+				absentByMatch.set(matchName, new Set());
+			absentByMatch.get(matchName)!.add(playerSocket.alias);
+			server.log.info(`Player ${playerSocket.alias} disconnected from match ${matchName}`);
 		}
-		const sockets = gameSockets.get(gameId);
-		const gameState = gameStates.get(gameId);
-	
-		gameSockets.get(gameId)?.delete(playerSocket);
 
-		if (gameState?.status === "RUNNING") {
-			server.log.info(`Player ${player} disconnected during active game`);
-			onePlayerEndsGame(gameId!, playerSocket.alias, gameState!);
-			cleanup(gameId);
-			return;
+		const gameId = playerSocket.gameId;
+		
+		if (gameId) {
+			const sockets = gameSockets.get(gameId);
+			sockets?.delete(playerSocket);
+			const gameState = gameStates.get(gameId);
+			if (gameState?.status === "RUNNING") {
+				server.log.info(`Player ${player} disconnected during active game`);
+				onePlayerEndsGame(gameId!, playerSocket.alias, gameState!);
+				cleanup(gameId);
+				//return;
+			}
+			// if no players are connected anymore, stop the loop
+			if (sockets?.size === 0) {
+				server.log.info(`Stopped loop for game with id ${gameId}`);
+				cleanup(gameId);
+			}
 		}
-		// if no players are connected anymore, stop the loop
-		if (gameSockets.get(gameId)?.size === 0) {
-			server.log.info(`Stopped loop for game with id ${gameId}`);
-			cleanup(gameId);
-		}
+		playerSockets.get(playerSocket.alias)?.delete(playerSocket);
 	});
 })
 
@@ -113,13 +125,16 @@ async function handleMessage(player: PlayerSocket, message: any) {
 
 	if (message.type === "consts")
 		player.ws.send(JSON.stringify({ type: "consts", data: board }));
-
-	if (message.type === "PLAYER_READY") {
+	
+	else if (message.type == "current match") {
+		player.current_match = message.matchName;
+	}
+	else if (message.type === "PLAYER_READY") {
 		player.ready = true;
-		canStartGame(player.gameId);
+		canStartGame(player);
 	}
 	
-	if (message.type === "new_game") {
+	else if (message.type === "new_game") {
 		const newGameId = Number(message.gameId);
 		const oldGameId = player.gameId;
 
@@ -127,6 +142,7 @@ async function handleMessage(player: PlayerSocket, message: any) {
 			gameSockets.get(oldGameId)!.delete(player);
 		player.gameId = newGameId;
 		player.ready = false;
+		player.current_match = message.matchName;
 
 		if (!gameSockets.has(newGameId))
 			gameSockets.set(newGameId, new Set());
@@ -192,12 +208,12 @@ function cleanup(gameId: number) {
 	gameMeta.delete(gameId);
 }
 
-function canStartGame(gameId?: number) {
-	if (!gameId) return;
+function canStartGame(player: PlayerSocket) {
+	if (!player.gameId) return;
 
-	const meta = gameMeta.get(gameId);
-	const sockets = gameSockets.get(gameId);
-	const gameState = gameStates.get(gameId);
+	const meta = gameMeta.get(player.gameId);
+	const sockets = gameSockets.get(player.gameId);
+	const gameState = gameStates.get(player.gameId);
 
 	if (!meta || !sockets || !gameState) return;
 	if (meta.started) return;
@@ -207,15 +223,36 @@ function canStartGame(gameId?: number) {
 	for (const p of sockets) {
 		if (p.ready) meta.playersReady.add(p.alias);
 	}
+	if (player.current_match) {
+		const absentees = absentByMatch.get(player.current_match);
+		if (absentees) {
+			let gameState = gameStates.get(player.gameId)!;
+
+			if (player.alias === gameState.current.leftPlayer.alias) {
+				if (absentees.has(gameState.current.rightPlayer.alias)) {
+					onePlayerEndsGame(player.gameId, gameState.current.rightPlayer.alias, gameState!);
+					cleanup(player.gameId);
+					return;
+				}
+			}
+			else {
+				if (absentees.has(gameState.current.leftPlayer.alias)) {
+					onePlayerEndsGame(player.gameId, gameState.current.leftPlayer.alias, gameState!);
+					cleanup(player.gameId);
+					return;
+				}
+			}
+		}
+	}
 	if (gameState.current.type === "REMOTE" && meta.playersReady.size < 2) {
-		console.log(`Game ${gameId}: waiting for players`);
+		console.log(`Game ${player.gameId}: waiting for players`);
 		return;
 	}
 
 	meta.started = true;
-	console.log(`Game ${gameId}: starting`);
+	console.log(`Game ${player.gameId}: starting`);
 
-	broadcast(gameId, {type: "ready", data: { board, gameState }});
+	broadcast(player.gameId, {type: "ready", data: { board, gameState }});
 }
 
 async function loadGameData(gameId: number) {
@@ -315,6 +352,7 @@ function onePlayerEndsGame(gameId: number, alias: string, gameState: GameState) 
 	}
 	sendResult(gameState);
 	for (const p of sockets) {
-		p.ws.send(JSON.stringify({ type: "win", data: gameState }));
+		server.log.info("sending player had left match while waiting");
+		p.ws.send(JSON.stringify({ type: "player left", data: gameState }));
 	}
 }

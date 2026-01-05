@@ -113,7 +113,8 @@ export async function renderNewConsoleTournament() {
 					console.log(`Game ready, game id: ${msg.gameId}`)
 					gameSocket?.send(JSON.stringify({
 						type:"new_game",
-						gameId:msg.gameId
+						gameId: msg.gameId,
+						matchName: msg.matchName
 					}))
 					renderArena({ type: "start", matchName: "Console" });
 					//await renderGameBoard();
