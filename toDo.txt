@@ -2,8 +2,8 @@ TO DO LIST per Module
 
 - MatchService:
 	- the user should be able to leave the tournament(?)
-	- if a participant eaves the matc before start of his game - catch it in the game engine and mark him as loosing (Henrizz)
-	- remove match from menu once it has started (so it cannot be clicked again)
+	✅ - if a participant eaves the matc before start of his game - catch it in the game engine and mark him as loosing (Henrizz)
+	✅ - remove match from menu once it has started (so it cannot be clicked again)
 
 - Setup(Henrizz):
 ✅	- change localhost to alow playing from different machines
