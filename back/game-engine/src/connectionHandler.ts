@@ -56,8 +56,10 @@ function broadcast(gameId: number, payload: object) {
 	const set = gameSockets.get(gameId);
 	if (!set) return;
 	const message = JSON.stringify(payload);
-	for (const player of set)
-		player.ws.send(message);
+	for (const player of set) {
+		if (!player.current_match || !absentByMatch.get(player.current_match)?.has(player.alias))
+			player.ws.send(message);
+	}
 }
 
 server.get("/ws", { websocket: true }, async (ws, req) => {
@@ -81,11 +83,6 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 		}
 	});
 	ws.on("close", () => {
-		
-		// if (!gameId) {
-		// 	playerSockets.get(player)?.delete(playerSocket);
-		// 	return server.log.info(`Player ${player} disconnected`);
-		// }
 		const matchName = playerSocket.current_match;
 		if (matchName) {
 			if (!absentByMatch.has(matchName))
@@ -113,6 +110,7 @@ server.get("/ws", { websocket: true }, async (ws, req) => {
 			}
 		}
 		playerSockets.get(playerSocket.alias)?.delete(playerSocket);
+		playerSocket.current_match = null;
 	});
 })
 
