@@ -1,6 +1,6 @@
 import { gameState, GameState, board } from "./gameSpecs.js";
 import { disconnectGameWS } from "../match_service/gameSocket.js";
-import { draw, drawNumber, drawText } from "./draw.js";
+import { draw, drawNumber } from "./draw.js";
 import { renderCreateTournamentForm } from "../match_service/start_page.js"
 import { gameSocket } from "../match_service/gameSocket.js";
 import { renderArena } from "../arena.js";
@@ -66,22 +66,24 @@ export async function startGame(overlay: HTMLElement, canvas: HTMLCanvasElement)
 	}
 	if (message.type === "stop")
 		stopGame = true;
-	if (message.type === "state" || message.type === "win") {
+	if (message.type === "state" || message.type === "win" || message.type === "player left") {
 		const getState: GameState = message.data;
 		Object.assign(gameState, getState);
-		if (message.type === "win") {
+		if (message.type === "win" || message.type === "player left") {
 			draw(canvas);
 			cancelAnimationFrame(frameID);
 
 			gameActive = false;
-
-			if (gameState.current.type == "REMOTE")
-				renderArena({ type: "winner", name: gameState.winner.alias });
+			if (gameState.current.type == "REMOTE") {
+				if (message.type === "win")
+					renderArena({ type: "winner", name: gameState.winner.alias });
+				else
+					renderArena({ type: "player left", loser: gameState.loser.alias, winner: gameState.winner.alias });
+			}
 			else
 				renderArena({ type: "winner_console", name: gameState.winner.alias });
-	
+			}
 		}
-	}
 });
 
 	gameSocket.addEventListener("error", (event) => {

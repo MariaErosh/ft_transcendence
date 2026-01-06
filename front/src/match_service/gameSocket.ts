@@ -1,7 +1,7 @@
 import { refreshAccessToken } from "../api.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { board, gameState } from "../game_front/gameSpecs.js"
-import { applyGameBootstrap, gameBootstrapped, setGameBootstrapped } from "../game_front/runtimeImports.js"
+import { applyGameBootstrap, setGameBootstrapped } from "../game_front/runtimeImports.js"
 import { getWSBaseURL } from "./lobbySocket.js"
 
 export let gameSocket: WebSocket | null = null;

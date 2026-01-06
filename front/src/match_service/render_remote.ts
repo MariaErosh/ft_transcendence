@@ -50,19 +50,25 @@ export async function renderNewRemoteTournament() {
 	async function refreshMatches() {
 		listBox.innerHTML = "<div class='text-purple-600 animate-pulse'>SCANNING FOR TOURNAMENTS...</div>";
         try {
-            const matches: string[] = await getOpenMatches();
+            const matches: {name: string; started: boolean }[] = await getOpenMatches();
             listBox.innerHTML = "";
 
             for (const match of matches) {
                 const btn = document.createElement("button");
-                btn.textContent = `> ${match.toUpperCase()}`;
+                btn.textContent = `> ${match.name.toUpperCase()}`;
                 btn.className = `
                     bg-gray-100 text-black font-bold text-xl p-3 border-2 border-black
                     text-left flex justify-between items-center
                     hover:bg-pink-100 hover:border-pink-500 transition-colors
                 `;
-                btn.innerHTML = `<span>> ${match.toUpperCase()}</span> <span class="text-xs bg-black text-white px-2 py-1">JOIN</span>`;
-                btn.addEventListener("click", () => joinRoom(match));
+                btn.innerHTML = `<span>> ${match.name.toUpperCase()}</span>
+				 <span class="text-xs ${match.started ? 'bg-gray-500' : 'bg-black'} text-white px-2 py-1">
+                     ${match.started ? 'IN PROGRESS' : 'JOIN'}</span>`;
+                
+				if (!match.started)
+					btn.addEventListener("click", () => joinRoom(match.name));
+				else
+					btn.classList.add("cursor-not-allowed", "opacity-50");
                 listBox.appendChild(btn);
             }
             if (matches.length === 0) listBox.innerHTML = "<div class='text-gray-500 italic uppercase text-sm'>No open tournaments available.</div>";
@@ -106,11 +112,11 @@ export async function renderNewRemoteTournament() {
 
 			try {
 				// Fetch current matches
-				const currentMatches: string[] = await getOpenMatches();
+				const currentMatches:  {name: string; started: boolean }[] = await getOpenMatches();
 
 				// Check if the name already exists
 				const nameExists = currentMatches.some(
-					(m) => m.toLowerCase() === name.toLowerCase()
+					(m) => m.name.toLowerCase() === name.toLowerCase()
 				);
 				if (nameExists) {
 					alert("A match with this name already exists. Choose a different name.");
@@ -197,7 +203,8 @@ async function joinRoom(matchName: string) {
 				// await connectGameWS();
 				gameSocket?.send(JSON.stringify({
 					type:"new_game",
-					gameId:msg.gameId
+					gameId: msg.gameId,
+					matchName: msg.matchName
 				}))
 				//await renderGameBoard();
 				renderArena({ type: "start", matchName: matchName})

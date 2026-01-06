@@ -25,17 +25,18 @@ export interface PlayerPayload {
 interface Match {
 	players: Set<PlayerPayload>,
 	type: string
+	started: boolean;
 }
 
 const matches = new Map<string, Match>();
 const userSockets = new Map<number, Set<WebSocket>>();
 
 export function getOpenMatches() {
-	const result: string[] = [];
+	const result: {name: string; started: boolean }[] = [];
 
 	for (const [name, match] of matches.entries()) {
 		if (match.type === "REMOTE") {
-			result.push(name);
+			result.push({ name, started: match.started });
 		}
 	}
 	logger.info({ matches: result }, "Remote matches");
@@ -200,7 +201,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						server.log.warn(`User ${userId} has already joined another match`);
 						return;
 					}
-					if (!matches.has(matchName)) matches.set(matchName,{type: data.match_type, players: new Set()} );
+					if (!matches.has(matchName)) matches.set(matchName,{type: data.match_type, players: new Set(), started: false} );
 					matches.get(matchName)!.players.add(player);
 
 					server.log.info(`User ${userId} joined match ${matchName}`);
@@ -221,7 +222,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 				}
 
 				if (data.type === "new_match") {
-					if (!matches.has(data.name)) matches.set(data.name, {type: data.match_type, players:new Set()});
+					if (!matches.has(data.name)) matches.set(data.name, {type: data.match_type, players:new Set(), started:false});
 					else {
 						socket.send(JSON.stringify({ error: "Match already exists" }));
 						server.log.warn("MATCH ALREADY EXISTS");
@@ -230,8 +231,12 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 				if (data.type === "start_match") {
 					server.log.info("Received start_match");
+	
 					const playerData = matches.get(data.name)?.players;
 					if (!playerData || playerData.size < 2) return;
+					const match = matches.get(data.name);
+					if (!match) return;
+					match.started = true;
 					const players: { id: number, alias: string }[] = [];
 					for (const player of playerData) {
 						if (player.sub !== undefined)
