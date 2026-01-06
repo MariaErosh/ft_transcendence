@@ -3,6 +3,8 @@ import { gameSocket } from "./match_service/gameSocket.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
+let arenaRenderLocked = false;
+let pendingArenastate: ArenaState | null = null;
 
 export 	type ArenaState =
 		| { type: "winner"; name: string }
@@ -13,6 +15,13 @@ export 	type ArenaState =
 		| { type: "player left"; loser: string; winner: string; }
 
 export function renderArena(state: ArenaState) {
+
+	// to store the state to be displayed after "player left" has been shown
+	if (arenaRenderLocked && state.type != "player left") {
+	pendingArenastate = state;
+	return;
+	}
+
 	const main = document.getElementById("main") as HTMLElement;
 	main.innerHTML = "";
 	history.pushState({ view:"arena", arenaState: state}, "", "arena");
@@ -40,7 +49,6 @@ export function renderArena(state: ArenaState) {
 	const contentDiv = document.createElement("div") as HTMLElement;
 	contentDiv.className = "flex flex-col items-center gap-6 text-black text-center w-full";
 	arenaBoard.appendChild(contentDiv);
-
 
 	switch (state.type) {
 
@@ -73,18 +81,25 @@ export function renderArena(state: ArenaState) {
 		break;
 
 		case "player left":
+			arenaRenderLocked = true;
 			contentDiv.innerHTML = `
                 <div class="flex flex-col gap-6">
                     <h1 class="text-6xl font-black uppercase tracking-tighter bg-purple-600 text-white p-4 border-4 border-black shadow-[8px_8px_0_0_#000000]">
-                        PLAYER ${state.loser} LEFT THE GAME. VICTORY FOR: ${state.winner}!
-                    </h1>
+                        PLAYER ${state.loser} LEFT THE GAME. </h1>
                     <p class="text-xl font-bold uppercase max-w-md">
-                        > STAND BY FOR SUBSEQUENT ROUNDS <br>
-                        > SYNCING TOURNAMENT DATA...
+                        > VICTORY FOR: ${state.winner}!
                     </p>
                     <div class="animate-pulse text-purple-700 font-black">SYSTEM WAITING...</div>
                 </div>
             `;
+			setTimeout(() => {
+				arenaRenderLocked = false;
+				if (pendingArenastate) {
+					const next = pendingArenastate;
+					pendingArenastate = null;
+					renderArena(next);
+				}
+			}, 3000);
 		break;
 
 		case "winner_console":
