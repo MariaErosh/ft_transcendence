@@ -62,18 +62,27 @@ export function renderLogin() {
        //     localStorage.setItem("refreshToken", response.refreshToken);
 	   console.log("Response to login call: ", response);
 	   if (response.accessToken) {
-		localStorage.setItem("username", username.value);// I added this two lines because the login wasn't storing username, but not sure if we wanted to be different. Att: Steph
-		localStorage.setItem("refreshToken", response.refreshToken);
             localStorage.removeItem("temp");
-            history.pushState({ view: "main"}, "", "/");
-            renderUserMenu();
-            renderCreateTournamentForm();
-			reconnectChat();
-        } else {
-            msg.textContent = `!! ${response.error || "Login failed"}`;
-        }
-    });
-    main.appendChild(form);
+			if (response.status === "onboarding_2fa") {
+				render2FASetup(response.userId, username.value);
+                //reconnectChat(); //TODO stephanie
+			} 
+			else {
+				localStorage.setItem("username", username.value);
+                localStorage.setItem("refreshToken", response.refreshToken);
+				history.pushState({ view: "main"}, "", "/");
+				renderUserMenu();
+				renderCreateTournamentForm();
+			}
+		} 
+		else if (response.twoFactorRequired) {
+			render2FA(response.userId);
+		}
+		else {
+			msg.textContent = `!! ${response.error || "Login failed"}`;
+		}
+	});
+	main.appendChild(form);
 }
 
 export function renderRegister() {
