@@ -51,7 +51,7 @@ export class UserService {
 		});
 	}
 
-	async getUserByUsername(username: string) { 
+	async getUserByUsername(username: string) {
 		return new Promise<UserRow[]>((resolve, reject) => { //because username is not unique, returning array of users
 		this.db_inst.all("SELECT * FROM users WHERE username = ?", [username], (err, rows) => {
 			if (err) return reject(err);
@@ -62,7 +62,7 @@ export class UserService {
 
 	async getAll() : Promise<UserRow[]> {
 		return new Promise((resolve, reject) => {
-			this.db_inst.all("SELECT username, email FROM users", (err, rows) =>	{
+			this.db_inst.all("SELECT id, username, email FROM users", (err, rows) =>	{
 				if (err) return reject(err);
 				resolve(rows as UserRow[]);
 			});
@@ -82,7 +82,7 @@ export class UserService {
 		auth_user_id: number,
 		data: Partial<{ username: string;
 						email: string;
-						displayName: string 
+						displayName: string
 					}>
 	): Promise<UserRow | undefined> {
 		const fields: string[] = [];
@@ -100,9 +100,9 @@ export class UserService {
 			fields.push("display_name = ?");
 			values.push(data.displayName);
 		}
-		if (fields.length === 0) 
+		if (fields.length === 0)
 			return undefined;
-		
+
 		values.push(auth_user_id);
 		const db = this.db_inst;
 
@@ -133,7 +133,7 @@ export class UserService {
 				"SELECT games_played, games_won FROM users WHERE auth_user_id = ?",
 				[auth_user_id],
 				(
-					err: Error | null, 
+					err: Error | null,
 					row :{games_played: number; games_won: number } | undefined) => {
 						if (err) return reject(err);
 						if (!row) return resolve(undefined);
@@ -161,13 +161,13 @@ export class UserService {
 			});
 		});
 	}
-	
+
 	async updateStats(
 						auth_user_id: number,
 						played: number = 1,
 						won: number = 0
 	): Promise<UserRow | undefined> {
-		const db = this.db_inst;		
+		const db = this.db_inst;
 
 		return new Promise<UserRow | undefined>((resolve, reject) => {
 			if (played < 0 || won < 0) return reject(new Error("Invalid stats values"));
@@ -181,7 +181,7 @@ export class UserService {
 				function (err) {
 					if (err) return reject(err);
 					if (this.changes === 0) return resolve(undefined);
-					
+
 					db.get(
 					"SELECT * FROM users WHERE auth_user_id = ?",
 					[auth_user_id],
@@ -195,8 +195,8 @@ export class UserService {
 		});
 	}
 
-	
-	
+
+
 
 
 }

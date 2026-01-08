@@ -19,7 +19,7 @@ export async function authorisedRequest<T=any>(url: string, options: ApiRequestO
     "Authorization": `Bearer ${accessToken}`,
   };
 
-  let res = await fetch(url, options);
+  let res = await fetch(`${BASE_URL}${url}`, options);
 
   if (res.status === 401 && localStorage.getItem("refreshToken")) {
     const refreshed = await refreshAccessToken();
@@ -120,7 +120,7 @@ export async function register(username: string,  email: string, password: strin
 }
 
 export async function enable2FA(userId: number, username: string) {
-  const res = await authorisedRequest(`${BASE_URL}/auth/2fa/enable`, {
+  const res = await authorisedRequest(`/auth/2fa/enable`, {
     method: 'POST',
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, userId})
@@ -218,7 +218,7 @@ export async function getMatchPlayers(matchName: string): Promise <string[]>{
 }
 
 export async function sendGameToGameEngine(game:GameInstance){
-  await authorisedRequest(`${BASE_URL}/game/start`, {
+  await authorisedRequest(`/game/start`, {
 		method: "POST",
 		headers: {"Content-Type": "application/json" },
 		body: JSON.stringify(game)
@@ -238,6 +238,6 @@ export async function sendGameToGameEngine(game:GameInstance){
 // }
 
 export async function userLoggedIn(){
-  const res = await authorisedRequest(`${BASE_URL}/check`, {method: "GET"});
+  const res = await authorisedRequest(`/check`, {method: "GET"});
   return res.ok;
 }

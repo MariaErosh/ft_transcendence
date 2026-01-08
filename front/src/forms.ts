@@ -3,6 +3,7 @@ import { renderUserMenu } from "./ui.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
 import { disconnectWS } from "./match_service/lobbySocket.js";
+import { reconnectChat } from "./chat_service/chat.js";
 
 // Common style classes to keep code DRY
 const FORM_CONTAINER_CLASS = "bg-gray-200 p-8 border-4 border-black shadow-[8px_8px_0_0_#000000] w-96 flex flex-col gap-5 font-mono";
@@ -24,7 +25,7 @@ export function renderLogin() {
     form.appendChild(title);
 
     const username = document.createElement("input");
-    username.placeholder = "USERNAME OE EMAIL";
+    username.placeholder = "USERNAME OR EMAIL";
     username.className = INPUT_CLASS;
     form.appendChild(username);
 
@@ -64,9 +65,11 @@ export function renderLogin() {
             localStorage.removeItem("temp");
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
+                //reconnectChat(); //TODO stephanie
 			} 
 			else {
 				localStorage.setItem("username", username.value);
+                localStorage.setItem("refreshToken", response.refreshToken);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
 				renderCreateTournamentForm();
@@ -115,12 +118,12 @@ export function renderRegister() {
 	// --- 2FA Checkbox Section ---
     const tfaContainer = document.createElement("div");
     tfaContainer.className = "flex items-center gap-3 cursor-pointer group";
-    
+
     const tfaCheckbox = document.createElement("input");
     tfaCheckbox.type = "checkbox";
     tfaCheckbox.id = "enable-2fa";
     tfaCheckbox.className = "w-5 h-5 border-2 border-black accent-purple-600 cursor-pointer";
-    
+
     const tfaLabel = document.createElement("label");
     tfaLabel.htmlFor = "enable-2fa";
     tfaLabel.textContent = "ENABLE 2FA AUTH";
@@ -270,6 +273,7 @@ export function render2FA(userId: number) {
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
 			renderCreateTournamentForm();
+			reconnectChat();
         } else {
             msg.textContent = `!! ${response.data.error || "Invalid code"}`;
         }

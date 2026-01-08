@@ -1,9 +1,16 @@
 TO DO LIST per Module
 
+- general Website:
+	- The user should be able to use the Back and Forward buttons of the browser.
+		--> make history of the sections - do we have to show the endpoints in the url bar?
+
 - MatchService:
 	- the user should be able to leave the tournament(?)
 	✅ - if a participant eaves the matc before start of his game - catch it in the game engine and mark him as loosing (Henrizz)
 	✅ - remove match from menu once it has started (so it cannot be clicked again)
+
+- Chat
+	- List of users and have the option to add as friend and list of friends from the profile
 
 - Setup(Henrizz):
 ✅	- change localhost to alow playing from different machines

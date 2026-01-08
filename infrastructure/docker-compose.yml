@@ -59,6 +59,31 @@ services:
     networks:
       - internal
 
+  chat:
+    build:
+      context: ../back/chat-service
+      dockerfile: Dockerfile
+    container_name: chat
+    volumes:
+      - ../back/chat-service/data/:/app/data
+    env_file:
+      - ../back/chat-service/.env
+    networks:
+      - internal
+
+  interact:
+    build:
+      context: ../back/interact-service
+      dockerfile: Dockerfile
+    container_name: interact
+    expose:
+      - 3006
+    volumes:
+      - ../back/interact-service/data/:/app/data
+    env_file:
+      - ../back/interact-service/.env
+    networks:
+      - internal
 
   gateway:
     build:
@@ -71,6 +96,8 @@ services:
     depends_on:
       - auth
       - user
+      - chat
+      - interact
     env_file:
     - ../back/gateway/.env
     networks:
@@ -213,8 +240,8 @@ services:
     depends_on:
       - gateway
     ports:
-      - "443:443"
-      - "80:80"
+      - "8443:8443"
+      - "8080:8080"
     volumes:
       - ./ssl:/etc/nginx/ssl
     env_file:
