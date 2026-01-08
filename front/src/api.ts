@@ -178,7 +178,7 @@ export interface GameInstance {
     rightPlayer: Player;
 }
 
-export async function getOpenMatches(): Promise<string[]> {
+export async function getOpenMatches(): Promise< {name: string; started: boolean }[]> {
 	try {
 		const response = await fetch(`${BASE_URL}/open`, {
 			method: "GET",

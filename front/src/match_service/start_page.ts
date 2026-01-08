@@ -2,7 +2,8 @@ import { renderNewConsoleTournament } from "./render_console.js";
 import { renderNewRemoteTournament } from "./render_remote.js";
 import { userLoggedIn } from "../api.js";
 import { logout } from "../forms.js";
-
+// import { insideMatch, setInsideMatch } from "../arena.js";
+import { gameSocket } from "./gameSocket.js";
 
 export function renderCreateTournamentForm() {
 	if (localStorage.getItem("temp") === "temp") logout();
@@ -10,6 +11,14 @@ export function renderCreateTournamentForm() {
 	main.innerHTML = "";
 	console.log("Rendering match making menu");
 	history.pushState({ view: "main" }, "", "/");
+
+	// if (insideMatch == true) {
+	// 	console.log("sending left match to backend");
+	// 	if (gameSocket && gameSocket.readyState == WebSocket.OPEN) {
+	// 		gameSocket.send(JSON.stringify({ type: "left match" }));
+	// 	}
+	// 	setInsideMatch(false);
+	// }
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null
 	if (!wrapper) {
@@ -88,7 +97,7 @@ export function renderCreateTournamentForm() {
 					renderNewRemoteTournament();
 					history.pushState({ view: "remote" }, "", "remote");
 				}
-				else msg.textContent = "!! SESSION EXPIRED. LOGIN AGAIN !!"
+				else msg.textContent = "!! LOGIN REQUIRED !!"
 			});
 
 			const consoleButton = document.createElement("button");

@@ -100,5 +100,3 @@ export function renderUserMenu() {
 	container.appendChild(menu);
 	//menuWrapper.appendChild(menu);
 }
-
-

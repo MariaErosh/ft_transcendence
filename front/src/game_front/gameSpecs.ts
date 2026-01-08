@@ -37,6 +37,7 @@ export interface GameState {
 	servingPlayer: 'left' | 'right';
 	current: GameObject;
 	winner: Player;
+	loser: Player;
 }
 
 export let gameState: GameState = {
@@ -53,4 +54,5 @@ export let gameState: GameState = {
 		type: 'none'
 	},
 	winner: { alias: 'none', id: -1 },
+	loser: { alias: 'none', id: -1 },
 }
