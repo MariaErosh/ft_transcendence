@@ -4,7 +4,9 @@ import { ChatData } from './chatData.js';
 import { displayMessage, loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
-const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
+// Use window location to construct WebSocket URL dynamically
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const GATEWAY_WS_URL = `${protocol}//${window.location.host}/chat/ws`;
 
 let chatSocket: WebSocket | null = null;
 let shouldReconnect = false;
