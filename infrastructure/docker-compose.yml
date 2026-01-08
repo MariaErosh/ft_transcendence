@@ -242,8 +242,8 @@ services:
     depends_on:
       - gateway
     ports:
-      - "443:443"
-      - "80:80"
+      - "8443:443"
+      - "8080:80"
     volumes:
       - ./ssl:/etc/nginx/ssl
     env_file:
