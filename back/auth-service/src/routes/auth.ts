@@ -190,13 +190,30 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 	// Setting up 2FA and generating a QR code
 	fastify.post("/auth/2fa/enable", async (req, reply) => {
+		let userId: number;
+		let username: string;
 
+		// Check if called from gateway
 		const gw = (req.headers as any)['x-gateway-secret'];
-		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+		if (gw && gw === process.env.GATEWAY_SECRET) {
+			// Gateway call - use headers
+			userId = Number((req.headers as any)['x-user-id']);
+			username = String((req.headers as any)['x-username'] || "");
+		} else {
+			// Direct call - use JWT authentication
+			try {
+				const authHeader = req.headers.authorization as string | undefined;
+				if (!authHeader) return reply.status(401).send({ error: "Missing authentication" });
+				const token = authHeader.split(" ")[1];
+				const payload: any = fastify.jwt.verify(token);
+				userId = payload.sub;
+				username = payload.username;
+			} catch (err: any) {
+				return reply.status(401).send({ error: "Invalid token" });
+			}
+		}
 
-		const userId = Number((req.headers as any)['x-user-id']);
-		const username = String((req.headers as any)['x-username'] || "");
-		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+		if (!userId) return reply.status(400).send({ error: "User ID missing" });
 
 		try {
 			const result = await auth.enable2FA(userId, username);
@@ -223,12 +240,27 @@ export async function authRoutes(fastify: FastifyInstance) {
 	});
 
 	fastify.post("/auth/2fa/set", async (req, reply) => {
+		let userId: number;
 
+		// Check if called from gateway
 		const gw = (req.headers as any)['x-gateway-secret'];
-		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+		if (gw && gw === process.env.GATEWAY_SECRET) {
+			// Gateway call - use headers
+			userId = Number((req.headers as any)['x-user-id']);
+		} else {
+			// Direct call - use JWT authentication
+			try {
+				const authHeader = req.headers.authorization as string | undefined;
+				if (!authHeader) return reply.status(401).send({ error: "Missing authentication" });
+				const token = authHeader.split(" ")[1];
+				const payload: any = fastify.jwt.verify(token);
+				userId = payload.sub;
+			} catch (err: any) {
+				return reply.status(401).send({ error: "Invalid token" });
+			}
+		}
 
-		const userId = Number((req.headers as any)['x-user-id']);
-		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
+		if (!userId) return reply.status(400).send({ error: "User ID missing" });
 
 		try {
 			const result = await auth.mark2FAset(userId);
