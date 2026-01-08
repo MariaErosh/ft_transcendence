@@ -6,7 +6,7 @@ import { updateStatus } from './uiRenderer.js';
 
 // Use window location to construct WebSocket URL dynamically
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const GATEWAY_WS_URL = `${protocol}//${window.location.host}/chat/ws`;
+const GATEWAY_WS_URL = `${protocol}//${window.location.host}/api/chat/ws`;
 
 let chatSocket: WebSocket | null = null;
 let shouldReconnect = false;

@@ -30,6 +30,6 @@ COPY --from=build /app/favicon.ico /usr/share/nginx/html/favicon.ico
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 80 443
+EXPOSE 8080 8443
 
 ENTRYPOINT ["/entrypoint.sh"]
