@@ -3,7 +3,7 @@
 import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
-import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend } from './userManager.js';
+import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
@@ -443,307 +443,213 @@ function setupUserHandlers(users: User[]) {
  * Shows conversation with a specific user, includes back button and dropdown menu
  */
 export function renderDMView() {
-  if (!chatContainer) return;
+	if (!chatContainer) return;
 
-  const currentRecipient = ChatData.getCurrentRecipient();
-  const isConnected = ChatData.isConnected();
+	const recipient = ChatData.getCurrentRecipient();
+	if (!recipient) {
+	renderHomeView();
+	return;
+	}
 
-  if (!currentRecipient) {
-    // Fallback to home view if no recipient
-    renderHomeView();
-    return;
-  }
+	chatContainer.className = "fixed bottom-6 right-6 z-50";
+	chatContainer.innerHTML = renderDMLayout(recipient);
 
-  chatContainer.className = "fixed bottom-6 right-6 z-50";
-  chatContainer.innerHTML = `
-    <div class="
-        bg-gray-200
-        border-4 border-black
-        w-96 h-[500px] flex flex-col
-        shadow-[8px_8px_0_0_#000000]
-        transition-all duration-150
-    ">
-      <!-- Header -->
-      <div class="
-        bg-purple-600
-        text-white
-        px-4 py-3
-        border-b-4 border-black
-        flex justify-between items-center
-      ">
-        <div class="flex items-center gap-2">
-          <button id="back-button" class="
-            text-lg hover:text-pink-400
-            leading-none
-          ">
-            ←
-          </button>
-          <h3 class="font-bold tracking-wider text-sm">
-            CHAT WITH @${escapeHtml(currentRecipient.username)}
-          </h3>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <button id="dropdown-menu" class="
-              text-xl hover:text-pink-400
-              leading-none
-              px-2
-            ">
-              ⋮
-            </button>
-            <div id="dropdown-content" class="
-              hidden
-              absolute right-0 top-8
-              bg-white
-              border-4 border-black
-              shadow-[4px_4px_0_0_#000000]
-              min-w-[180px]
-              z-50
-            ">
-              <button data-action="add-friend" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-green-200
-                border-b-2 border-black
-                text-black
-              ">
-                ➕ Add Friend
-              </button>
-              <button data-action="delete-friend" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-red-200
-                border-b-2 border-black
-                text-black
-              ">
-                ➖ Delete Friend
-              </button>
-              <button data-action="block" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-yellow-200
-                border-b-2 border-black
-                text-black
-                block-btn
-              ">
-                🚫 Block User
-              </button>
-              <button data-action="unblock" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-green-200
-                border-b-2 border-black
-                text-black
-                unblock-btn
-              ">
-                ✅ Unblock User
-              </button>
-              <button data-action="profile" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-blue-200
-                border-b-2 border-black
-                text-black
-              ">
-                👤 See Profile
-              </button>
-              <button data-action="game" class="
-                w-full text-left px-3 py-2
-                text-xs font-bold uppercase
-                hover:bg-purple-200
-                text-black
-              ">
-                🎮 Game Invitation
-              </button>
-            </div>
-          </div>
-          <button id="chat-minimize" class="
-            text-xl font-extrabold
-            hover:text-pink-400
-            leading-none
-            px-2
-          ">
-            ✕
-          </button>
-        </div>
-      </div>
+	setupDMHeaderHandlers(recipient);
+	setupDMInputHandlers();
+	setupDMMenuHandlers(recipient);
 
-      <!-- Messages Container -->
-      <div id="chat-messages" class="
-        flex-1
-        overflow-y-auto
-        p-4
-        space-y-3
-        bg-black/90
-        font-mono
-        text-sm
-      ">
-        <div class="text-center text-green-400">
-          > LOADING CONVERSATION...
-        </div>
-      </div>
+	displayStoredMessages();
+}
 
-      <!-- Typing Indicator -->
-      <div id="typing-indicator" class="
-        hidden
-        px-4 py-2
-        bg-black/80
-        border-t-2 border-gray-700
-        text-green-400
-        text-xs
-        italic
-        font-mono
-      ">
-      </div>
+function renderDMLayout(recipient: User): string {
+	const isConnected = ChatData.isConnected();
 
-      <!-- Input Footer -->
-      <div class="
-        border-t-4 border-black
-        p-3
-        bg-gray-300
-      ">
-        <div class="flex gap-2">
-          <input
-            id="chat-input"
-            type="text"
-            placeholder="Message @${escapeHtml(currentRecipient.username)}..."
-            class="
-              text-sm
-              text-black
-              flex-1
-              px-3 py-2
-              border-2 border-black
-              bg-white
-              focus:outline-none
-              focus:border-purple-600
-              font-mono
-            "
-            ${!isConnected ? 'disabled' : ''}
-          />
-          <button
-            id="chat-send"
-            class="
-              text-sm
-              px-4 py-2
-              bg-pink-500
-              text-black
-              uppercase font-bold
-              border-2 border-black
-              shadow-[2px_2px_0_0_#000000]
-              hover:bg-pink-400
-              active:shadow-none active:translate-x-[2px] active:translate-y-[2px]
-              disabled:bg-gray-400
-            "
-            ${!isConnected ? 'disabled' : ''}
-          >
-            SEND
-          </button>
-        </div>
-        <div id="chat-status" class="
-          text-xs
-          mt-1
-          font-mono
-          font-bold
-          ${isConnected ? 'text-green-600' : 'text-red-600'}
-        ">
-          ${isConnected ? '// CONNECTED' : '// DISCONNECTED'}
-        </div>
-      </div>
-    </div>
-  `;
+	return `
+	<div class="
+		bg-gray-200
+		border-4 border-black
+		w-96 h-[500px] flex flex-col
+		shadow-[8px_8px_0_0_#000000]
+	">
+		${renderDMHeader(recipient)}
+		${renderDMMessages()}
+		${renderTypingIndicator()}
+		${renderDMFooter(recipient, isConnected)}
+	</div>
+	`;
+}
 
-  // Setup event listeners
-  const input = document.getElementById("chat-input") as HTMLInputElement;
-  const sendBtn = document.getElementById("chat-send") as HTMLButtonElement;
-  const minimizeBtn = document.getElementById("chat-minimize");
-  const backBtn = document.getElementById("back-button");
-  const dropdownBtn = document.getElementById("dropdown-menu");
-  const dropdownContent = document.getElementById("dropdown-content");
+function renderDMHeader(recipient: User): string {
+	return `
+	<div class="
+		bg-purple-600 text-white
+		px-4 py-3
+		border-b-4 border-black
+		flex justify-between items-center
+	">
+		<div class="flex items-center gap-2">
+		<button id="back-button" class="text-lg hover:text-pink-400">←</button>
+		<h3 class="font-bold tracking-wider text-sm">
+			CHAT WITH @${escapeHtml(recipient.username)}
+		</h3>
+		</div>
 
-  // Show/hide block/unblock buttons based on blocked status
-  const blockedUsersList = ChatData.getBlockedUsers();
-  const isBlocked = currentRecipient.userId ? blockedUsersList.includes(currentRecipient.userId) : false;
-  const blockBtn = dropdownContent?.querySelector('.block-btn');
-  const unblockBtn = dropdownContent?.querySelector('.unblock-btn');
+		<div class="flex items-center gap-2">
+		${renderDMMenu()}
+		<button id="chat-minimize" class="text-xl hover:text-pink-400">✕</button>
+		</div>
+	</div>
+	`;
+}
 
-  if (isBlocked) {
-    blockBtn?.classList.add('hidden');
-    unblockBtn?.classList.remove('hidden');
-  } else {
-    blockBtn?.classList.remove('hidden');
-    unblockBtn?.classList.add('hidden');
-  }
+function renderDMMenu(): string {
+	return `
+		<div class="relative">
+		<button id="dropdown-menu" class="text-xl hover:text-pink-400 px-2">⋮</button>
 
-  sendBtn?.addEventListener("click", () => sendMessage(input?.value || ""));
-  input?.addEventListener("keypress", (e) => {
-	typingHandler();
-    if (e.key === "Enter") sendMessage(input.value);
-  });
-  minimizeBtn?.addEventListener("click", closeChat);
-  backBtn?.addEventListener("click", () => {
-    goBackToHome();
-    renderHomeView();
-  });
+		<div id="dropdown-content" class="
+			hidden absolute right-0 top-8
+			bg-white border-4 border-black
+			shadow-[4px_4px_0_0_#000000]
+			min-w-[180px] z-50
+		">
+			<button data-action="add-friend" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black border-b-2 border-black add-friend-btn">➕ Add Friend</button>
+			<button data-action="delete-friend" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black border-b-2 border-black delete-friend-btn">➖ Delete Friend</button>
+			<button data-action="block" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black border-b-2 border-black block-btn">🚫 Block User</button>
+			<button data-action="unblock" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black border-b-2 border-black unblock-btn">✅ Unblock User</button>
+			<button data-action="profile" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black border-b-2 border-black">👤 See Profile</button>
+			<button data-action="game" class="w-full text-left px-3 py-2 text-xs font-bold uppercase hover:bg-purple-200 text-black">🎮 Game Invitation</button>
+		</div>
+		</div>
+	`;
+}
 
-  // Dropdown menu toggle
-  dropdownBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    dropdownContent?.classList.toggle('hidden');
-  });
+function renderDMMessages(): string {
+	return `
+	<div id="chat-messages" class="
+		flex-1 overflow-y-auto
+		p-4 space-y-3
+		bg-black/90
+		font-mono text-sm
+	">
+		<div class="text-center text-green-400">
+		> LOADING CONVERSATION...
+		</div>
+	</div>
+	`;
+}
 
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!dropdownContent?.contains(e.target as Node) && e.target !== dropdownBtn) {
-      dropdownContent?.classList.add('hidden');
-    }
-  });
+function renderTypingIndicator(): string {
+	return `
+	<div id="typing-indicator" class="
+		hidden px-4 py-2
+		bg-black/80
+		border-t-2 border-gray-700
+		text-green-400 text-xs italic font-mono
+	"></div>
+	`;
+}
 
-  // Dropdown menu actions
-  dropdownContent?.querySelectorAll('button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const action = btn.getAttribute('data-action');
-      dropdownContent?.classList.add('hidden');
+function renderDMFooter(recipient: User, isConnected: boolean): string {
+	return `
+		<div class="border-t-4 border-black p-3 bg-gray-300">
+		<div class="flex gap-2">
+			<input
+			id="chat-input"
+			type="text"
+			placeholder="Message @${escapeHtml(recipient.username)}..."
+			class="text-sm text-black flex-1 px-3 py-2 border-2 border-black bg-white focus:outline-none focus:border-purple-600 font-mono"
+			${!isConnected ? "disabled" : ""}
+			/>
+			<button
+			id="chat-send"
+			class="text-sm px-4 py-2 bg-pink-500 text-black uppercase font-bold border-2 border-black shadow-[2px_2px_0_0_#000000] hover:bg-pink-400 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:bg-gray-400"
+			${!isConnected ? "disabled" : ""}
+			>
+			SEND
+			</button>
+		</div>
+		<div id="chat-status" class="
+			text-xs mt-1 font-mono font-bold
+			${isConnected ? "text-green-600" : "text-red-600"}
+		">
+			${isConnected ? "// CONNECTED" : "// DISCONNECTED"}
+		</div>
+		</div>
+	`;
+}
 
-      switch (action) {
-        case 'add-friend':
-		addFriend(currentRecipient.userId!);
+function setupDMHeaderHandlers(recipient: User) {
+	document.getElementById("chat-minimize")?.addEventListener("click", closeChat);
+
+	document.getElementById("back-button")?.addEventListener("click", () => {
+	goBackToHome();
+	renderHomeView();
+	});
+}
+
+function setupDMInputHandlers() {
+	const input = document.getElementById("chat-input") as HTMLInputElement;
+	const sendBtn = document.getElementById("chat-send");
+
+	sendBtn?.addEventListener("click", () => sendMessage(input.value));
+
+	input?.addEventListener("keypress", (e) => {
+		typingHandler();
+		if (e.key === "Enter") sendMessage(input.value);
+	});
+}
+
+function setupDMMenuHandlers(recipient: User) {
+	const dropdownBtn = document.getElementById("dropdown-menu");
+	const dropdown = document.getElementById("dropdown-content");
+	if (!dropdown || !dropdownBtn) return;
+
+	syncDMMenuState(dropdown, recipient);
+
+	dropdownBtn.addEventListener("click", e => {
+		e.stopPropagation();
+		dropdown.classList.toggle("hidden");
+	});
+
+	document.addEventListener("click", e => {
+		if (!dropdown.contains(e.target as Node)) {
+		dropdown.classList.add("hidden");
+		}
+	});
+
+	dropdown.querySelectorAll("button").forEach(btn => {
+		btn.addEventListener("click", () => {
+		dropdown.classList.add("hidden");
+		handleDMMenuAction(btn.dataset.action, recipient);
+		});
+	});
+}
+
+function syncDMMenuState(menu: HTMLElement, recipient: User) {
+	const blocked = ChatData.getBlockedUsers();
+	const friends = ChatData.getFriends();
+
+	const isBlocked = recipient.userId && blocked.includes(recipient.userId);
+	const isFriend = recipient.userId && friends.some(f => f.userId === recipient.userId);
+
+	menu.querySelector(".block-btn")?.classList.toggle("hidden", !!isBlocked);
+	menu.querySelector(".unblock-btn")?.classList.toggle("hidden", !isBlocked);
+	menu.querySelector(".add-friend-btn")?.classList.toggle("hidden", !!isFriend);
+	menu.querySelector(".delete-friend-btn")?.classList.toggle("hidden", !isFriend);
+}
+
+function handleDMMenuAction(action: string | undefined, recipient: User) {
+	if (!recipient.userId) return;
+
+	switch (action) {
+		case "add-friend": addFriend(recipient.userId); break;
+		case "delete-friend": removeFriend(recipient.userId); break;
+		case "block": blockUser(recipient.userId); break;
+		case "unblock": unblockUser(recipient.userId); break;
+		case "profile": showProfile(recipient.userId); break;
+		case "game":
+		console.log("Game invitation to:", recipient.username);
 		break;
-        case 'delete-friend':
-          console.log('Delete friend:', currentRecipient.username);
-          // TODO: Implement delete friend
-          break;
-        case 'block':
-          if (currentRecipient.userId) {
-            blockUser(currentRecipient.userId);
-          } else {
-            console.error('Cannot block user: userId is undefined');
-            updateStatus('Error: Cannot block user', 'error');
-          }
-          break;
-        case 'unblock':
-          if (currentRecipient.userId) {
-            unblockUser(currentRecipient.userId);
-          } else {
-            console.error('Cannot unblock user: userId is undefined');
-            updateStatus('Error: Cannot unblock user', 'error');
-          }
-          break;
-        case 'profile':
-          if (currentRecipient?.userId) {
-            showProfile(currentRecipient.userId);
-          } else {
-            console.error('Cannot show profile: userId is undefined');
-            updateStatus('Error: Cannot show profile', 'error');
-          }
-          break;
-        case 'game':
-          console.log('Game invitation to:', currentRecipient.username);
-          // TODO: Implement game invitation
-          break;
-      }
-    });
-  });
-
-  // Display stored messages
-  displayStoredMessages();
+	}
 }

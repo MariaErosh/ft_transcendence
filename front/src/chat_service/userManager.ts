@@ -268,3 +268,23 @@ export async function addFriend(friendId: number) {
 		updateStatus('Failed to add friend', 'error');
 	}
 }
+
+export async function removeFriend(friendId: number) {
+	try {
+		console.log('Removing friend:', friendId);
+		const response = await authorisedRequest(`/interact/friends/${friendId}`, {
+			method: 'DELETE',
+		});
+		if (response.success) {
+			updateStatus('Friend removed successfully', 'success');
+			await loadFriends();
+			renderDMView();
+			console.log('Friend removed successfully');
+		} else {
+			updateStatus(response.error || 'Failed to remove friend', 'error');
+		}
+	} catch (err) {
+		console.error('Failed to remove friend:', err);
+		updateStatus('Failed to remove friend', 'error');
+	}
+}
