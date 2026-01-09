@@ -4,6 +4,7 @@ import { renderCreateTournamentForm } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
 import { disconnectWS } from "./match_service/lobbySocket.js";
 import { reconnectChat } from "./chat_service/chat.js";
+import { setAccessToken } from "./auth.js";
 
 // Common style classes to keep code DRY
 const FORM_CONTAINER_CLASS = "bg-gray-200 p-8 border-4 border-black shadow-[8px_8px_0_0_#000000] w-96 flex flex-col gap-5 font-mono";
@@ -62,14 +63,13 @@ export function renderLogin() {
        //     localStorage.setItem("refreshToken", response.refreshToken);
 	   console.log("Response to login call: ", response);
 	   if (response.accessToken) {
-            localStorage.removeItem("temp");
+            setAccessToken(response.accessToken);
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
                 //reconnectChat(); //TODO stephanie
 			} 
 			else {
 				localStorage.setItem("username", username.value);
-                localStorage.setItem("refreshToken", response.refreshToken);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
 				renderCreateTournamentForm();
@@ -223,10 +223,7 @@ export async function render2FASetup(userId: number, username: string) {
             
             // Store the tokens from the verify response
             if (verified.data.accessToken) {
-                localStorage.setItem("accessToken", verified.data.accessToken);
-                localStorage.setItem("refreshToken", verified.data.refreshToken);
-                localStorage.setItem("refreshExpiresAt", verified.data.refreshExpiresAt);
-                localStorage.removeItem("tempToken"); // Clean up temp token
+                setAccessToken(verified.data.accessToken ?? null);
                 localStorage.setItem("username", username);
             }
             
@@ -277,9 +274,7 @@ export function render2FA(userId: number) {
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "Verified. Logging in...";
 			localStorage.removeItem("temp");
-			localStorage.setItem("accessToken", response.data.accessToken);
-			localStorage.setItem("refreshToken", response.data.refreshToken);
-			localStorage.setItem("refreshExpiresAt", response.data.refreshExpiresAt);
+			setAccessToken(response.data.accessToken ?? null);
 			localStorage.setItem("username", response.data.userName);
 
 			history.pushState({ view: "main"}, "", "/");
@@ -298,11 +293,10 @@ export async function logout() {
 	try {
 		await logoutRequest();
 	} catch {}
-
+    setAccessToken(null);
 	//TODO: remove temp login info
     localStorage.removeItem("username");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+
     localStorage.removeItem("temp");
     localStorage.removeItem("userid");
     disconnectGameWS();

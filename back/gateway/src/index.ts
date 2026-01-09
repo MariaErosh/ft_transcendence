@@ -10,16 +10,20 @@ import { getMatchPlayers, getOpenMatches, notifyAboutNewGame, registerGatewayWeb
 import { registerGameWebSocket } from "./gameSockets";
 import { registerChatWebSocket } from "./chatSockets";
 
+function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
 
-
-const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET as string;
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
-const AUTH_URL = process.env.AUTH_URL!;
-const USER_URL = process.env.USER_URL!;
-const GENGINE_URL = process.env.GENGINE_URL!;
-const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
-const CHAT_URL = process.env.CHAT_URL!;
+const PORT = Number(requiredEnv("PORT"));
+const JWT_SECRET = requiredEnv("JWT_SECRET");
+const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
+const AUTH_URL = requiredEnv("AUTH_URL");
+const USER_URL = requiredEnv("USER_URL");
+const GENGINE_URL = requiredEnv("GENGINE_URL");
+const MATCH_SERVICE_URL = requiredEnv("MATCH_SERVICE_URL");
+const CHAT_URL = requiredEnv("CHAT_URL");
 
 async function buildServer() {
 	const server = Fastify({

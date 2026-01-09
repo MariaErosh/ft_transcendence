@@ -9,6 +9,7 @@ import { renderArena } from "./arena.js";
 import { renderChat } from "./chat_service/chat.js";
 import { initializeProfileUI } from "./profile_front/profile.js";
 import { renderFooterLinks } from "./policies/render_footer_links.js";
+import { refreshAccessToken } from "./auth.js";
 
 const app = document.getElementById("app")!;
 
@@ -24,7 +25,17 @@ renderCreateTournamentForm();
 renderChat();
 initializeProfileUI();
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+	try {
+		const refreshed = await refreshAccessToken();
+		if (refreshed) {
+			console.log("Access token refreshed at startup");
+		} else {
+			console.log("No refresh token available, user not logged in");
+		}
+	} catch (err) {
+		console.log("Refresh token failed at startup:", err);
+	}
 	// if user refreshed on a sub-page (like /game), redirect to "/"
 	if (location.pathname !== "/") {
 		history.replaceState({ view: "main" }, "", "/");

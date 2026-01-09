@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
 import dotenv from "dotenv";
+import cookie from "@fastify/cookie";
 
 dotenv.config();
 
@@ -10,6 +11,8 @@ const USER_URL = process.env.USER_URL;
 
 export async function authRoutes(fastify: FastifyInstance) {
 	const auth = new AuthService();
+
+	fastify.register(cookie);
 
 	// Registration
 	fastify.post("/auth/register", async (req, reply) => {
@@ -128,11 +131,21 @@ export async function authRoutes(fastify: FastifyInstance) {
 				});
 			}
 
-			return reply.send({
-				username: user.username,
+			return reply
+				.setCookie("refresh_token", refreshToken, {
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+					sameSite: "strict",
+					path: "/auth/refresh",
+					expires: new Date(expiresAt),
+				})
+			.send({
 				accessToken,
-				refreshToken,
-				refreshExpiresAt: expiresAt,
+				user: {
+					id: user.id,
+					username: user.username,
+					two_factor_enabled: user.two_factor_enabled,
+				},
 			});
 		} catch (err: any) {
 			return reply.status(500).send({ error: "Internal server error" })
@@ -142,7 +155,10 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 	// Token refresh
 	fastify.post("/auth/refresh", async (req, reply) => {
-		const { refreshToken } = req.body as any;
+		const refreshToken = req.cookies.refresh_token;
+
+		if (!refreshToken)
+			return reply.status(401).send({error: "missing refresh token"});
 		try {
 			const userId = await auth.consumeRefreshToken(refreshToken);
 			const user = await auth.findUserById(userId);
@@ -154,11 +170,19 @@ export async function authRoutes(fastify: FastifyInstance) {
 				{ expiresIn: "15m" }
 			);
 			const { refreshToken: newRefresh, expiresAt } = await auth.createRefreshToken(userId);
-			reply.send({ accessToken, refreshToken: newRefresh, refreshExpiresAt: expiresAt });
-		} catch (err: any) {
-			reply.status(401).send({ error: err.message });
-		}
-	});
+			reply
+				.setCookie("refresh_token", newRefresh, {
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+					sameSite: "strict",
+					path: "/auth/refresh",
+					expires: new Date(expiresAt),
+				})
+				.send({ accessToken });
+			} catch (err: any) {
+				reply.status(401).send({ error: err.message });
+			}
+		});
 
 	// Verify token
 	fastify.post("/auth/verify", async (req, reply) => {
@@ -177,14 +201,19 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/auth/logout", async (req, reply) => {
 		// expects Authorization: Bearer <accessToken>
 		try {
-			const authHeader = req.headers.authorization as string | undefined;
-			if (!authHeader) return reply.status(401).send({ error: "missing auth" });
-			const token = authHeader.split(" ")[1];
-			const payload: any = fastify.jwt.verify(token);
-			await auth.revokeAllForUser(payload.sub);
-			return reply.send({ ok: true });
-		} catch (err: any) {
-			return reply.status(401).send({ error: err.message });
+			const authHeader = req.headers.authorization;
+			if (authHeader) {
+				const token = authHeader.split(" ")[1];
+				const payload: any = fastify.jwt.verify(token);
+				await auth.revokeAllForUser(payload.sub);
+			}
+			reply
+				.clearCookie("refresh_token", { path: "/auth/refresh" })
+				.send({ ok: true });
+		} catch {
+			reply
+				 .clearCookie("refresh_token", { path: "/auth/refresh" })
+				.send({ ok: true });
 		}
 	});
 
@@ -289,12 +318,22 @@ export async function authRoutes(fastify: FastifyInstance) {
 			);
 			const { refreshToken, expiresAt } = await auth.createRefreshToken(user.id);
 
-			return reply.send({
-				accessToken,
-				refreshToken,
-				refreshExpiresAt: expiresAt,
-				userName: user.username
-			});
+			return reply
+				.setCookie("refresh_token", refreshToken, {
+					httpOnly: true,
+					secure: process.env.NODE_ENV === "production",
+					sameSite: "strict",
+					path: "/auth/refresh",
+					expires: new Date(expiresAt),
+				})
+				.send({
+					accessToken,
+					user: {
+					id: user.id,
+					username: user.username,
+					},
+				});
+
 		} catch (err: any) {
 			return reply.status(500).send({ error: err.message });
 		}

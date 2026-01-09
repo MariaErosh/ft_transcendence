@@ -1,4 +1,4 @@
-import { refreshAccessToken } from "../api.js";
+import { getAccessToken, refreshAccessToken } from "../auth.js";
 
 export let lobbySocket: WebSocket | null = null;
 let reconnecting = false;
@@ -16,11 +16,13 @@ export async function connectWS(): Promise<void> {
 			resolve(); 
 			return;
 		}
-		let token = localStorage.getItem("accessToken");
+		let token = getAccessToken();
 
-		if (!token && !(await refreshAccessToken())) return reject(new Error("No token available!"));
-
-		token = localStorage.getItem("accessToken");
+	if (!token) {
+		const refreshed = await refreshAccessToken(); // uses refresh cookie
+		if (!refreshed) return reject(new Error("No token available"));
+		token = getAccessToken();
+	}
 		lobbySocket = new WebSocket(`${getWSBaseURL()}/api/ws?token=${token}`);
 
 		lobbySocket.onerror = (err) => {

@@ -88,8 +88,8 @@ Tools we use to monitor the app.
    docker-compose up --build
    ```
 
-The application will be available at `https://localhost` on the host machine 
-and on any other machine in the same network at `https://< ipaddress_of_hostmachine >`
+The application will be available at `https://localhost:8443` on the host machine 
+and on any other machine in the same network at `https://<ipaddress_of_hostmachine>:8443`
 
 ---
 

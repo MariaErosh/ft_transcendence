@@ -1,4 +1,4 @@
-import { refreshAccessToken } from "../api.js";
+import { getAccessToken, refreshAccessToken } from "../auth.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { board, gameState } from "../game_front/gameSpecs.js"
 import { applyGameBootstrap, setGameBootstrapped } from "../game_front/runtimeImports.js"
@@ -8,29 +8,25 @@ export let gameSocket: WebSocket | null = null;
 let reconnecting = false;
 let manualClose = false;
 
-export async function connectGameWS(): Promise <void> {
-  if (gameSocket && gameSocket.readyState === WebSocket.OPEN)
-    return;
-  if (gameSocket && gameSocket.readyState === WebSocket.CONNECTING) {
-    console.log("Socket is connecting, waiting...");
-    return new Promise((resolve) => {
-      const checkOpen = () => {
-        if (gameSocket!.readyState === WebSocket.OPEN) {
-          resolve();
-        } else {
-          setTimeout(checkOpen, 100);
-        }
-      };
-      checkOpen();
-    });
-  }
+export async function connectGameWS(): Promise<void> {
+  return new Promise(async (resolve, reject) => {
+    if (gameSocket && gameSocket.readyState === WebSocket.OPEN) {
+      console.log("Game socket already connected");
+      return resolve();
+    }
 
-  return new Promise (async (resolve, reject)=>{
-    let token = localStorage.getItem("accessToken");
+    // Get token from memory
+    let token = getAccessToken();
 
-    if (!token && !(await refreshAccessToken())) return reject;
-  
-    token = localStorage.getItem("accessToken");
+    // Try refreshing if token is missing
+    if (!token) {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        return reject(new Error("No access token available"));
+      }
+      token = getAccessToken();
+    }
+
     gameSocket = new WebSocket(`${getWSBaseURL()}/api/game/ws?token=${token}`);
   
     gameSocket.onopen = () => {

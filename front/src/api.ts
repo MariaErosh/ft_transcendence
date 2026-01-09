@@ -1,3 +1,4 @@
+import { getAccessToken, getTempAccessToken, refreshAccessToken } from "./auth.js";
 const BASE_URL = "/api";
 
 interface ApiRequestOptions extends RequestInit {
@@ -12,93 +13,81 @@ interface RefreshResponse {
 
 
 export async function authorisedRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
-  const accessToken = localStorage.getItem("accessToken");
-
-  options.headers = {
-    ...(options.headers || {}),
-    "Authorization": `Bearer ${accessToken}`,
-  };
-
-  let res = await fetch(`${BASE_URL}${url}`, options);
-
-  if (res.status === 401 && localStorage.getItem("refreshToken")) {
+  let token = getAccessToken();
+  if (!token) {
     const refreshed = await refreshAccessToken();
-    if (refreshed) return authorisedRequest(url, options); // retry request
+    if (refreshed)
+      token = getAccessToken();
   }
-  const data = await res.json();
-  console.log("Result in authorisedRequest:", data);
-  return data;
-}
 
-export async function tempTokenRequest<T=any>(url: string, options: ApiRequestOptions = {}) {
-  const accessToken = localStorage.getItem("tempToken");
-
-  options.headers = {
+  const headers: Record<string, string> = {
     ...(options.headers || {}),
-    "Authorization": `Bearer ${accessToken}`,
   };
 
-  let res = await fetch(`${BASE_URL}${url}`, options);
-  console.log("Result in tempTokenRequest:", res);
-  
-  const text = await res.text();
-  if (!text) return {};
-  
-  const data = JSON.parse(text);
-  return data;
-}
+  if (token)
+    headers["Authorization"] = `Bearer ${token}`;
 
-export async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = localStorage.getItem("refreshToken");
-  if (!refreshToken) return false;
-
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
+  let res = await fetch(`${BASE_URL}${url}`, {
+    ...options,
+    headers,
+    credentials: "include", // send refresh cookie
   });
 
-  if (!res.ok) return false;
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) return res;
 
-  const data: RefreshResponse = await res.json();
+    const retryToken = getAccessToken();
+    if (retryToken)
+      headers["Authorization"] = `Bearer ${retryToken}`;
 
-  if (!data.accessToken) return false;
-
-  localStorage.setItem("accessToken", data.accessToken);
-  if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-
-  return true;
+    return fetch(`${BASE_URL}${url}`, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`request failed: ${text}`);
+  }
+  return res.json() as Promise<T>;
 }
+
+export async function tempTokenRequest(url: string, options: ApiRequestOptions = {}): Promise<Response> {
+
+  const token = getTempAccessToken();
+  
+  const headers: Record<string, string> = {
+    ...(options.headers || {}),
+  };
+  if (token) 
+      headers["Authorization"] = `Bearer ${token}`;
+  
+  return fetch(`${BASE_URL}${url}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+}
+
 
 export async function login(username: string, password: string) {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include", // allow refresh cookie
     body: JSON.stringify({ username, password }),
   });
-  const data = await res.json();
-  if (data.accessToken) {
-    if (data.status === "onboarding_2fa") {
-      localStorage.setItem("tempToken", data.accessToken);
-      return data;
-    }
-    localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
-    localStorage.setItem("refreshExpiresAt", data.refreshExpiresAt);
-  }
-  return data;
+
+  return res.json();
 }
 
 export async function logoutRequest() {
-  const token = localStorage.getItem("accessToken");
-  if (!token) return;
-
-  await fetch(`${BASE_URL}/auth/logout`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+    await fetch(`${BASE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
 }
 
 export async function verify2FA(userId: number, token: string) {
@@ -128,7 +117,10 @@ export async function enable2FA(userId: number, username: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, userId})
     });
-    return res;
+    if (!res.ok) throw new Error("Failed to enable 2FA");
+  
+    const data = await res.json();
+    return data;
 }
 
 export async function set2FAenabled(userId: number, username: string){
@@ -137,7 +129,10 @@ export async function set2FAenabled(userId: number, username: string){
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, userId})
     });
-    return res;
+    if (!res.ok) throw new Error("Failed to set 2FA enabled");
+  
+    const data = await res.json();
+    return data;
 }
 
 interface CreateMatchPayload{

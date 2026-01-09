@@ -4,6 +4,7 @@ import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
+import { getAccessToken } from "../auth.js";
 
 /**
  * Load message history from server
@@ -150,7 +151,7 @@ export function clearMessages() {
  * Get current user ID from JWT token
  */
 function getCurrentUserId(): number | null {
-	const token = localStorage.getItem('accessToken');
+	const token = getAccessToken();
 	if (!token) return null;
 
 	try {
