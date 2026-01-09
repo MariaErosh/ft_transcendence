@@ -25,7 +25,21 @@ export function registerConversationRoutes(
             if (userId === null) return;
 
             const conversations = await conversationRepo.getUserConversations(userId);
-            return reply.send({ conversations });
+
+            // Enhance conversation data with other participant info
+            const enhancedConversations = conversations.map(conv => {
+                // Find the other participant (not the current user)
+                const otherParticipantId = conv.participants.find((id: number) => id !== userId);
+
+                return {
+                    id: conv.id,
+                    created_at: conv.created_at,
+                    other_user_id: otherParticipantId,
+                    unread_count: conv.unread_count
+                };
+            });
+
+            return reply.send({ conversations: enhancedConversations });
         } catch (error: any) {
             app.log.error({ error }, 'Failed to get conversations');
             return reply.code(500).send({ error: 'Failed to fetch conversations' });

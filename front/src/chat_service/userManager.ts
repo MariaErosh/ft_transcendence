@@ -22,11 +22,25 @@ export async function loadUsers() {
     console.log('Online users data:', onlineData);
     const onlineUsernames = new Set((onlineData.users || []).map((u: any) => u.username));
 
-    // Map users with online status
+    // Get conversations with unread counts
+    const conversationsData = await authorisedRequest('/chat/conversations');
+    console.log('Conversations data:', conversationsData);
+    const unreadCounts = new Map<number, number>();
+
+    if (conversationsData.conversations) {
+      conversationsData.conversations.forEach((conv: any) => {
+        if (conv.unread_count > 0 && conv.other_user_id) {
+          unreadCounts.set(conv.other_user_id, conv.unread_count);
+        }
+      });
+    }
+
+    // Map users with online status and unread counts
     allUsers = allUsers.map((user: any) => ({
       username: user.username,
       userId: user.id,
       isOnline: onlineUsernames.has(user.username),
+      unreadCount: unreadCounts.get(user.id) || 0,
     }));
 
     console.log('Final allUsers array:', allUsers);
@@ -79,16 +93,17 @@ export async function loadFriends() {
     const friendsData = await authorisedRequest('/interact/friends');
     console.log('Friends data:', friendsData);
 
-    // Get already loaded users to sync online status
+    // Get already loaded users to sync online status and unread counts
     const allUsers = ChatData.getAllUsers();
 
     const friends = (friendsData || []).map((friend: any) => {
-      // Find matching user to get online status
+      // Find matching user to get online status and unread count
       const matchingUser = allUsers.find(u => u.username === friend.username);
       return {
         username: friend.username,
         userId: friend.id,
         isOnline: matchingUser?.isOnline || false,
+        unreadCount: matchingUser?.unreadCount || 0,
       };
     });
 
@@ -131,6 +146,9 @@ export async function openDM(user: User) {
   // Mark messages as read if conversation exists
   if (conversationId) {
     await markConversationAsRead(conversationId);
+    // Reload users to update unread counts
+    await loadUsers();
+    await loadFriends();
   }
 
   // Render DM view
@@ -157,8 +175,8 @@ export async function goBackToHome() {
   // Switch to home view
   ChatData.setCurrentView('home');
 
-  // Refresh online status when returning to home
-  await refreshOnlineStatus();
+  // Refresh data when returning to home
+  await Promise.all([loadUsers(), loadFriends(), refreshOnlineStatus()]);
 
   // Render home view
   renderHomeView();
@@ -241,4 +259,51 @@ export async function unblockUser(userId: number) {
     console.error('Failed to unblock user:', err);
     updateStatus('Failed to unblock user', 'error');
   }
+}
+
+export async function addFriend(friendId: number) {
+	try {
+		console.log('Adding friend:', friendId);
+
+		const response = await authorisedRequest('/interact/friends', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ friendId: friendId }),
+		});
+
+		//console.log('addFriend response:', response);
+
+		if (response.success) {
+			updateStatus('Friend added successfully', 'success');
+			await loadFriends();
+			renderDMView();
+			console.log('Friend added successfully');
+		} else {
+			console.error('Add friend failed with response:', response);
+			updateStatus(response.error || 'Failed to add friend', 'error');
+		}
+	} catch (err) {
+		console.error('Failed to add friend:', err);
+		updateStatus('Failed to add friend', 'error');
+	}
+}
+
+export async function removeFriend(friendId: number) {
+	try {
+		console.log('Removing friend:', friendId);
+		const response = await authorisedRequest(`/interact/friends/${friendId}`, {
+			method: 'DELETE',
+		});
+		if (response.success) {
+			updateStatus('Friend removed successfully', 'success');
+			await loadFriends();
+			renderDMView();
+			console.log('Friend removed successfully');
+		} else {
+			updateStatus(response.error || 'Failed to remove friend', 'error');
+		}
+	} catch (err) {
+		console.error('Failed to remove friend:', err);
+		updateStatus('Failed to remove friend', 'error');
+	}
 }
