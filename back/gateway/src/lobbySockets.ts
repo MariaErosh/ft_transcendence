@@ -202,38 +202,48 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 						server.log.warn(`User ${userId} has already joined another match`);
 						return;
 					}
-					if (!matches.has(matchName)) matches.set(matchName,{type: data.match_type, players: new Set(), started: false} );
-					matches.get(matchName)!.players.add(player);
+					if (!matches.has(matchName)) {
+						matches.set(matchName, {type: data.match_type, players: new Set(), started: false});
+					}
 
-					server.log.info(`User ${userId} joined match ${matchName}`);
+					const match = matches.get(matchName)!;
+					const isNewPlayer = !Array.from(match.players).some(p => p.sub === player.sub);
+					match.players.add(player);
 
-					const players = matches.get(matchName)!.players;
-					for (const player of players) {
-						userSockets.get(player.sub)?.forEach((s) => {
+				server.log.info(`User ${userId} (${player.username}) joined match ${matchName}`);
+
+			// First, send all existing players to the joining player
+			const allPlayers = Array.from(match.players);
+			for (const existingPlayer of allPlayers) {
+				userSockets.get(player.sub)?.forEach((s) => {
+					if (s.readyState === WebSocket.OPEN) {
+						s.send(JSON.stringify({
+							type: "player_joined",
+							name: matchName,
+							alias: existingPlayer.username,
+							match_type: match.type
+						}));
+					}
+				});
+			}
+
+				// Then, notify OTHER players (not the joiner) about the new player
+				for (const p of allPlayers) {
+					if (p.sub !== player.sub) { // Don't send to the joiner again
+						userSockets.get(p.sub)?.forEach((s) => {
 							if (s.readyState === WebSocket.OPEN) {
 								s.send(JSON.stringify({
 									type: "player_joined",
 									name: matchName,
-									alias: player!.username,
-									match_type: matches.get(matchName)!.type
+									alias: player.username,
+									match_type: match.type
 								}));
 							}
 						});
-					};
-				}
-
-				if (data.type === "new_match") {
-					if (!matches.has(data.name)) matches.set(data.name, {type: data.match_type, players:new Set(), started:false});
-					else {
-						socket.send(JSON.stringify({ error: "Match already exists" }));
-						server.log.warn("MATCH ALREADY EXISTS");
 					}
 				}
-
-				if (data.type === "start_match") {
-					server.log.info("Received start_match");
-	
-					const playerData = matches.get(data.name)?.players;
+			} else if (data.type === "start_match") {
+				const playerData = matches.get(data.name)?.players;
 					if (!playerData || playerData.size < 2) return;
 					const match = matches.get(data.name);
 					if (!match) return;

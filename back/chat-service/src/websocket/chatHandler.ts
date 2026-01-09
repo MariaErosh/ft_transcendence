@@ -101,6 +101,60 @@ export async function handleChatMessage(
 }
 
 /**
+ * Handle game invitation - simplified version
+ */
+export async function handleGameInvitation(
+    userId: number,
+    username: string,
+    recipientId: number,
+    invitationData: any,
+    socket: WebSocket,
+    logger: any,
+    connectedClients: Map<string, any>
+) {
+    try {
+        const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
+        if (blocked) {
+            socket.send(JSON.stringify({ type: 'error', content: 'Cannot send invitation to this user' }));
+            return;
+        }
+
+        const conversationId = await conversationRepo.getOrCreateConversation(userId, recipientId);
+        const content = `🎮 ${invitationData.match_name || invitationData.tournament_name || 'Game'} invitation`;
+
+        // Save as special message with metadata
+        const messageId = await messageRepo.createMessage({
+            conversationId,
+            senderId: userId,
+            content,
+            messageType: 'game_invitation',
+            metadata: JSON.stringify(invitationData)
+        });
+
+        const message = {
+            type: 'game_invitation',
+            id: messageId,
+            conversation_id: conversationId,
+            sender_id: userId,
+            sender_username: username,
+            content,
+            created_at: new Date().toISOString(),
+            invitation_data: invitationData
+        };
+
+        logger.info({ userId, recipientId }, 'Game invitation sent');
+
+        const sent = sendMessageToUser(connectedClients, recipientId, message);
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ ...message, delivered: sent }));
+        }
+    } catch (error: any) {
+        logger.error({ error }, 'Failed to send game invitation');
+        socket.send(JSON.stringify({ type: 'error', content: 'Failed to send invitation' }));
+    }
+}
+
+/**
  * Handle typing indicator
  */
 export async function handleTypingIndicator(
@@ -203,6 +257,20 @@ export async function handleIncomingMessage(
     try {
         const message = JSON.parse(data.toString());
         logger.info({ username, message }, 'Received message from client');
+
+        // Handle game invitation
+        if (message.type === 'game_invitation' && message.recipientId && message.invitationData) {
+            await handleGameInvitation(
+                userId,
+                username,
+                message.recipientId,
+                message.invitationData,
+                socket,
+                logger,
+                connectedClients
+            );
+            return;
+        }
 
         // Handle typing indicator
         if (message.type === 'typing' && message.recipientId !== undefined && message.isTyping !== undefined) {

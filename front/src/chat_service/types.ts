@@ -18,6 +18,19 @@ export interface ChatMessage {
   recipient_id?: number | null;
   isDM?: boolean;
   delivered?: boolean;
+  // Game invitation fields
+  invitation_id?: number; // ID from game_invitations table
+  invitation_type?: 'tournament' | 'direct_match'; // For future extension
+  invitation_data?: {
+    match_id?: number;
+    match_name?: string;
+    sender_username?: string;
+    tournament_id?: number;
+    tournament_name?: string;
+    invitation_type?: string;
+    join_url?: string;
+  };
+  join_url?: string;
 }
 
 export interface User {
@@ -25,6 +38,17 @@ export interface User {
   username: string;
   isOnline?: boolean;
   unreadCount?: number;
+}
+
+export interface Tournament {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+  round: number;
+  owner: string;
+  created_at: string;
+  player_count: number;
 }
 
 export type StatusType = "success" | "error" | "info";

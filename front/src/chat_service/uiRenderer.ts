@@ -8,6 +8,7 @@ import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
 import { renderLogin } from '../forms.js';
+import { showGameInvitationModal } from './gameInvitation.js';
 
 let chatContainer: HTMLElement | null = null;
 
@@ -660,7 +661,7 @@ function handleDMMenuAction(action: string | undefined, recipient: User) {
 		case "unblock": unblockUser(recipient.userId); break;
 		case "profile": showProfile(recipient.userId); break;
 		case "game":
-		console.log("Game invitation to:", recipient.username);
-		break;
+			showGameInvitationModal(recipient.username, recipient.userId);
+			break;
 	}
 }

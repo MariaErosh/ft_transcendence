@@ -14,17 +14,14 @@ export async function loadUsers() {
   try {
     // Get all users from user service
     const allUsersData = await authorisedRequest('/users');
-    console.log('Raw user data from /users:', allUsersData);
     let allUsers = allUsersData || [];
 
     // Get online users from chat service
     const onlineData = await authorisedRequest('/chat/users/online');
-    console.log('Online users data:', onlineData);
     const onlineUsernames = new Set((onlineData.users || []).map((u: any) => u.username));
 
     // Get conversations with unread counts
     const conversationsData = await authorisedRequest('/chat/conversations');
-    console.log('Conversations data:', conversationsData);
     const unreadCounts = new Map<number, number>();
 
     if (conversationsData.conversations) {
@@ -43,7 +40,6 @@ export async function loadUsers() {
       unreadCount: unreadCounts.get(user.id) || 0,
     }));
 
-    console.log('Final allUsers array:', allUsers);
     ChatData.setAllUsers(allUsers);
     ChatData.setOnlineUsers(onlineData.users || []);
   } catch (err) {
@@ -57,7 +53,7 @@ export async function loadUsers() {
  */
 export async function refreshOnlineStatus() {
   try {
-    console.log('Refreshing online status...');
+    //console.log('Refreshing online status...');
 
     // Get current online users
     const onlineData = await authorisedRequest('/chat/users/online');
@@ -91,7 +87,7 @@ export async function refreshOnlineStatus() {
 export async function loadFriends() {
   try {
     const friendsData = await authorisedRequest('/interact/friends');
-    console.log('Friends data:', friendsData);
+    //console.log('Friends data:', friendsData);
 
     // Get already loaded users to sync online status and unread counts
     const allUsers = ChatData.getAllUsers();
@@ -108,7 +104,7 @@ export async function loadFriends() {
     });
 
     ChatData.setFriends(friends);
-    console.log('Friends loaded:', friends);
+    //console.log('Friends loaded:', friends);
   } catch (err) {
     console.error('Failed to load friends:', err);
     // If endpoint doesn't exist yet, set empty array
@@ -121,7 +117,7 @@ export async function loadFriends() {
  * Action: User clicked on a friend/user in home view
  */
 export async function openDM(user: User) {
-  console.log('Opening DM with:', user);
+  //console.log('Opening DM with:', user);
 
   // Clear typing indicator from previous conversation
   clearTypingIndicator();
@@ -160,7 +156,7 @@ export async function openDM(user: User) {
  * Action: User clicked back button in DM view
  */
 export async function goBackToHome() {
-  console.log('Going back to home view');
+  //console.log('Going back to home view');
 
   // Clear typing indicator before switching
   clearTypingIndicator();
@@ -188,12 +184,11 @@ export async function goBackToHome() {
 export async function loadBlockedUsers() {
   try {
     const response = await authorisedRequest('/chat/blocks');
-    console.log('Blocked users data:', response);
 
     const blockedUsers = response.blockedUsers || [];
     ChatData.setBlockedUsers(blockedUsers);
 
-    console.log('Blocked users loaded:', blockedUsers);
+    //console.log('Blocked users loaded:', blockedUsers);
   } catch (err) {
     console.error('Failed to load blocked users:', err);
     ChatData.setBlockedUsers([]);

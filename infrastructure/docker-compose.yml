@@ -44,6 +44,8 @@ services:
     container_name: game-engine
     ports:
       - "3003:3003"
+    env_file:
+      - ../back/game-engine/.env
     networks:
       - internal
 
@@ -56,6 +58,8 @@ services:
     container_name: match
     expose:
       - 3004
+    env_file:
+      - ../back/match-service/.env
     networks:
       - internal
 

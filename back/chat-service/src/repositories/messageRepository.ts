@@ -16,10 +16,12 @@ export interface CreateMessageParams {
     conversationId: number;
     senderId: number;
     content: string;
+	messageType?: string;
+	metadata?: string;
 }
 
 // ============================================================================
-// Message Repository
+// Message Operations
 // ============================================================================
 
 /**
@@ -28,8 +30,14 @@ export interface CreateMessageParams {
 export function createMessage(params: CreateMessageParams): Promise<number> {
     return new Promise((resolve, reject) => {
         db.run(
-            'INSERT INTO messages (conversation_id, sender_id, content) VALUES (?, ?, ?)',
-            [params.conversationId, params.senderId, params.content],
+            'INSERT INTO messages (conversation_id, sender_id, content, message_type, metadata) VALUES (?, ?, ?, ?, ?)',
+            [
+                params.conversationId, 
+                params.senderId, 
+                params.content,
+                params.messageType || 'text',
+                params.metadata || null
+            ],
             function(err) {
                 if (err) {
                     reject(new Error(`Failed to create message: ${err.message}`));
