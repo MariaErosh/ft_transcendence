@@ -377,7 +377,18 @@ function renderUserRow(
       "
     >
       <span class="w-2 h-2 rounded-full ${statusColor}"></span>
-      <span class="truncate">${escapeHtml(user.username)}</span>
+      <span class="truncate flex-1">${escapeHtml(user.username)}</span>
+      ${user.unreadCount && user.unreadCount > 0 ? `
+        <span class="
+          px-2 py-0.5 text-xs font-bold
+          bg-pink-500 text-white
+          rounded-full
+          border-2 border-black
+          shadow-[2px_2px_0_0_#000000]
+        ">
+          ${user.unreadCount}
+        </span>
+      ` : ''}
     </button>
   `;
 }

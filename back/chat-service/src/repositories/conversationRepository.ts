@@ -109,13 +109,20 @@ export async function getOrCreateConversation(userId1: number, userId2: number):
 /**
  * Get all conversations for a user
  */
-export function getUserConversations(userId: number): Promise<ConversationWithParticipants[]> {
+export function getUserConversations(userId: number): Promise<any[]> {
     return new Promise((resolve, reject) => {
         const query = `
             SELECT
                 c.id,
                 c.created_at,
-                GROUP_CONCAT(cp.user_id) as participant_ids
+                GROUP_CONCAT(cp.user_id) as participant_ids,
+                (
+                    SELECT COUNT(*)
+                    FROM messages m
+                    WHERE m.conversation_id = c.id
+                    AND m.sender_id != ?
+                    AND m.is_read = 0
+                ) as unread_count
             FROM conversations c
             INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
             WHERE c.id IN (
@@ -127,14 +134,15 @@ export function getUserConversations(userId: number): Promise<ConversationWithPa
             ORDER BY c.created_at DESC
         `;
 
-        db.all(query, [userId], (err: any, rows: any[]) => {
+        db.all(query, [userId, userId], (err: any, rows: any[]) => {
             if (err) {
                 reject(new Error(`Failed to get user conversations: ${err.message}`));
             } else {
                 const conversations = rows.map(row => ({
                     id: row.id,
                     created_at: row.created_at,
-                    participants: row.participant_ids.split(',').map(Number)
+                    participants: row.participant_ids.split(',').map(Number),
+                    unread_count: row.unread_count || 0
                 }));
                 resolve(conversations);
             }

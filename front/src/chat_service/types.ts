@@ -24,6 +24,7 @@ export interface User {
   userId?: number;
   username: string;
   isOnline?: boolean;
+  unreadCount?: number;
 }
 
 export type StatusType = "success" | "error" | "info";
