@@ -95,9 +95,16 @@ export class MatchService {
 		}
 		const matchId = game.match_id;
 		await this.recordGameResults(gameId, loser.alias, winner.alias);
+
+		// Notify players about game result via chat
+		await this.notifyGameResult(winner.id, loser.id, gameId);
+
 		let match = await this.getMatchById(matchId);
 		let gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		if (gamesLeft.length === 0) {
+			// Notify about tournament round completion
+			await this.notifyRoundComplete(matchId, match.round);
+
 			await this.createNewRound(match.id, match.name);
 			match = await this.getMatchById(matchId);
 			gamesLeft = await this.checkGamesLeft(match.id, match.round);
@@ -256,6 +263,54 @@ export class MatchService {
 		});
 
 		}
+	}
+
+	private async notifyGameResult(winnerId: number, loserId: number, gameId: number) {
+		try {
+			await fetch(`${GATEWAY}/chat/notifications/game-result`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+				},
+				body: JSON.stringify({
+					winnerId,
+					loserId,
+					gameId
+				})
+			});
+		} catch (error) {
+			logger.error({ error }, 'Failed to send game result notification');
+		}
+	}
+
+	private async notifyRoundComplete(matchId: number, round: number) {
+		try {
+			const players = await this.getMatchPlayers(matchId);
+			const playerIds = players.map((p: any) => p.user_id);
+
+			await fetch(`${GATEWAY}/chat/notifications/tournament-round`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+				},
+				body: JSON.stringify({
+					matchId,
+					round,
+					playerIds
+				})
+			});
+		} catch (error) {
+			logger.error({ error }, 'Failed to send round complete notification');
+		}
+	}
+
+	private async getMatchPlayers(matchId: number): Promise<any[]> {
+		return await dbAll(this.db,
+			"SELECT DISTINCT user_id FROM players WHERE match_id = ?",
+			[matchId]
+		);
 	}
 }
 

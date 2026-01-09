@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import * as notificationRepo from '../repositories/notificationRepository';
 
-export function registerNotificationRoutes(app: FastifyInstance) {
+export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUser: (userId: number, message: any) => boolean) {
     // Get user notifications
     app.get('/chat/notifications', async (request: any, reply: any) => {
         try {
@@ -85,6 +85,133 @@ export function registerNotificationRoutes(app: FastifyInstance) {
         } catch (error: any) {
             app.log.error({ error }, 'Failed to mark all as read');
             return reply.code(500).send({ error: 'Failed to update notifications' });
+        }
+    });
+
+    // Game result notification (called by match-service via gateway)
+    app.post('/chat/notifications/game-result', async (request: any, reply: any) => {
+        try {
+            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+                return reply.code(401).send({ error: 'Unauthorized' });
+            }
+
+            const { winnerId, loserId, gameId } = request.body;
+
+            // Send to winner
+            const sentToWinner = sendMessageToUser(winnerId, {
+                type: 'game_notification',
+                subType: 'victory',
+                gameId,
+                message: '🎉 You won the game!',
+                timestamp: Date.now()
+            });
+
+            // Send to loser
+            const sentToLoser = sendMessageToUser(loserId, {
+                type: 'game_notification',
+                subType: 'defeat',
+                gameId,
+                message: '😔 You lost the game',
+                timestamp: Date.now()
+            });
+
+            // Store notifications in DB for offline users
+            if (!sentToWinner) {
+                await notificationRepo.createNotification({
+                    userId: winnerId,
+                    type: 'game_result',
+                    payload: { result: 'victory', gameId }
+                });
+            }
+
+            if (!sentToLoser) {
+                await notificationRepo.createNotification({
+                    userId: loserId,
+                    type: 'game_result',
+                    payload: { result: 'defeat', gameId }
+                });
+            }
+
+            return reply.send({ success: true });
+        } catch (error: any) {
+            app.log.error({ error }, 'Failed to send game result notification');
+            return reply.code(500).send({ error: 'Failed to send notification' });
+        }
+    });
+
+    // Tournament round notification
+    app.post('/chat/notifications/tournament-round', async (request: any, reply: any) => {
+        try {
+            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+                return reply.code(401).send({ error: 'Unauthorized' });
+            }
+
+            const { matchId, round, playerIds } = request.body;
+
+            for (const playerId of playerIds) {
+                const sent = sendMessageToUser(playerId, {
+                    type: 'game_notification',
+                    subType: 'tournament_round',
+                    matchId,
+                    round,
+                    message: `🏆 Tournament Round ${round} completed!`,
+                    timestamp: Date.now()
+                });
+
+                // Store in DB if user is offline
+                if (!sent) {
+                    await notificationRepo.createNotification({
+                        userId: playerId,
+                        type: 'tournament_round',
+                        payload: { matchId, round }
+                    });
+                }
+            }
+
+            return reply.send({ success: true });
+        } catch (error: any) {
+            app.log.error({ error }, 'Failed to send tournament round notification');
+            return reply.code(500).send({ error: 'Failed to send notification' });
+        }
+    });
+
+    // Match starting soon notification
+    app.post('/chat/notifications/match-starting', async (request: any, reply: any) => {
+        try {
+            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+                return reply.code(401).send({ error: 'Unauthorized' });
+            }
+
+            const { playerIds, matchId, matchName, timeUntilStart } = request.body;
+
+            for (const playerId of playerIds) {
+                const sent = sendMessageToUser(playerId, {
+                    type: 'game_notification',
+                    subType: 'match_starting',
+                    matchId,
+                    matchName,
+                    timeUntilStart,
+                    message: `⏰ Match "${matchName}" starts in ${timeUntilStart} seconds!`,
+                    timestamp: Date.now()
+                });
+
+                // Store in DB if user is offline
+                if (!sent) {
+                    await notificationRepo.createNotification({
+                        userId: playerId,
+                        type: 'match_starting',
+                        payload: { matchId, matchName, timeUntilStart }
+                    });
+                }
+            }
+
+            return reply.send({ success: true });
+        } catch (error: any) {
+            app.log.error({ error }, 'Failed to send match starting notification');
+            return reply.code(500).send({ error: 'Failed to send notification' });
         }
     });
 }

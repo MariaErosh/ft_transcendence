@@ -200,7 +200,7 @@ async function start() {
     registerConversationRoutes(app, sendToUser);
     registerBlockRoutes(app);
     registerInvitationRoutes(app, sendToUser);
-    registerNotificationRoutes(app);
+    registerNotificationRoutes(app, sendToUser);
 
     // Register WebSocket
     registerChatWebSocket(app);
