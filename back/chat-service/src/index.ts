@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import dotenv from 'dotenv';
 import { WebSocket } from 'ws';
+import metricsPlugin from 'fastify-metrics';
 import { initDB } from './db/database';
 import { registerConversationRoutes } from './routes/conversations';
 import { registerBlockRoutes } from './routes/blocks';
@@ -109,10 +110,10 @@ function notifyUserLeft(username: string) {
  */
 function handleDisconnect(userId: number, username: string, logger: any) {
     logger.info(`WebSocket disconnected: ${username}`);
-    
+
     // Clear any pending typing timeouts
     clearUserTypingTimeouts(userId);
-    
+
     // Remove from connected clients
     connectedClients.delete(username);
     notifyUserLeft(username);
@@ -171,9 +172,23 @@ function registerChatWebSocket(app: any) {
 async function start() {
     await initDB();
 
-    const app = Fastify({ logger: true });
+    const app = Fastify({
+        logger: {
+            level: 'info',
+            transport: {
+                targets: [
+                    { target: 'pino/file', options: { destination: 1 } },
+                    {
+                        target: 'pino-socket',
+                        options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+                    }
+                ]
+            }
+        }
+    });
 
     // Register plugins
+    app.register(metricsPlugin, { endpoint: '/metrics' });
     app.register(cors, { origin: true, credentials: true });
     app.register(websocket);
 
