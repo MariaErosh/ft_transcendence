@@ -159,7 +159,6 @@ export async function goBackToHome() {
 
   // Refresh online status when returning to home
   await refreshOnlineStatus();
-
   // Render home view
   renderHomeView();
 }
@@ -241,4 +240,31 @@ export async function unblockUser(userId: number) {
     console.error('Failed to unblock user:', err);
     updateStatus('Failed to unblock user', 'error');
   }
+}
+
+export async function addFriend(friendId: number) {
+	try {
+		console.log('Adding friend:', friendId);
+
+		const response = await authorisedRequest('/interact/friends', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ friendId: friendId }),
+		});
+
+		//console.log('addFriend response:', response);
+
+		if (response.success) {
+			updateStatus('Friend added successfully', 'success');
+			await loadFriends();
+			renderDMView();
+			console.log('Friend added successfully');
+		} else {
+			console.error('Add friend failed with response:', response);
+			updateStatus(response.error || 'Failed to add friend', 'error');
+		}
+	} catch (err) {
+		console.error('Failed to add friend:', err);
+		updateStatus('Failed to add friend', 'error');
+	}
 }

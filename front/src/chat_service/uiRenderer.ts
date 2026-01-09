@@ -3,7 +3,7 @@
 import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
-import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser } from './userManager.js';
+import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend } from './userManager.js';
 import { displayStoredMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
@@ -111,6 +111,7 @@ export function renderHomeView() {
 	}
 
 	const data = getChatViewData();
+	//console.log('renderHomeView - data.friends:', data.friends);
 	chatContainer.innerHTML = renderChatLayout(data);
 
 	setupHeaderHandlers();
@@ -272,14 +273,14 @@ function renderFriendsSection(data: {
   const { friends, blockedUsers, currentUsername } = data;
 
   return `
-    <div class="border-b-4 border-black bg-pink-100">
+    <div class="border-b-4 border-black bg-black">
       <div class="px-3 py-2 bg-pink-500 text-black font-bold text-xs uppercase tracking-wide">
         💜 Friends
       </div>
       <div id="friends-list" class="p-2 space-y-1">
         ${
           friends.length === 0
-            ? `<div class="text-xs text-gray-500 italic px-2 py-2">No friends yet</div>`
+            ? `<div class="text-xs text-gray-100 italic px-2 py-2">No friends yet</div>`
             : friends
                 .filter(u => u.username !== currentUsername)
                 .map(u => renderUserRow(u, blockedUsers, "friend"))
@@ -294,8 +295,10 @@ function renderAllUsersSection(data: {
   allUsers: User[];
   blockedUsers: number[];
   currentUsername: string | null;
+  friends: User[];
 }): string {
-  const { allUsers, blockedUsers, currentUsername } = data;
+  const { allUsers, blockedUsers, currentUsername, friends } = data;
+  const friendUserIds = new Set(friends.map(f => f.userId));
 
   return `
     <div class="bg-gray-700">
@@ -305,7 +308,7 @@ function renderAllUsersSection(data: {
       <div id="all-users-list" class="p-2 space-y-1">
         ${
           allUsers
-            .filter(u => u.username !== currentUsername)
+            .filter(u => u.username !== currentUsername && !friendUserIds.has(u.userId))
             .map(u => renderUserRow(u, blockedUsers, "all"))
             .join("")
         }
@@ -365,8 +368,8 @@ function renderUserRow(
         w-full text-left px-2 py-2
         text-sm font-mono
         text-gray-200
-        hover:${context === "friend" ? "bg-pink-200" : "bg-purple-200"}
-        hover:text-black
+        hover:bg-purple-200
+		hover:text-black
         flex items-center gap-2
         border-2 border-transparent
         hover:border-black
@@ -433,6 +436,7 @@ function setupUserHandlers(users: User[]) {
 		});
 	});
 }
+
 
 /**
  * Render DM View
@@ -702,9 +706,8 @@ export function renderDMView() {
 
       switch (action) {
         case 'add-friend':
-          console.log('Add friend:', currentRecipient.username);
-          // TODO: Implement add friend
-          break;
+		addFriend(currentRecipient.userId!);
+		break;
         case 'delete-friend':
           console.log('Delete friend:', currentRecipient.username);
           // TODO: Implement delete friend
