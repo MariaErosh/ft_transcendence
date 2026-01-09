@@ -219,10 +219,22 @@ export async function render2FASetup(userId: number, username: string) {
     verifyBtn.addEventListener("click", async () => {
         const verified = await verify2FA(userId, tokenInput.value);
         if (verified.success) {
-			set2FAenabled(userId, username);
+			await set2FAenabled(userId, username);
+            
+            // Store the tokens from the verify response
+            if (verified.data.accessToken) {
+                localStorage.setItem("accessToken", verified.data.accessToken);
+                localStorage.setItem("refreshToken", verified.data.refreshToken);
+                localStorage.setItem("refreshExpiresAt", verified.data.refreshExpiresAt);
+                localStorage.removeItem("tempToken"); // Clean up temp token
+                localStorage.setItem("username", username);
+            }
+            
             msg.className = "text-green-600 text-xs font-bold uppercase";
-            msg.textContent = "2FA ACTIVE. Redirecting to login...";
-            setTimeout(() => renderLogin(), 2000);
+            msg.textContent = "2FA ACTIVE. Redirecting...";
+            setTimeout(() => {
+                window.location.href = "/"; // Redirect to home/main page
+            }, 1500);
         } else {
             msg.textContent = "!! INVALID CODE. TRY AGAIN !!";
         }
