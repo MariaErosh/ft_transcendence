@@ -16,7 +16,7 @@ export function requiredEnv(key: string): string {
 }
 
 const USER_PORT = requiredEnv("USER_PORT");
-const USER_URL = requiredEnv("USER_SERVICE") + USER_PORT;
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + USER_PORT;
 
 
 async function start() {
