@@ -16,7 +16,7 @@ import { GATEWAY_SECRET } from "./index.js";
  * The chat service handles all authentication and message logic.
  */
 export async function registerChatWebSocket(server: FastifyInstance) {
-	const CHAT_URL = requiredEnv("CHAT_SERVICE") + requiredEnv("CHAT_PORT");
+	const CHAT_URL = requiredEnv("CHAT_SERVICE") + ":" + requiredEnv("CHAT_PORT");
 
 	server.get("/chat/ws", { websocket: true }, (socket, request) => {
 		const token = (request.query as any).token;
