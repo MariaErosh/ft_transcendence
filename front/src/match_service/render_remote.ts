@@ -252,7 +252,7 @@ export async function joinRoom(matchName: string) {
 			console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
 			renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
 		}
-	})
+	});
 		function refreshPlayers() {
 			playersList.innerHTML = "";
 			for (const p of players) {
