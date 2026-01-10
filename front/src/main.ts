@@ -1,5 +1,5 @@
 import { renderUserMenu } from "./ui.js";
-import { renderCreateTournamentForm } from "./match_service/start_page.js";
+import { renderChooseMode, renderStartView } from "./match_service/start_page.js";
 import { renderLogin, renderRegister } from "./forms.js"
 import { renderNewRemoteTournament,  } from "./match_service/render_remote.js";
 import { renderNewConsoleTournament } from "./match_service/render_console.js";
@@ -8,7 +8,7 @@ import { setStop } from "./game_front/gamePlay.js"
 import { renderArena } from "./arena.js";
 import { renderChat } from "./chat_service/chat.js";
 import { initializeProfileUI } from "./profile_front/profile.js";
-import { renderFooterLinks } from "./policies/render_footer_links.js";
+import { renderFooterLinks, renderPrivacyPolicy, renderTermsOfService } from "./policies/render_footer_links.js";
 
 const app = document.getElementById("app")!;
 
@@ -19,8 +19,8 @@ app.innerHTML = `
 	<div id="profile-window" class="hidden"></div>`;
 
 renderFooterLinks();
+renderStartView();
 renderUserMenu();
-renderCreateTournamentForm();
 renderChat();
 initializeProfileUI();
 
@@ -30,7 +30,7 @@ window.addEventListener("DOMContentLoaded", () => {
 		history.replaceState({ view: "main" }, "", "/");
 		renderFooterLinks();
 		renderUserMenu();
-		renderCreateTournamentForm();
+		renderStartView();
 		renderChat();
 		initializeProfileUI();
 	}
@@ -44,7 +44,7 @@ window.addEventListener("popstate", (event) => {
 		setStop();
 		renderUserMenu();
 		renderFooterLinks();
-		renderCreateTournamentForm();
+		renderStartView();
 		renderChat();
 		return;
 	}
@@ -72,18 +72,27 @@ window.addEventListener("popstate", (event) => {
 				console.warn("No arena state in history, cannot render");
 			}
 			break;
+			case "privacy":
+			renderPrivacyPolicy();
+			break;
+		case "terms":
+			renderTermsOfService();
+			break;
+		case "mode":
+			renderChooseMode();
+			break;
 		case "main":
 			setStop();
 			renderUserMenu();
 			renderFooterLinks();
-			renderCreateTournamentForm();
+			renderStartView();
 			renderChat();
 			break;
 		default:
 			setStop();
 			renderUserMenu();
 			renderFooterLinks();
-			renderCreateTournamentForm();
+			renderStartView();
 			renderChat();
 	}
 });

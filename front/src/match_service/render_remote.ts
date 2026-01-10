@@ -2,10 +2,21 @@ import { lobbySocket, connectWS } from "./lobbySocket.js";
 import { getMatchPlayers, getOpenMatches } from "../api.js"
 import { connectGameWS, gameSocket } from "./gameSocket.js";
 import { renderArena } from "../arena.js";
+import { renderBlackBox, renderMatchMenu } from "../elements.js";
 
 
 export async function renderNewRemoteTournament() {
-	const blackBox = document.getElementById("black-box")!;
+	let blackBox = document.getElementById("black-box");
+	if (!blackBox) {
+		blackBox = renderBlackBox();
+		let wrapper = document.getElementById("match-menu") as HTMLElement | null;
+		if (!wrapper) {
+			wrapper = renderMatchMenu();
+		}
+		wrapper!.appendChild(blackBox);
+	} else {
+		blackBox.innerHTML = "";
+	}
 	blackBox.innerHTML = "";
 	blackBox.className = "bg-gray-200 w-2/3 h-2/3 border-8 border-black shadow-[16px_16px_0_0_#000000] flex flex-col items-center justify-center z-40 font-mono p-8";
 
@@ -64,7 +75,7 @@ export async function renderNewRemoteTournament() {
                 btn.innerHTML = `<span>> ${match.name.toUpperCase()}</span>
 				 <span class="text-xs ${match.started ? 'bg-gray-500' : 'bg-black'} text-white px-2 py-1">
                      ${match.started ? 'IN PROGRESS' : 'JOIN'}</span>`;
-                
+
 				if (!match.started)
 					btn.addEventListener("click", () => joinRoom(match.name));
 				else
@@ -140,7 +151,7 @@ export async function renderNewRemoteTournament() {
 
 async function joinRoom(matchName: string) {
 
-		blackBox.innerHTML = "";
+		blackBox!.innerHTML = "";
 
 		const headerGroup = document.createElement('div');
         headerGroup.className = "w-3/5 mb-6";
@@ -148,7 +159,7 @@ async function joinRoom(matchName: string) {
             <div class="text-black text-4xl font-black tracking-tighter uppercase">Tournament: ${matchName}</div>
             <div class="text-purple-700 text-sm font-bold tracking-widest uppercase">Awaiting participants...</div>
         `;
-        blackBox.appendChild(headerGroup);
+        blackBox!.appendChild(headerGroup);
 
 		const playersList = document.createElement("div");
 		playersList.className = `
@@ -158,7 +169,7 @@ async function joinRoom(matchName: string) {
             shadow-[8px_8px_0_0_#000000]
             flex flex-col gap-2
         `;
-		blackBox.appendChild(playersList);
+		blackBox!.appendChild(playersList);
 
 		const startButton = document.createElement("button");
 		startButton.textContent = "START TOURNAMENT";
@@ -168,7 +179,7 @@ async function joinRoom(matchName: string) {
             w-1/3 h-16 text-2xl border-4 border-black
             cursor-not-allowed opacity-50 transition-all
         `;
-		blackBox.appendChild(startButton);
+		blackBox!.appendChild(startButton);
 
 		startButton.addEventListener("click", () => {
 			console.log("SENDING start_match");
