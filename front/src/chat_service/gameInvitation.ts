@@ -143,7 +143,7 @@ async function createAndSendInvitation(
     }
 
     // Generate unique match name
-    const matchName = `${senderUsername}_vs_${recipientUsername}_${Date.now()}`;
+    const matchName = `${senderUsername}_vs_${recipientUsername}_${Date.now()}`; //TODO steph improve name of the match
 
     // Send invitation through chat websocket (match will be created later)
     const invitationMessage = {

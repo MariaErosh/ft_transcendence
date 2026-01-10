@@ -101,7 +101,7 @@ export async function handleChatMessage(
 }
 
 /**
- * Handle game invitation - simplified version
+ * Handle game invitation
  */
 export async function handleGameInvitation(
     userId: number,
@@ -131,6 +131,9 @@ export async function handleGameInvitation(
             metadata: JSON.stringify(invitationData)
         });
 
+        // Retrieve the saved message to get the exact timestamp
+        const savedMessage = await messageRepo.getMessageById(messageId);
+        
         const message = {
             type: 'game_invitation',
             id: messageId,
@@ -138,7 +141,7 @@ export async function handleGameInvitation(
             sender_id: userId,
             sender_username: username,
             content,
-            created_at: new Date().toISOString(),
+            created_at: savedMessage?.created_at || new Date().toISOString(),
             invitation_data: invitationData
         };
 

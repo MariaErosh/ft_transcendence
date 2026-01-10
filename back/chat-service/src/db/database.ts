@@ -95,7 +95,7 @@ function createMessagesTable(): Promise<void> {
 			content TEXT NOT NULL,
 			message_type TEXT DEFAULT 'text',
 			metadata TEXT,
-			created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+			created_at TEXT NOT NULL,
 			is_read INTEGER DEFAULT 0,
 			read_at TEXT
 		)
