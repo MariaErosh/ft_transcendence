@@ -20,12 +20,12 @@ export function requiredEnv(key: string): string {
 const GATEWAY_PORT = Number(requiredEnv("GATEWAY_PORT"));
 const JWT_SECRET = requiredEnv("JWT_SECRET");
 export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
-const AUTH_URL = requiredEnv("AUTH_SERVICE") + requiredEnv("AUTH_PORT");
-const USER_URL = requiredEnv("USER_SERVICE") + requiredEnv("USER_PORT");
-const GAME_URL = requiredEnv("GAME_SERVICE") + requiredEnv("GAME_PORT");
-export const MATCH_SERVICE_URL = requiredEnv("MATCH_SERVICE") + requiredEnv("MATCH_PORT");
-const CHAT_URL = requiredEnv("CHAT_SERVICE") + requiredEnv("CHAT_PORT");
-const INTERACT_URL = requiredEnv("INTERACT_SERVICE") + requiredEnv("INTERACT_PORT");
+const AUTH_URL = `${requiredEnv("AUTH_SERVICE")}:${requiredEnv("AUTH_PORT")}`;
+const USER_URL = `${requiredEnv("USER_SERVICE")}:${requiredEnv("USER_PORT")}`;
+const GAME_URL = `${requiredEnv("GAME_SERVICE")}:${requiredEnv("GAME_PORT")}`;
+export const MATCH_SERVICE_URL = `${requiredEnv("MATCH_SERVICE")}:${requiredEnv("MATCH_PORT")}`;
+const CHAT_URL = `${requiredEnv("CHAT_SERVICE")}:${requiredEnv("CHAT_PORT")}`;
+const INTERACT_URL = `${requiredEnv("INTERACT_SERVICE")}:${requiredEnv("INTERACT_PORT")}`;
 
 async function buildServer() {
 	const server = Fastify({
