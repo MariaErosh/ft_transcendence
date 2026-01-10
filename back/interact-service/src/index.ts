@@ -17,8 +17,8 @@ export function requiredEnv(key: string): string {
 const PORT = parseInt(requiredEnv("INTERACT_PORT"));
 const HOST = '0.0.0.0';
 export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
-export const USER_URL = requiredEnv("USER_SERVICE") + requiredEnv("USER_PORT");
-export const GATEWAY_URL = requiredEnv("GATEWAY_SERVICE") + requiredEnv("GATEWAY_PORT");
+export const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
+export const GATEWAY_URL = requiredEnv("GATEWAY_SERVICE") + ":" + requiredEnv("GATEWAY_PORT");
 
 const server = Fastify({
 	logger: {
