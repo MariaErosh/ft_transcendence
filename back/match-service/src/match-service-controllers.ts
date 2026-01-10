@@ -6,7 +6,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET;
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
+
+export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 	const gw = (req.headers as any)['x-gateway-secret'];

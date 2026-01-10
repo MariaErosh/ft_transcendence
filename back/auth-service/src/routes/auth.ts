@@ -1,9 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
+import { requiredEnv } from "../index.js";
 
-const GATEWAY_URL = process.env.GATEWAY_URL;
-const USER_URL = process.env.USER_URL;
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
+const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 export async function authRoutes(fastify: FastifyInstance) {
 	const auth = new AuthService();
@@ -47,7 +48,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 					headers: {
 						"Content-Type": "application/json",
 						//"Authorization": `Bearer ${systemToken}`
-						"x-gateway-secret": process.env.GATEWAY_SECRET!, // чтобы user-service пропустил
+						"x-gateway-secret": GATEWAY_SECRET, // чтобы user-service пропустил
 						"x-user-service": "auth",
 						"x-user-id": user.id.toString()
 					},
@@ -192,7 +193,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 		// Check if called from gateway
 		const gw = (req.headers as any)['x-gateway-secret'];
-		if (gw && gw === process.env.GATEWAY_SECRET) {
+		if (gw && gw === GATEWAY_SECRET) {
 			// Gateway call - use headers
 			userId = Number((req.headers as any)['x-user-id']);
 			username = String((req.headers as any)['x-username'] || "");
@@ -223,7 +224,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 	fastify.post("/auth/2fa/deletesecret", async (req, reply) => {
 
 		const gw = (req.headers as any)['x-gateway-secret'];
-		if (!gw || gw !== process.env.GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
+		if (!gw || gw !== GATEWAY_SECRET) return reply.status(401).send({ error: "access not from Gateway" });
 
 		const userId = Number((req.headers as any)['x-user-id']);
 		if (!userId) return reply.status(400).send({ error: "User ID missing from headers" });
@@ -241,7 +242,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
 		// Check if called from gateway
 		const gw = (req.headers as any)['x-gateway-secret'];
-		if (gw && gw === process.env.GATEWAY_SECRET) {
+		if (gw && gw === GATEWAY_SECRET) {
 			// Gateway call - use headers
 			userId = Number((req.headers as any)['x-user-id']);
 		} else {

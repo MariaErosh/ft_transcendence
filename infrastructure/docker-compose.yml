@@ -12,11 +12,11 @@ services:
       target: prod
     container_name: auth
     expose:
-      - 3001
+      - ${AUTH_PORT}
     volumes:
       - ../back/auth-service/data/:/app/data
     env_file:
-    - ../back/auth-service/.env
+      - .env
     networks:
       - internal
 
@@ -27,11 +27,11 @@ services:
       target: prod
     container_name: user
     expose:
-        - 3002
+        - ${USER_PORT}
     volumes:
       - ../back/user-service/data/:/app/data
     env_file:
-    - ../back/user-service/.env
+      - .env
     networks:
       - internal
 
@@ -43,9 +43,9 @@ services:
       target: prod
     container_name: game-engine
     ports:
-      - "3003:3003"
+      - "${GAME_PORT}:${GAME_PORT}"
     env_file:
-      - ../back/game-engine/.env
+      - .env
     networks:
       - internal
 
@@ -57,9 +57,9 @@ services:
       target: prod
     container_name: match
     expose:
-      - 3004
+      - ${MATCH_PORT}
     env_file:
-      - ../back/match-service/.env
+      - .env
     networks:
       - internal
 
@@ -68,10 +68,12 @@ services:
       context: ../back/chat-service
       dockerfile: Dockerfile
     container_name: chat
+    expose:
+      - ${CHAT_PORT}
     volumes:
       - ../back/chat-service/data/:/app/data
     env_file:
-      - ../back/chat-service/.env
+      - .env
     networks:
       - internal
 
@@ -81,11 +83,11 @@ services:
       dockerfile: Dockerfile
     container_name: interact
     expose:
-      - 3006
+      - ${INTERACT_PORT}
     volumes:
       - ../back/interact-service/data/:/app/data
     env_file:
-      - ../back/interact-service/.env
+      - .env
     networks:
       - internal
 
@@ -96,14 +98,14 @@ services:
       target: prod
     container_name: gateway
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     depends_on:
       - auth
       - user
       - chat
       - interact
     env_file:
-    - ../back/gateway/.env
+      - .env
     networks:
       - internal
 
@@ -136,6 +138,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    env_file:
+      - .env
     networks:
       - internal
 
@@ -189,6 +193,8 @@ services:
       retries: 10
     depends_on:
       - elasticsearch
+    env_file:
+      - .env
     networks:
       - internal
 
@@ -206,6 +212,8 @@ services:
       - "9114:9114"
     depends_on:
       - elasticsearch
+    env_file:
+      - .env
     networks:
       - internal
 
@@ -220,6 +228,8 @@ services:
     depends_on:
       logstash:
         condition: service_healthy
+    env_file:
+      - .env
     networks:
       - internal
 
@@ -233,6 +243,8 @@ services:
       - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       - elasticsearch
+    env_file:
+      - .env
     networks:
       - internal
 
@@ -249,7 +261,7 @@ services:
     volumes:
       - ./ssl:/etc/nginx/ssl
     env_file:
-      - ../front/.env
+      - .env
     networks:
       - internal
 

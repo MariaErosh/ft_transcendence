@@ -13,12 +13,17 @@ export const playerKeys = new Map<number, {
 	right: { up: boolean, down: boolean }
 }>();
 
+function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
 const gameMeta = new Map<number, GameMeta>();
 
 dotenv.config(); //loads the credentials from the .env file insto process.env
-const PORT = Number(process.env.PORT || 3003);
-const GATEWAY = process.env.GATEWAY_URL;
-//const GENGINE_URL = process.env.GENGINE_URL;
+const PORT = Number(requiredEnv("GAME_PORT"));
+const GATEWAY = requiredEnv("GATEWAY_SERVICE") + ":" + requiredEnv("GATEWAY_PORT");
 
 export const server = Fastify({
 	logger: {

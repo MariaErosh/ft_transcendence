@@ -3,6 +3,7 @@ import websocketPlugin from "@fastify/websocket";
 import { WebSocket } from "ws";
 import dotenv from "dotenv";
 import pino from "pino";
+import { MATCH_SERVICE_URL, GATEWAY_SECRET } from "./index.js";
 
 const logger = pino({
 	level: 'info',
@@ -268,10 +269,9 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 							server.log.warn(`Right player ${player.sub} has no active sockets`);
 						}
 					}
-					const MATCH_SERVICE_DIRECT = process.env.MATCH_SERVICE_URL ?? "http://match:3004";
-					await fetch(`${MATCH_SERVICE_DIRECT}/match/new`, {
+					await fetch(`${MATCH_SERVICE_URL}/match/new`, {
 						method: "POST",
-						headers: { "Content-Type": "application/json", "x-gateway-secret": `${process.env.GATEWAY_SECRET}`, },
+						headers: { "Content-Type": "application/json", "x-gateway-secret": `${GATEWAY_SECRET}`, },
 						body: JSON.stringify({ name: data.name, players: players, type: "REMOTE", owner: null })
 					});
 				}

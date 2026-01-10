@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import * as blockRepo from '../repositories/blockRepository';
+import { GATEWAY_SECRET } from "../index.js"
 
 export function registerBlockRoutes(app: FastifyInstance) {
     // Block a user
     app.post('/chat/blocks', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -43,7 +44,7 @@ export function registerBlockRoutes(app: FastifyInstance) {
     app.delete('/chat/blocks/:userId', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -62,7 +63,7 @@ export function registerBlockRoutes(app: FastifyInstance) {
     app.get('/chat/blocks', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 

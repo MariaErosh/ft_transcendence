@@ -6,6 +6,14 @@ import { authRoutes } from "./routes/auth";
 import  authPlugin  from "./plugins/authPlugins";
 import metricsPlugin from "fastify-metrics";
 
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
+const AUTH_PORT = requiredEnv("AUTH_PORT");
+
 const server = Fastify({
 	logger: {
 		level: 'info',
@@ -33,8 +41,8 @@ const start = async () => {
   server.get("/health", async () => ({ status: "ok" }));
 
   try {
-    await server.listen({ port: 3001, host: "0.0.0.0" });
-    server.log.info("Auth service running on http://0.0.0.0:3001");
+    await server.listen({ port: Number(AUTH_PORT), host: "0.0.0.0" });
+    server.log.info(`Auth service running on http://0.0.0.0:${AUTH_PORT}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

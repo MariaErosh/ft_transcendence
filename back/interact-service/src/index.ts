@@ -3,9 +3,22 @@ import metricsPlugin from 'fastify-metrics';
 import { initDB } from './db/database';
 import { registerFriendRoutes } from './routes/friends';
 import { registerProfileRoutes } from './routes/profiles';
+import dotenv from "dotenv";
 
-const PORT = parseInt(process.env.PORT || '3006');
-const HOST = process.env.HOST || '0.0.0.0';
+dotenv.config();
+
+
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
+const PORT = parseInt(requiredEnv("INTERACT_PORT"));
+const HOST = '0.0.0.0';
+export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
+export const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
+export const GATEWAY_URL = requiredEnv("GATEWAY_SERVICE") + ":" + requiredEnv("GATEWAY_PORT");
 
 const server = Fastify({
 	logger: {

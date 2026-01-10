@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { promisify } from 'util';
 
-const dbPath = process.env.DB_PATH || '/app/data/database.sqlite';
+const dbPath ='/app/data/database.sqlite';
 export const db = new sqlite3.Database(dbPath);
 
 // Promisify database methods for easier async/await usage
