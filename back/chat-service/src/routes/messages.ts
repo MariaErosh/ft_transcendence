@@ -60,11 +60,35 @@ async function enrichMessagesWithUsernames(messages: any[]): Promise<any[]> {
         usernames.map(({ id, username }) => [id, username])
     );
 
-    // Add sender_username to each message
-    return messages.map(msg => ({
-        ...msg,
-        sender_username: usernameMap.get(msg.sender_id) || 'Unknown'
-    }));
+    // Add sender_username to each message and parse metadata if present
+    return messages.map(msg => {
+        const enrichedMsg: any = {
+            ...msg,
+            sender_username: usernameMap.get(msg.sender_id) || 'Unknown',
+            type: msg.message_type || 'text'
+        };
+
+        // Parse metadata JSON if it exists
+        if (msg.metadata) {
+            try {
+                enrichedMsg.invitation_data = JSON.parse(msg.metadata);
+            } catch (error) {
+                console.error('Failed to parse message metadata:', error);
+            }
+        }
+
+        // Debug log for game invitations
+        if (enrichedMsg.type === 'game_invitation') {
+            console.log('Enriched game invitation:', {
+                id: enrichedMsg.id,
+                type: enrichedMsg.type,
+                has_invitation_data: !!enrichedMsg.invitation_data,
+                message_type_from_db: msg.message_type
+            });
+        }
+
+        return enrichedMsg;
+    });
 }
 
 export function registerMessageRoutes(app: FastifyInstance) {

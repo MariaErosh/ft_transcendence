@@ -169,7 +169,7 @@ export function renderArena(state: ArenaState) {
 			const btn = document.getElementById("ready-btn") as HTMLButtonElement;
 			const DISABLED_BTN_CLASS = "bg-gray-400 text-gray-700 font-bold uppercase px-6 py-3 border-2 border-black cursor-not-allowed opacity-70 shadow-none text-xl";
 			if (btn) {
-				btn.addEventListener("click", () => {
+				btn.addEventListener("click", async () => {
 					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
 
 					btn.disabled = true;

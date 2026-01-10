@@ -101,6 +101,71 @@ export async function handleChatMessage(
 }
 
 /**
+ * Handle game invitation
+ */
+export async function handleGameInvitation(
+    userId: number,
+    username: string,
+    recipientId: number,
+    invitationData: any,
+    socket: WebSocket,
+    logger: any,
+    connectedClients: Map<string, any>
+) {
+    try {
+        const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
+        if (blocked) {
+            socket.send(JSON.stringify({ type: 'error', content: 'Cannot send invitation to this user' }));
+            return;
+        }
+
+        const conversationId = await conversationRepo.getOrCreateConversation(userId, recipientId);
+        const content = `${invitationData.match_name || invitationData.tournament_name || 'Game'}`;
+        const storedInvitationData = {
+            sender_id: userId,
+            sender_username: username,
+            match_id: invitationData.match_id,
+            match_name: invitationData.match_name,
+            tournament_id: invitationData.tournament_id,
+            tournament_name: invitationData.tournament_name,
+            expires_at: invitationData.expires_at,
+            game_mode: invitationData.game_mode,
+            invitation_type: invitationData.invitation_type
+        };
+        const messageId = await messageRepo.createMessage({
+            conversationId,
+            senderId: userId,
+            content,
+            messageType: 'game_invitation',
+            metadata: JSON.stringify(storedInvitationData)
+        });
+
+        const savedMessage = await messageRepo.getMessageById(messageId);
+        
+        const message = {
+            type: 'game_invitation',
+            id: messageId,
+            conversation_id: conversationId,
+            sender_id: userId,
+            sender_username: username,
+            content,
+            created_at: savedMessage?.created_at || new Date().toISOString(),
+            invitation_data: storedInvitationData
+        };
+
+        logger.info({ userId, recipientId }, 'Game invitation sent');
+
+        const sent = sendMessageToUser(connectedClients, recipientId, message);
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ ...message, delivered: sent }));
+        }
+    } catch (error: any) {
+        logger.error({ error }, 'Failed to send game invitation');
+        socket.send(JSON.stringify({ type: 'error', content: 'Failed to send invitation' }));
+    }
+}
+
+/**
  * Handle typing indicator
  */
 export async function handleTypingIndicator(
@@ -115,7 +180,7 @@ export async function handleTypingIndicator(
         // Check if users have blocked each other
         const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
         if (blocked) {
-            return; // Silently ignore typing from blocked users
+            return;
         }
 
         // Clear existing timeout for this user->recipient pair
@@ -181,7 +246,6 @@ export async function handleTypingIndicator(
 export function clearUserTypingTimeouts(userId: number) {
     const userTimeouts = typingTimeouts.get(userId);
     if (userTimeouts) {
-        // Clear all timeouts
         for (const timeout of userTimeouts.values()) {
             clearTimeout(timeout);
         }
@@ -203,6 +267,20 @@ export async function handleIncomingMessage(
     try {
         const message = JSON.parse(data.toString());
         logger.info({ username, message }, 'Received message from client');
+
+        // Handle game invitation
+        if (message.type === 'game_invitation' && message.recipientId && message.invitationData) {
+            await handleGameInvitation(
+                userId,
+                username,
+                message.recipientId,
+                message.invitationData,
+                socket,
+                logger,
+                connectedClients
+            );
+            return;
+        }
 
         // Handle typing indicator
         if (message.type === 'typing' && message.recipientId !== undefined && message.isTyping !== undefined) {
