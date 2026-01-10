@@ -10,7 +10,6 @@ const INVITATION_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
  * Show game invitation confirmation modal and create match
  */
 export async function showGameInvitationModal(recipientUsername: string, recipientUserId: number) {
-    // Get current user info
     const currentUserId = getCurrentUserId();
     const currentUsername = getCurrentUsername();
 
@@ -97,17 +96,12 @@ function setupModalHandlers(
     recipientUserId: number,
     recipientUsername: string
 ) {
-    // Close button
     modal.querySelector('#modal-close')?.addEventListener('click', () => {
         modal.remove();
     });
-
-    // Cancel button
     modal.querySelector('#cancel-btn')?.addEventListener('click', () => {
         modal.remove();
     });
-
-    // Send invitation button
     modal.querySelector('#send-invitation-btn')?.addEventListener('click', async () => {
         try {
             await createAndSendInvitation(currentUserId, currentUsername, recipientUserId, recipientUsername);
@@ -118,7 +112,6 @@ function setupModalHandlers(
             showError('Failed to send invitation');
         }
     });
-
     // Click outside to close
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -143,9 +136,8 @@ async function createAndSendInvitation(
     }
 
     // Generate unique match name
-    const matchName = `${senderUsername}_vs_${recipientUsername}_${Date.now()}`; //TODO steph improve name of the match
+    const matchName = `${senderUsername} vs ${recipientUsername} (#${Math.floor(Math.random() * 1000)})`; //TODO steph improve name of the match
 
-    // Send invitation through chat websocket (match will be created later)
     const invitationMessage = {
         type: 'game_invitation',
         recipientId: recipientId,
@@ -164,7 +156,7 @@ async function createAndSendInvitation(
     ws.send(JSON.stringify(invitationMessage));
     console.log('Game invitation sent:', invitationMessage);
 
-    // Auto-join the sender to the match lobby
+    // Auto-join the sender to the match lobby!!
     await joinMatchDirectly(matchName);
 }
 

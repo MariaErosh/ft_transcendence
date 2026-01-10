@@ -6,8 +6,8 @@ export interface ChatMessage {
   conversation_id?: number;
   sender_id?: number;
   sender_username?: string;
-  user_id?: number; // Legacy support
-  username?: string; // Legacy support
+  user_id?: number;
+  username?: string;
   content?: string;
   isTyping?: boolean;
   read_by_user_id?: number;
@@ -20,7 +20,7 @@ export interface ChatMessage {
   delivered?: boolean;
   // Game invitation fields
   invitation_id?: number; // ID from game_invitations table
-  invitation_type?: 'tournament' | 'direct_match'; // For future extension
+  invitation_type?: 'tournament' | 'direct_match'; // Maybe we need this
   invitation_data?: {
     match_id?: number;
     match_name?: string;

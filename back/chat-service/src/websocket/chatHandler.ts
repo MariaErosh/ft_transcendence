@@ -120,7 +120,7 @@ export async function handleGameInvitation(
         }
 
         const conversationId = await conversationRepo.getOrCreateConversation(userId, recipientId);
-        const content = `🎮 ${invitationData.match_name || invitationData.tournament_name || 'Game'} invitation`;
+        const content = `${invitationData.match_name || invitationData.tournament_name || 'Game'}`;
 
         // Save as special message with metadata
         const messageId = await messageRepo.createMessage({
@@ -131,7 +131,6 @@ export async function handleGameInvitation(
             metadata: JSON.stringify(invitationData)
         });
 
-        // Retrieve the saved message to get the exact timestamp
         const savedMessage = await messageRepo.getMessageById(messageId);
         
         const message = {
@@ -238,7 +237,6 @@ export async function handleTypingIndicator(
 export function clearUserTypingTimeouts(userId: number) {
     const userTimeouts = typingTimeouts.get(userId);
     if (userTimeouts) {
-        // Clear all timeouts
         for (const timeout of userTimeouts.values()) {
             clearTimeout(timeout);
         }
