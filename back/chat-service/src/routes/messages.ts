@@ -2,9 +2,10 @@ import { FastifyInstance } from 'fastify';
 import * as conversationRepo from '../repositories/conversationRepository';
 import * as messageRepo from '../repositories/messageRepository';
 import * as blockRepo from '../repositories/blockRepository';
+import { requiredEnv } from "../index.js";
 
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://user:3002';
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET;
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
+const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 /**
  * Validate gateway authentication and extract user ID
@@ -23,7 +24,7 @@ function validateGatewayAuth(request: any, reply: any): number | null {
  */
 async function getUsernameById(userId: number): Promise<string | null> {
     try {
-        const response = await fetch(`${USER_SERVICE_URL}/users/${userId}`, {
+        const response = await fetch(`${USER_URL}/users/${userId}`, {
             headers: {
                 'x-gateway-secret': GATEWAY_SECRET || ''
             }

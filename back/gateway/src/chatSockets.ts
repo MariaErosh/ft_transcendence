@@ -2,6 +2,8 @@ import { FastifyInstance } from "fastify";
 import { WebSocket } from "ws";
 import { PlayerPayload } from "lobbySockets";
 import "@fastify/websocket";
+import { requiredEnv } from "./index.js";
+import { GATEWAY_SECRET } from "./index.js";
 
 /**
  * Register Chat WebSocket Proxy
@@ -14,7 +16,7 @@ import "@fastify/websocket";
  * The chat service handles all authentication and message logic.
  */
 export async function registerChatWebSocket(server: FastifyInstance) {
-	const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3005";
+	const CHAT_URL = requiredEnv("CHAT_SERVICE") + ":" + requiredEnv("CHAT_PORT");
 
 	server.get("/chat/ws", { websocket: true }, (socket, request) => {
 		const token = (request.query as any).token;
@@ -43,7 +45,7 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 
 		const chatSocket = new WebSocket(chatWsUrl, {
 			headers: {
-				'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+				'x-gateway-secret': GATEWAY_SECRET
 			}
 		});
 
