@@ -4,7 +4,7 @@ import * as messageRepo from '../repositories/messageRepository';
 import * as blockRepo from '../repositories/blockRepository';
 import { requiredEnv } from "../index.js";
 
-const USER_URL = requiredEnv("USER_SERVICE") + requiredEnv("USER_PORT");
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
 const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 /**
