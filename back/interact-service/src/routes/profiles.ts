@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import * as profileRepo from '../repositories/profileRepository';
+import { GATEWAY_SECRET, USER_URL } from '../index.js';
 
 export function registerProfileRoutes(app: FastifyInstance) {
     // Get user profile
     app.get('/interact/profile/:userId', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -15,9 +16,9 @@ export function registerProfileRoutes(app: FastifyInstance) {
 
             // Fetch user info including game stats from user service
             try {
-                const response = await fetch(`http://user:3002/users/${userId}`, {
+                const response = await fetch(`${USER_URL}/users/${userId}`, {
                     headers: {
-                        'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+                        'x-gateway-secret': GATEWAY_SECRET || ''
                     }
                 });
                 if (response.ok) {
@@ -45,7 +46,7 @@ export function registerProfileRoutes(app: FastifyInstance) {
     app.get('/interact/profile', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -58,9 +59,9 @@ export function registerProfileRoutes(app: FastifyInstance) {
 
             // Fetch user info including game stats
             try {
-                const response = await fetch(`http://user:3002/users/${userId}`, {
+                const response = await fetch(`${USER_URL}/users/${userId}`, {
                     headers: {
-                        'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+                        'x-gateway-secret': GATEWAY_SECRET || ''
                     }
                 });
                 if (response.ok) {
@@ -88,7 +89,7 @@ export function registerProfileRoutes(app: FastifyInstance) {
     app.put('/interact/profile', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 

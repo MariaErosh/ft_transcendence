@@ -29,19 +29,19 @@ export async function connectGameWS(): Promise <void> {
     let token = localStorage.getItem("accessToken");
 
     if (!token && !(await refreshAccessToken())) return reject;
-  
+
     token = localStorage.getItem("accessToken");
     gameSocket = new WebSocket(`${getWSBaseURL()}/api/game/ws?token=${token}`);
-  
+
     gameSocket.onopen = () => {
       console.log("gameWs connected");
       reconnecting = false;
       resolve()
     };
-  
+
     gameSocket.addEventListener("message", async (ev) => {
       const msg = JSON.parse(ev.data);
-    
+
       if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
         if (await refreshAccessToken()) reconnectGameWs();
       }
@@ -60,17 +60,17 @@ export async function connectGameWS(): Promise <void> {
         return;
       }
     });
-  
+
     gameSocket.onclose = () => {
-      console.warn("gameWs closed");
-  
+      console.log("gameWs closed");
+
       if (manualClose) {
         manualClose = false;
         return;
       }
     };
   })
-  
+
 }
 
 export function disconnectGameWS() {

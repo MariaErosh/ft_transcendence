@@ -4,6 +4,19 @@ import { UserService } from "./services/userService";
 import { userRoutes } from "./routes/user";
 //import  authPlugin  from "./plugins/authPlugin";
 import metricsPlugin from "fastify-metrics";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
+const USER_PORT = requiredEnv("USER_PORT");
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + USER_PORT;
 
 
 async function start() {
@@ -42,12 +55,12 @@ async function start() {
 		userRoutes(instance, userService);
 	});
 
-	await fastify.listen({ port: 3002, host: "0.0.0.0"  }, (err, address) => {
+	await fastify.listen({ port: Number(USER_PORT), host: "0.0.0.0"  }, (err, address) => {
 		if (err) {
 			console.error(err);
 			process.exit(1);
 		}
-		console.log("User service running on ", process.env.USER_URL);
+		console.log("User service running on ", USER_URL);
 	});
 }
 

@@ -78,7 +78,7 @@ window.addEventListener("popstate", (event) => {
 			if (state.arenaState) {
 				renderArena(state.arenaState);
 			} else {
-				console.warn("No arena state in history, cannot render");
+				console.log("No arena state in history, cannot render");
 			}
 			break;
 			case "privacy":

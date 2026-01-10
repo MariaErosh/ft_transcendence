@@ -2,13 +2,14 @@ import { FastifyInstance } from 'fastify';
 import * as blockRepo from '../repositories/blockRepository';
 import * as invitationRepo from '../repositories/invitationRepository';
 import * as notificationRepo from '../repositories/notificationRepository';
+import { GATEWAY_SECRET } from "../index.js"
 
 export function registerInvitationRoutes(app: FastifyInstance, sendMessageToUser: (userId: number, message: any) => boolean) {
     // Send game invitation
     app.post('/chat/invitations/game', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -65,7 +66,7 @@ export function registerInvitationRoutes(app: FastifyInstance, sendMessageToUser
     app.get('/chat/invitations', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -84,7 +85,7 @@ export function registerInvitationRoutes(app: FastifyInstance, sendMessageToUser
     app.put('/chat/invitations/:id', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 

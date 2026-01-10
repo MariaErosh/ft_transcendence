@@ -13,7 +13,7 @@ export async function connectWS(): Promise<void> {
 	return new Promise(async (resolve, reject) => {
 		if (lobbySocket && lobbySocket.readyState === WebSocket.OPEN) {
 			console.log("Socket already connected, skipping new connection");
-			resolve(); 
+			resolve();
 			return;
 		}
 		let token = localStorage.getItem("accessToken");
@@ -27,7 +27,7 @@ export async function connectWS(): Promise<void> {
 			console.error("WS connection error:", err);
 			reject(new Error("WebSocket failed to connect"));
 		};
-		
+
 		lobbySocket.onopen = () => {
 			console.log("WS connected");
 			reconnecting = false;
@@ -38,13 +38,13 @@ export async function connectWS(): Promise<void> {
 			const msg = JSON.parse(ev.data);
 
 			if (msg.type === "ERROR" && msg.reason === "jwt_expired") {
-				if (await refreshAccessToken()) 
+				if (await refreshAccessToken())
           reconnectWS();
 			}
 		});
 
 		lobbySocket.onclose = () => {
-			console.warn("WS closed");
+			console.log("WS closed");
 
 			if (manualClose) {
 				manualClose = false;

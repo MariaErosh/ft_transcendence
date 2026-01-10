@@ -11,15 +11,21 @@ import { registerGameWebSocket } from "./gameSockets";
 import { registerChatWebSocket } from "./chatSockets";
 
 
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
 
-const PORT = Number(process.env.PORT || 3000);
-const JWT_SECRET = process.env.JWT_SECRET as string;
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET as string;
-const AUTH_URL = process.env.AUTH_URL!;
-const USER_URL = process.env.USER_URL!;
-const GENGINE_URL = process.env.GENGINE_URL!;
-const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
-const CHAT_URL = process.env.CHAT_URL!;
+const GATEWAY_PORT = Number(requiredEnv("GATEWAY_PORT"));
+const JWT_SECRET = requiredEnv("JWT_SECRET");
+export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
+const AUTH_URL = `${requiredEnv("AUTH_SERVICE")}:${requiredEnv("AUTH_PORT")}`;
+const USER_URL = `${requiredEnv("USER_SERVICE")}:${requiredEnv("USER_PORT")}`;
+const GAME_URL = `${requiredEnv("GAME_SERVICE")}:${requiredEnv("GAME_PORT")}`;
+export const MATCH_SERVICE_URL = `${requiredEnv("MATCH_SERVICE")}:${requiredEnv("MATCH_PORT")}`;
+const CHAT_URL = `${requiredEnv("CHAT_SERVICE")}:${requiredEnv("CHAT_PORT")}`;
+const INTERACT_URL = `${requiredEnv("INTERACT_SERVICE")}:${requiredEnv("INTERACT_PORT")}`;
 
 async function buildServer() {
 	const server = Fastify({
@@ -101,7 +107,7 @@ async function buildServer() {
 	});
 
 	await server.register(proxy, {
-		upstream: GENGINE_URL,
+		upstream: GAME_URL,
 		prefix: "/game",
 		rewritePrefix: "/game",
 		http2: false,
@@ -115,7 +121,7 @@ async function buildServer() {
 	});
 
 	await server.register(proxy, {
-		upstream: process.env.INTERACT_URL || "http://interact:3006",
+		upstream: INTERACT_URL,
 		prefix: "/interact",
 		rewritePrefix: "/interact",
 		http2: false,
@@ -175,8 +181,8 @@ async function start() {
 	let server;
 	try {
 		server = await buildServer();
-		await server.listen({ port: PORT, host: "0.0.0.0" });
-		server.log.info(`Gateway listening on http://0.0.0.0:${PORT}`);
+		await server.listen({ port: GATEWAY_PORT, host: "0.0.0.0" });
+		server.log.info(`Gateway listening on http://0.0.0.0:${GATEWAY_PORT}`);
 	} catch (err) {
 		if (server) server.log.error(err);
 		else console.error(err);
