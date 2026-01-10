@@ -152,7 +152,12 @@ async function createAndSendInvitation(
     console.log('Game invitation sent:', invitationMessage);
 
     // Auto-join the sender to the match lobby!!
-    await joinMatchDirectly(matchName);
+    try {
+        await joinMatchDirectly(matchName);
+    } catch (error) {
+        console.error('Failed to auto-join match after sending invitation:', error);
+        showError('Invitation sent, but failed to join the game lobby automatically. You may need to join the match manually.');
+    }
 }
 
 export function isInvitationExpired(expiresAt: number): boolean {

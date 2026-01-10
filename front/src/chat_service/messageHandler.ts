@@ -250,7 +250,6 @@ export function displayStoredMessages() {
  */
 export function clearMessages() {
   console.log('[clearMessages] Clearing all messages');
-  console.trace('[clearMessages] Called from:');
   const messagesContainer = document.getElementById("chat-messages");
   if (!messagesContainer) return;
   messagesContainer.innerHTML = "";
