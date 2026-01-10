@@ -30,19 +30,19 @@ export function renderArena(state: ArenaState) {
 	let arena = document.createElement("div");
 	arena.id = "arena";
 	arena.className = `
-		fixed inset-0
-		bg-black/40 backdrop-blur-md
-		flex flex-col items-center justify-center z-40
+		relative min-h-screen w-full
+        bg-black/40 backdrop-blur-md
+        flex flex-col items-center justify-start py-20 z-40
 	`;
 	main.appendChild(arena);
 
 	const arenaBoard = document.createElement("div");
 	arenaBoard.className = `
-		bg-gray-200 w-2/3 h-2/3
+		bg-gray-200 w-2/3 min-h-[500px] h-auto
         flex flex-col items-center justify-center
         p-12 border-8 border-black
         shadow-[20px_20px_0_0_#000000]
-        font-mono relative
+        font-mono relative my-auto
 		`;
 	arena.appendChild(arenaBoard);
 
@@ -142,7 +142,6 @@ export function renderArena(state: ArenaState) {
 				`;
 				arenaBoard.appendChild(backBtn);
 				backBtn.addEventListener("click", () => {
-					arena.innerHTML = "";
 					renderUserMenu();
 					renderStartView();
 				});

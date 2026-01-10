@@ -18,10 +18,9 @@ export async function renderGameBoard() {
 	const wrapper = document.createElement('div');
 	wrapper.id = 'game-board-wrapper';
 	wrapper.className = `
-		relative p-4 bg-gray-200
-		border-8 border-black
-		shadow-[20px_20px_0_0_#000000]
-		flex flex-col items-center
+		relative w-full min-h-screen
+        flex flex-col items-center justify-center
+        p-4
 	`;
 	main.appendChild(wrapper);
 
@@ -30,7 +29,7 @@ export async function renderGameBoard() {
 	canvas.id = 'game-board';
 	canvas.width = board.CANVAS_WIDTH;
 	canvas.height =  board.CANVAS_HEIGHT;
-	canvas.className = 'border-4 border-black bg-black';
+	canvas.className = 'border-8 border-black';
 	wrapper.appendChild(canvas);
 
 	const overlay = document.createElement('div');

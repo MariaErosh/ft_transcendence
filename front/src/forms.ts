@@ -11,9 +11,20 @@ const INPUT_CLASS = "border-2 border-black p-2 focus:outline-none focus:border-p
 const PRIMARY_BTN_CLASS = "bg-purple-600 text-white p-2 border-2 border-black font-bold uppercase shadow-[3px_3px_0_0_#000000] hover:bg-purple-500 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all";
 const SECONDARY_BTN_CLASS = "bg-pink-500 text-black p-2 border-2 border-black font-bold uppercase shadow-[3px_3px_0_0_#000000] hover:bg-pink-400 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all";
 
-export function renderLogin() {
+
+function getCenteredContainer() {
     const main = document.getElementById("main")!;
     main.innerHTML = "";
+
+    // This container fills the screen and centers the form
+    const wrapper = document.createElement("div");
+    wrapper.className = "min-h-screen w-full flex items-center justify-center p-6";
+    main.appendChild(wrapper);
+    return wrapper;
+}
+
+export function renderLogin() {
+    const wrapper = getCenteredContainer();
 
     history.pushState({ view:"login"}, "", "login");
     const form = document.createElement("form");
@@ -82,12 +93,11 @@ export function renderLogin() {
 			msg.textContent = `!! ${response.error || "Login failed"}`;
 		}
 	});
-	main.appendChild(form);
+	wrapper.appendChild(form);
 }
 
 export function renderRegister() {
-    const main = document.getElementById("main")!;
-    main.innerHTML = "";
+   const wrapper = getCenteredContainer();
     history.pushState({ view:"signup"}, "", "signup");
 
     const form = document.createElement("form");
@@ -174,12 +184,11 @@ export function renderRegister() {
         }
     });
 
-    main.appendChild(form);
+    wrapper.appendChild(form);
 }
 
 export async function render2FASetup(userId: number, username: string) {
-    const main = document.getElementById("main")!;
-    main.innerHTML = "";
+	const wrapper = getCenteredContainer();
 
     const { qrCodeDataURL, secret } = await enable2FA(userId, username);
 
@@ -240,13 +249,11 @@ export async function render2FASetup(userId: number, username: string) {
         }
     });
 
-    main.appendChild(form);
+    wrapper.appendChild(form);
 }
 
 export function render2FA(userId: number) {
-    const main = document.getElementById("main")!;
-    main.innerHTML = "";
-
+    const wrapper = getCenteredContainer();
     const form = document.createElement("form");
     form.className = FORM_CONTAINER_CLASS;
 
@@ -291,7 +298,7 @@ export function render2FA(userId: number) {
         }
     });
 
-    main.appendChild(form);
+    wrapper.appendChild(form);
 }
 
 export async function logout() {

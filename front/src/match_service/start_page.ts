@@ -44,7 +44,7 @@ export function renderStartView() {
 			border-4 border-black
 			shadow-[8px_8px_0_0_#000000]
 			flex items-center justify-center
-			w-3/5 h-1/3
+			w-3/5 h-48
 			text-7xl tracking-tighter
 			hover:bg-pink-400 hover:translate-x-[-2px] hover:translate-y-[-2px]
 			active:shadow-none active:translate-x-[4px] active:translate-y-[4px]
@@ -76,44 +76,44 @@ export function renderChooseMode() {
 	header.textContent = ">> SELECT MODE";
 	header.className = "text-4xl font-black mb-8 border-b-4 border-black";
 	blackBox.appendChild(header);
-			const msg = document.createElement("div");
-			msg.className = "text-red-600 font-bold mb-4 uppercase text-sm";
-			blackBox.appendChild(msg);
+	const msg = document.createElement("div");
+	msg.className = "text-red-600 font-bold mb-4 uppercase text-sm";
+	blackBox.appendChild(msg);
 
-			const remoteButton = document.createElement("button");
-			remoteButton.textContent = "REMOTE";
-			remoteButton.className = `
+	const remoteButton = document.createElement("button");
+	remoteButton.textContent = "REMOTE";
+	remoteButton.className = `
 				bg-purple-600 text-white font-black
 				border-4 border-black m-4
-				w-1/2 h-1/5 text-4xl
+				w-1/2 h-24 text-4xl
 				shadow-[6px_6px_0_0_#000000]
 				hover:bg-purple-500
 				active:shadow-none active:translate-x-[3px] active:translate-y-[3px]
 				transition-all cursor-pointer
 			`;
-			remoteButton.addEventListener("click", async () => {
-				if (localStorage.getItem("temp") === "temp") {
-					msg.textContent = "!! AUTH REQUIRED FOR REMOTE !!";
-				}
-				else if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
-					renderNewRemoteTournament();
-					history.pushState({ view: "remote" }, "", "remote");
-				}
-				else msg.textContent = "!! LOGIN REQUIRED !!"
-			});
+	remoteButton.addEventListener("click", async () => {
+		if (localStorage.getItem("temp") === "temp") {
+			msg.textContent = "!! AUTH REQUIRED FOR REMOTE !!";
+		}
+		else if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
+			renderNewRemoteTournament();
+			history.pushState({ view: "remote" }, "", "remote");
+		}
+		else msg.textContent = "!! LOGIN REQUIRED !!"
+	});
 
-			const consoleButton = document.createElement("button");
-			consoleButton.textContent = "CONSOLE";
-			consoleButton.className = `
+	const consoleButton = document.createElement("button");
+	consoleButton.textContent = "CONSOLE";
+	consoleButton.className = `
 				bg-pink-500 text-black font-black
 				border-4 border-black m-4
-				w-1/2 h-1/5 text-4xl
+				w-1/2 h-24 text-4xl
 				shadow-[6px_6px_0_0_#000000]
 				hover:bg-pink-400
 				active:shadow-none active:translate-x-[3px] active:translate-y-[3px]
 				transition-all cursor-pointer
 			`;
-				consoleButton.addEventListener("click", () => {
+	consoleButton.addEventListener("click", () => {
 		renderNewConsoleTournament();
 		history.pushState({ view: "console" }, "", "console");
 	});
