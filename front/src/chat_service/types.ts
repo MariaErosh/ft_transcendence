@@ -25,10 +25,15 @@ export interface ChatMessage {
     match_id?: number;
     match_name?: string;
     sender_username?: string;
+    sender_id?: number;
+    recipient_id?: number;
+    recipient_username?: string;
     tournament_id?: number;
     tournament_name?: string;
     invitation_type?: string;
     join_url?: string;
+    expires_at?: number;
+    created_at?: number;
   };
   join_url?: string;
 }

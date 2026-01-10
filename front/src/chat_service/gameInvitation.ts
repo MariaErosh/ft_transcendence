@@ -3,6 +3,9 @@
 import { getWebSocket } from './websocket.js';
 import { joinMatchDirectly } from '../match_service/render_remote.js';
 
+// Configuration
+const INVITATION_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Show game invitation confirmation modal and create match
  */
@@ -153,6 +156,8 @@ async function createAndSendInvitation(
             sender_id: senderId,
             recipient_id: recipientId,
             recipient_username: recipientUsername,
+            expires_at: Date.now() + INVITATION_EXPIRATION_MS,
+            created_at: Date.now(),
         }
     };
 
@@ -164,9 +169,21 @@ async function createAndSendInvitation(
 }
 
 /**
+ * Check if invitation is expired (for UI rendering)
+ */
+export function isInvitationExpired(expiresAt: number): boolean {
+    return Date.now() > expiresAt;
+}
+
+/**
  * Handle clicking on an invitation (recipient side)
  */
-export async function handleInvitationClick(matchName: string, senderUsername: string) {
+export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number) {
+    // Safety check (button should already be hidden if expired)
+    if (expiresAt && isInvitationExpired(expiresAt)) {
+        return;
+    }
+
     // Show confirmation modal
     const confirmed = confirm(`Join game with ${senderUsername}?`);
     if (confirmed) {

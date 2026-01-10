@@ -4,7 +4,7 @@ import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
-import { handleInvitationClick } from './gameInvitation.js';
+import { handleInvitationClick, isInvitationExpired } from './gameInvitation.js';
 
 /**
  * Load message history from server
@@ -97,15 +97,18 @@ export function displayMessage(message: ChatMessage) {
     const invitationData = message.invitation_data || {};
     const matchName = invitationData.match_name || invitationData.tournament_name || "Game";
     const senderUsername = invitationData.sender_username || message.sender_username || "Someone";
+    const expiresAt = invitationData.expires_at;
+    const isExpired = expiresAt ? isInvitationExpired(expiresAt) : false;
 
     console.log('[displayMessage] Rendering game invitation:', {
       messageId: message.id,
       matchName,
       senderUsername,
-      invitationData
+      invitationData,
+      isExpired
     });
 
-    messageEl.className = "bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-lg shadow-lg border-2 border-pink-500";
+    messageEl.className = `${isExpired ? 'opacity-50' : ''} bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-lg shadow-lg border-2 border-pink-500`;
     messageEl.innerHTML = `
       <div class="flex items-start gap-3">
         <div class="text-3xl">🎮</div>
@@ -116,24 +119,29 @@ export function displayMessage(message: ChatMessage) {
           <div class="text-white text-sm mb-2">
             ${escapeHtml(message.content || "Challenge invitation!")}
           </div>
-          <button
-            id="join-btn-${message.id || Date.now()}"
-            class="
-              bg-pink-500 hover:bg-pink-400
-              text-black font-bold
-              px-4 py-2 text-xs
-              rounded
-              border-2 border-black
-              shadow-[2px_2px_0_0_#000000]
-              hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]
-              transition-all
-              cursor-pointer
-            "
-            data-match-name="${escapeHtml(matchName)}"
-            data-sender="${escapeHtml(senderUsername)}"
-          >
-            JOIN GAME →
-          </button>
+          ${isExpired ? `
+            <span class="text-gray-500 text-xs italic">Expired</span>
+          ` : `
+            <button
+              id="join-btn-${message.id || Date.now()}"
+              class="
+                bg-pink-500 hover:bg-pink-400
+                text-black font-bold
+                px-4 py-2 text-xs
+                rounded
+                border-2 border-black
+                shadow-[2px_2px_0_0_#000000]
+                hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]
+                transition-all
+                cursor-pointer
+              "
+              data-match-name="${escapeHtml(matchName)}"
+              data-sender="${escapeHtml(senderUsername)}"
+              data-expires="${expiresAt || ''}"
+            >
+              JOIN GAME →
+            </button>
+          `}
           <div class="text-xs text-gray-400 mt-2">${time}</div>
         </div>
       </div>
@@ -141,27 +149,30 @@ export function displayMessage(message: ChatMessage) {
 
     messagesContainer.appendChild(messageEl);
 
-    // Add event listener for the button after appending to DOM
-    const btnId = `join-btn-${message.id || Date.now()}`;
-    const acceptBtn = document.getElementById(btnId) as HTMLButtonElement;
+    // Add event listener for the button after appending to DOM (only if not expired)
+    if (!isExpired) {
+      const btnId = `join-btn-${message.id || Date.now()}`;
+      const acceptBtn = document.getElementById(btnId) as HTMLButtonElement;
 
-    if (acceptBtn) {
-      console.log('Button found, adding click listener');
-      acceptBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const matchName = acceptBtn.getAttribute('data-match-name') || '';
-        const senderUsername = acceptBtn.getAttribute('data-sender') || '';
-        console.log('Join button clicked:', { matchName, senderUsername });
+      if (acceptBtn) {
+        console.log('Button found, adding click listener');
+        acceptBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const matchName = acceptBtn.getAttribute('data-match-name') || '';
+          const senderUsername = acceptBtn.getAttribute('data-sender') || '';
+          const expiresAt = acceptBtn.getAttribute('data-expires');
+          console.log('Join button clicked:', { matchName, senderUsername, expiresAt });
 
-        if (matchName) {
-          handleInvitationClick(matchName, senderUsername);
-        } else {
-          console.error('Invalid match name:', matchName);
-        }
-      });
-    } else {
-      console.error('Button not found:', btnId);
+          if (matchName) {
+            handleInvitationClick(matchName, senderUsername, expiresAt ? Number(expiresAt) : undefined);
+          } else {
+            console.error('Invalid match name:', matchName);
+          }
+        });
+      } else {
+        console.error('Button not found:', btnId);
+      }
     }
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
