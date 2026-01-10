@@ -1,6 +1,6 @@
 import { login, verify2FA, register, logoutRequest, enable2FA, set2FAenabled  } from "./api.js";
 import { renderUserMenu } from "./ui.js";
-import { renderCreateTournamentForm } from "./match_service/start_page.js"
+import { renderStartView } from "./match_service/start_page.js"
 import { disconnectGameWS } from "./match_service/gameSocket.js";
 import { disconnectWS } from "./match_service/lobbySocket.js";
 import { reconnectChat } from "./chat_service/chat.js";
@@ -66,15 +66,15 @@ export function renderLogin() {
 			if (response.status === "onboarding_2fa") {
 				render2FASetup(response.userId, username.value);
                 //reconnectChat(); //TODO stephanie
-			} 
+			}
 			else {
 				localStorage.setItem("username", username.value);
                 localStorage.setItem("refreshToken", response.refreshToken);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
-				renderCreateTournamentForm();
+				renderStartView();
 			}
-		} 
+		}
 		else if (response.twoFactorRequired) {
 			render2FA(response.userId);
 		}
@@ -220,7 +220,7 @@ export async function render2FASetup(userId: number, username: string) {
         const verified = await verify2FA(userId, tokenInput.value);
         if (verified.success) {
 			await set2FAenabled(userId, username);
-            
+
             // Store the tokens from the verify response
             if (verified.data.accessToken) {
                 localStorage.setItem("accessToken", verified.data.accessToken);
@@ -229,7 +229,7 @@ export async function render2FASetup(userId: number, username: string) {
                 localStorage.removeItem("tempToken"); // Clean up temp token
                 localStorage.setItem("username", username);
             }
-            
+
             msg.className = "text-green-600 text-xs font-bold uppercase";
             msg.textContent = "2FA ACTIVE. Redirecting...";
             setTimeout(() => {
@@ -284,7 +284,7 @@ export function render2FA(userId: number) {
 
 			history.pushState({ view: "main"}, "", "/");
 			renderUserMenu();
-			renderCreateTournamentForm();
+			renderStartView();
 			reconnectChat();
         } else {
             msg.textContent = `!! ${response.data.error || "Invalid code"}`;
@@ -309,5 +309,5 @@ export async function logout() {
     disconnectWS();
 
     renderUserMenu();
-    renderCreateTournamentForm();
+    renderStartView();
 }

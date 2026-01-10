@@ -1,5 +1,6 @@
 import { createConsoleMatch, login, register, sendGameToGameEngine, userLoggedIn } from "../api.js";
 import { renderArena } from "../arena.js";
+import { renderBlackBox, renderMatchMenu } from "../elements.js";
 import { renderGameBoard } from "../game_front/gameMenu.js";
 import { connectGameWS, disconnectGameWS, gameSocket } from "./gameSocket.js";
 import { connectWS, disconnectWS, lobbySocket } from "./lobbySocket.js";
@@ -39,7 +40,17 @@ export async function renderNewConsoleTournament() {
 		await createTempUser();
 	await connectWS();
 	const matchName = generateMatchName();
-	const blackBox = document.getElementById("black-box")!;
+	let blackBox = document.getElementById("black-box");
+	if (!blackBox) {
+		blackBox = renderBlackBox();
+		let wrapper = document.getElementById("match-menu") as HTMLElement | null;
+		if (!wrapper) {
+			wrapper = renderMatchMenu();
+		}
+		wrapper!.appendChild(blackBox);
+	} else {
+		blackBox.innerHTML = "";
+	}
 	blackBox.innerHTML = "";
 	blackBox.className = "bg-gray-200 w-2/3 h-2/3 border-8 border-black shadow-[16px_16px_0_0_#000000] flex flex-col items-center justify-center z-40 font-mono p-8";
 

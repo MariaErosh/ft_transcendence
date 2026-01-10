@@ -1,9 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const GATEWAY_URL = process.env.GATEWAY_URL;
 const USER_URL = process.env.USER_URL;
