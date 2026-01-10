@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import * as friendRepo from '../repositories/friendRepository';
-import { GATEWAY_SECRET, USER_URL, GATEWAY_URL } from "../index.js";
+import { GATEWAY_SECRET, USER_URL } from "../index.js";
 
 export function registerFriendRoutes(app: FastifyInstance) {
     // Get user's friends
@@ -22,7 +22,7 @@ export function registerFriendRoutes(app: FastifyInstance) {
             const friends = await Promise.all(
                 friendIds.map(async (friendId) => {
                     try {
-                        const response = await fetch(`${GATEWAY_URL}/users/${friendId}`, {
+                        const response = await fetch(`${USER_URL}/users/${friendId}`, {
                             headers: {
                                 'x-gateway-secret': GATEWAY_SECRET
                             }
