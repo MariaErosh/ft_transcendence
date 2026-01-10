@@ -14,7 +14,7 @@ const gameConnections = new Map<
 	}
 >();
 
-const GAME_URL = requiredEnv("GAME_SERVICE") + requiredEnv("GAME_PORT");
+const GAME_URL = requiredEnv("GAME_SERVICE") + ":" + requiredEnv("GAME_PORT");
 
 export async function registerGameWebSocket(server: FastifyInstance) {
 	server.get("/game/ws", { websocket: true }, async (connection, req) => {
