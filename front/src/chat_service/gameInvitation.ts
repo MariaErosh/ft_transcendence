@@ -167,7 +167,13 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
     // Show confirmation modal
     const confirmed = confirm(`Join game with ${senderUsername}?`);
     if (confirmed) {
-        joinMatchDirectly(matchName);
+        // Join the match lobby
+        try {
+            await joinMatchDirectly(matchName);
+        } catch (error) {
+            console.error('Failed to join match:', error);
+            showError('Failed to join match. Please try again.');
+        }
     }
 }
 
