@@ -233,7 +233,7 @@ export async function joinRoom(matchName: string) {
 		}
 		if (msg.type === "start_match" && msg.matchName === matchName) {
 			console.log("Match starting, waiting for game_ready message...", msg);
-			// Don't render arena yet - wait for game_ready to avoid websocket disconnection
+			renderArena({ type: "waiting", match: matchName });
 		}
 		if (msg.type === "game_ready"){
 			console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
