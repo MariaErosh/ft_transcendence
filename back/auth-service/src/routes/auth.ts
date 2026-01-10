@@ -3,7 +3,7 @@ import { AuthService } from "../services/authService";
 import { AuthUser } from "../services/authService";
 import { requiredEnv } from "../index.js";
 
-const USER_URL = requiredEnv("USER_SERVICE") + requiredEnv("USER_PORT");
+const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
 const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 export async function authRoutes(fastify: FastifyInstance) {
