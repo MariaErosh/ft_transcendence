@@ -96,7 +96,7 @@ export function displayMessage(message: ChatMessage) {
     console.log('[displayMessage] Processing game_invitation:', message);
     const invitationData = message.invitation_data || {};
     const matchName = invitationData.match_name || invitationData.tournament_name || "Game";
-    const senderUsername = invitationData.sender_username || message.sender_username || "Someone";
+    const senderUsername = message.sender_username || "Someone";
     const expiresAt = invitationData.expires_at;
     const isExpired = expiresAt ? isInvitationExpired(expiresAt) : false;
 

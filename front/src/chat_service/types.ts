@@ -22,18 +22,19 @@ export interface ChatMessage {
   invitation_id?: number; // ID from game_invitations table
   invitation_type?: 'tournament' | 'direct_match'; // Maybe we need this
   invitation_data?: {
+    // Game details (provided by client)
     match_id?: number;
     match_name?: string;
-    sender_username?: string;
-    sender_id?: number;
-    recipient_id?: number;
-    recipient_username?: string;
     tournament_id?: number;
     tournament_name?: string;
     invitation_type?: string;
     join_url?: string;
     expires_at?: number;
-    created_at?: number;
+    game_mode?: string;
+    custom_data?: any;
+    // added by backend from authenticated user
+    sender_username?: string;
+    sender_id?: number;
   };
   join_url?: string;
 }

@@ -144,12 +144,7 @@ async function createAndSendInvitation(
         invitationData: {
             invitation_type: 'direct_match',
             match_name: matchName,
-            sender_username: senderUsername,
-            sender_id: senderId,
-            recipient_id: recipientId,
-            recipient_username: recipientUsername,
             expires_at: Date.now() + INVITATION_EXPIRATION_MS,
-            created_at: Date.now(),
         }
     };
 
@@ -160,18 +155,11 @@ async function createAndSendInvitation(
     await joinMatchDirectly(matchName);
 }
 
-/**
- * Check if invitation is expired (for UI rendering)
- */
 export function isInvitationExpired(expiresAt: number): boolean {
     return Date.now() > expiresAt;
 }
 
-/**
- * Handle clicking on an invitation (recipient side)
- */
 export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number) {
-    // Safety check (button should already be hidden if expired)
     if (expiresAt && isInvitationExpired(expiresAt)) {
         return;
     }
@@ -179,7 +167,6 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
     // Show confirmation modal
     const confirmed = confirm(`Join game with ${senderUsername}?`);
     if (confirmed) {
-        // Join the match lobby
         joinMatchDirectly(matchName);
     }
 }
@@ -204,11 +191,8 @@ function getCurrentUserId(): number | null {
  * Get current username from localStorage or token
  */
 function getCurrentUsername(): string | null {
-    // Try localStorage first
     const username = localStorage.getItem('username');
     if (username) return username;
-
-    // Try token
     const token = localStorage.getItem('accessToken');
     if (!token) return null;
 
