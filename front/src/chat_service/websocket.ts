@@ -4,10 +4,19 @@ import { ChatData } from './chatData.js';
 import { displayMessage, loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
-const GATEWAY_WS_URL = "ws://localhost:3000/chat/ws";
+// Use window location to construct WebSocket URL dynamically
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const GATEWAY_WS_URL = `${protocol}//${window.location.host}/api/chat/ws`;
 
 let chatSocket: WebSocket | null = null;
 let shouldReconnect = false;
+
+/**
+ * Get the current WebSocket instance
+ */
+export function getWebSocket(): WebSocket | null {
+	return chatSocket;
+}
 
 /**
  * Connect to the chat WebSocket
@@ -79,9 +88,35 @@ function handleMessage(event: MessageEvent) {
 	try {
 		const message: ChatMessage = JSON.parse(event.data);
 
-		// Handle different message types
-		if (message.type === 'game_invitation' || message.type === 'invitation_response') {
-			console.log('Game invitation received:', message);
+		// Handle game invitation messages
+		if (message.type === 'game_invitation') {
+			console.log('[WebSocket] Game invitation received:', message);
+			console.trace('[WebSocket] Invitation received from:');
+
+			const currentRecipient = ChatData.getCurrentRecipient();
+			const currentUserId = getCurrentUserId();
+
+			// Check if this invitation belongs to the current open conversation
+			const isForCurrentConversation = currentRecipient &&
+				(
+					// Message from the person we're chatting with
+					message.sender_id === currentRecipient.userId ||
+					// Message sent by us to the person we're chatting with
+					(message.sender_id === currentUserId && message.conversation_id)
+				);
+
+			// Always store the invitation in history if it's for current conversation
+			if (isForCurrentConversation) {
+				console.log('[WebSocket] Adding invitation to history, chat open:', ChatData.isChatOpen());
+				ChatData.addMessage(message);
+				// Display if chat is open
+				if (ChatData.isChatOpen()) {
+					console.log('[WebSocket] Displaying invitation immediately');
+					displayMessage(message);
+				}
+			} else {
+				console.log('[WebSocket] Invitation NOT for current conversation');
+			}
 			return;
 		}
 
@@ -190,7 +225,6 @@ function handleReadReceipt(message: ChatMessage) {
 	console.log(`Updated ${updatedCount} messages to read status`);
 	ChatData.setMessageHistory(updatedMessages);
 
-	// If we're currently viewing this conversation, update the UI
 	if (currentRecipient) {
 		// Check if any message in the current view matches this conversation
 		const isCurrentConversation = messages.some(msg =>
@@ -407,7 +441,7 @@ function stopTyping(recipientId: number) {
 		ChatData.setTyping(false);
 		console.log('Stopped typing indicator sent');
 	} catch (err) {
-		console.error("Failed to send stop typing indicator:", err);
+		console.error('Failed to send stop typing indicator:', err);
 	}
 }
 

@@ -44,6 +44,8 @@ services:
     container_name: game-engine
     ports:
       - "3003:3003"
+    env_file:
+      - ../back/game-engine/.env
     networks:
       - internal
 
@@ -56,6 +58,8 @@ services:
     container_name: match
     expose:
       - 3004
+    env_file:
+      - ../back/match-service/.env
     networks:
       - internal
 
@@ -64,8 +68,6 @@ services:
       context: ../back/chat-service
       dockerfile: Dockerfile
     container_name: chat
-    ports:
-      - "3005:3005"
     volumes:
       - ../back/chat-service/data/:/app/data
     env_file:
@@ -242,8 +244,8 @@ services:
     depends_on:
       - gateway
     ports:
-      - "443:443"
-      - "80:80"
+      - "8443:8443"
+      - "8080:8080"
     volumes:
       - ./ssl:/etc/nginx/ssl
     env_file:

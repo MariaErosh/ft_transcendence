@@ -4,6 +4,7 @@ import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
+import { handleInvitationClick, isInvitationExpired } from './gameInvitation.js';
 
 /**
  * Load message history from server
@@ -14,39 +15,60 @@ export async function loadMessageHistory() {
 
     // Don't load history if no recipient is selected
     if (!currentRecipient || !currentRecipient.userId) {
-      console.log('No recipient selected, skipping history load');
+      //console.log('No recipient selected, skipping history load');
       return null;
     }
 
     const url = `/chat/messages?recipientId=${currentRecipient.userId}`;
-    console.log('Loading message history from:', url);
+    //console.log('Loading message history from:', url);
 
     const data = await authorisedRequest(url);
-    console.log('History loaded:', data.messages?.length, 'messages for', currentRecipient.username);
-    console.log('Raw message data from backend:', data.messages);
 
     if (data.messages) {
-      // Store messages with type field and normalized format including read status
-      const messages = data.messages.map((msg: any) => ({
-        type: 'message' as const,
-        id: msg.id,
-        conversation_id: msg.conversation_id,
-        sender_id: msg.sender_id,
-        sender_username: msg.sender_username || msg.username,
-        content: msg.content,
-        created_at: msg.created_at,
-        is_read: msg.is_read,
-        read_at: msg.read_at,
-      }));
+      console.log('[loadMessageHistory] Raw messages from server:', data.messages);
+      console.trace('[loadMessageHistory] Called from:');
 
-      console.log('Messages loaded with read status:', messages.map((m: ChatMessage) => ({ id: m.id, is_read: m.is_read })));
+      // Store messages with type field and normalized format including read status
+      const messages = data.messages.map((msg: any) => {
+        const mappedMsg = {
+          type: msg.type || 'message',
+          id: msg.id,
+          conversation_id: msg.conversation_id,
+          sender_id: msg.sender_id,
+          sender_username: msg.sender_username || msg.username,
+          content: msg.content,
+          created_at: msg.created_at,
+          is_read: msg.is_read,
+          read_at: msg.read_at,
+          // Include invitation_data if present
+          invitation_data: msg.invitation_data,
+        };
+
+        if (msg.type === 'game_invitation') {
+          console.log('[loadMessageHistory] Game invitation found:', {
+            id: msg.id,
+            original_type: msg.type,
+            mapped_type: mappedMsg.type,
+            has_invitation_data: !!msg.invitation_data,
+            invitation_data: msg.invitation_data
+          });
+        }
+
+        return mappedMsg;
+      });
+
       ChatData.setMessageHistory(messages);
 
       // If chat is open, display them immediately
       const isChatOpen = ChatData.isChatOpen();
+      console.log('[loadMessageHistory] Chat open:', isChatOpen, 'Message count:', messages.length);
       if (isChatOpen) {
+        console.log('[loadMessageHistory] Clearing and redisplaying messages');
         clearMessages();
-        messages.forEach((msg: ChatMessage) => displayMessage(msg));
+        messages.forEach((msg: ChatMessage) => {
+          console.log('[loadMessageHistory] Displaying message:', msg.id, msg.type);
+          displayMessage(msg);
+        });
       }
 
       // Return conversationId if messages exist
@@ -69,7 +91,93 @@ export function displayMessage(message: ChatMessage) {
   const messageEl = document.createElement("div");
   const time = formatTime(message.created_at || message.timestamp);
 
-  if (message.type === "system") {
+  // Handle game invitation messages
+  if (message.type === "game_invitation") {
+    console.log('[displayMessage] Processing game_invitation:', message);
+    const invitationData = message.invitation_data || {};
+    const matchName = invitationData.match_name || invitationData.tournament_name || "Game";
+    const senderUsername = invitationData.sender_username || message.sender_username || "Someone";
+    const expiresAt = invitationData.expires_at;
+    const isExpired = expiresAt ? isInvitationExpired(expiresAt) : false;
+
+    console.log('[displayMessage] Rendering game invitation:', {
+      messageId: message.id,
+      matchName,
+      senderUsername,
+      invitationData,
+      isExpired
+    });
+
+    messageEl.className = `${isExpired ? 'opacity-50' : ''} bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-lg shadow-lg border-2 border-pink-500`;
+    messageEl.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="text-3xl">🎮</div>
+        <div class="flex-1">
+          <div class="font-bold text-pink-300 text-sm mb-1">
+            Game Invitation from @${escapeHtml(senderUsername)}
+          </div>
+          <div class="text-white text-sm mb-2">
+            ${escapeHtml(message.content || "Challenge invitation!")}
+          </div>
+          ${isExpired ? `
+            <span class="text-gray-500 text-xs italic">Expired</span>
+          ` : `
+            <button
+              id="join-btn-${message.id || Date.now()}"
+              class="
+                bg-pink-500 hover:bg-pink-400
+                text-black font-bold
+                px-4 py-2 text-xs
+                rounded
+                border-2 border-black
+                shadow-[2px_2px_0_0_#000000]
+                hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]
+                transition-all
+                cursor-pointer
+              "
+              data-match-name="${escapeHtml(matchName)}"
+              data-sender="${escapeHtml(senderUsername)}"
+              data-expires="${expiresAt || ''}"
+            >
+              JOIN GAME →
+            </button>
+          `}
+          <div class="text-xs text-gray-400 mt-2">${time}</div>
+        </div>
+      </div>
+    `;
+
+    messagesContainer.appendChild(messageEl);
+
+    // Add event listener for the button after appending to DOM (only if not expired)
+    if (!isExpired) {
+      const btnId = `join-btn-${message.id || Date.now()}`;
+      const acceptBtn = document.getElementById(btnId) as HTMLButtonElement;
+
+      if (acceptBtn) {
+        console.log('Button found, adding click listener');
+        acceptBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const matchName = acceptBtn.getAttribute('data-match-name') || '';
+          const senderUsername = acceptBtn.getAttribute('data-sender') || '';
+          const expiresAt = acceptBtn.getAttribute('data-expires');
+          console.log('Join button clicked:', { matchName, senderUsername, expiresAt });
+
+          if (matchName) {
+            handleInvitationClick(matchName, senderUsername, expiresAt ? Number(expiresAt) : undefined);
+          } else {
+            console.error('Invalid match name:', matchName);
+          }
+        });
+      } else {
+        console.error('Button not found:', btnId);
+      }
+    }
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return; // Early return to avoid the default message append at the end
+  } else if (message.type === "system") {
     messageEl.className = "text-center text-gray-500 text-xs italic";
     messageEl.textContent = message.content || "";
   } else if (message.type === "error") {
@@ -85,12 +193,12 @@ export function displayMessage(message: ChatMessage) {
 
     // Debug logging
     if (isSentMessage) {
-      console.log('Rendering sent message:', { 
-        id: message.id, 
-        is_read: message.is_read, 
+      console.log('Rendering sent message:', {
+        id: message.id,
+        is_read: message.is_read,
         delivered: message.delivered,
         sender_id: message.sender_id,
-        currentUserId 
+        currentUserId
       });
     }
 
@@ -141,6 +249,8 @@ export function displayStoredMessages() {
  * Clear all messages from UI
  */
 export function clearMessages() {
+  console.log('[clearMessages] Clearing all messages');
+  console.trace('[clearMessages] Called from:');
   const messagesContainer = document.getElementById("chat-messages");
   if (!messagesContainer) return;
   messagesContainer.innerHTML = "";

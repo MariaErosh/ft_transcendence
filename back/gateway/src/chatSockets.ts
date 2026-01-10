@@ -49,7 +49,7 @@ export async function registerChatWebSocket(server: FastifyInstance) {
 
 		console.log(`Chat WebSocket: User ${player.username} connecting to ${chatWsUrl}`);
 
-		// Forward messages: Frontend → Gateway → Chat Service (birectionally)
+		// Forward messages: Frontend → Gateway → Chat Service (bidirectionally)
 		socket.on("message", (msg: any) => {
 			if (chatSocket.readyState === WebSocket.OPEN) {
 				chatSocket.send(msg);

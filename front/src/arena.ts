@@ -3,14 +3,25 @@ import { gameSocket } from "./match_service/gameSocket.js";
 import { renderCreateTournamentForm } from "./match_service/start_page.js";
 import { renderUserMenu } from "./ui.js";
 
+let arenaRenderLocked = false;
+let pendingArenastate: ArenaState | null = null;
+
 export 	type ArenaState =
 		| { type: "winner"; name: string }
 		| { type: "waiting"; match: string }
 		| { type: "end"; matchName: string, winner: string }
 		| { type: "start"; matchName: string }
 		| { type: "winner_console"; name: string; }
+		| { type: "player left"; loser: string; winner: string; }
 
 export function renderArena(state: ArenaState) {
+
+	// to store the state to be displayed after "player left" has been shown
+	if (arenaRenderLocked && state.type != "player left") {
+	pendingArenastate = state;
+	return;
+	}
+
 	const main = document.getElementById("main") as HTMLElement;
 	main.innerHTML = "";
 	history.pushState({ view:"arena", arenaState: state}, "", "arena");
@@ -38,7 +49,6 @@ export function renderArena(state: ArenaState) {
 	const contentDiv = document.createElement("div") as HTMLElement;
 	contentDiv.className = "flex flex-col items-center gap-6 text-black text-center w-full";
 	arenaBoard.appendChild(contentDiv);
-
 
 	switch (state.type) {
 
@@ -68,6 +78,28 @@ export function renderArena(state: ArenaState) {
                     <div class="animate-pulse text-purple-700 font-black">SYSTEM WAITING...</div>
                 </div>
             `;
+		break;
+
+		case "player left":
+			arenaRenderLocked = true;
+			contentDiv.innerHTML = `
+                <div class="flex flex-col gap-6">
+                    <h1 class="text-6xl font-black uppercase tracking-tighter bg-purple-600 text-white p-4 border-4 border-black shadow-[8px_8px_0_0_#000000]">
+                        PLAYER ${state.loser} LEFT THE GAME. </h1>
+                    <p class="text-xl font-bold uppercase max-w-md">
+                        > VICTORY FOR: ${state.winner}!
+                    </p>
+                    <div class="animate-pulse text-purple-700 font-black">SYSTEM WAITING...</div>
+                </div>
+            `;
+			setTimeout(() => {
+				arenaRenderLocked = false;
+				if (pendingArenastate) {
+					const next = pendingArenastate;
+					pendingArenastate = null;
+					renderArena(next);
+				}
+			}, 3000);
 		break;
 
 		case "winner_console":
@@ -125,10 +157,11 @@ export function renderArena(state: ArenaState) {
                         TOURNAMENT: ${state.match}
                     </div>
                     <p class="text-xl font-medium italic">
-                        "OPPONENT IS INITIALIZING HARDWARE..."
+                        "WAITING FOR OPPONENT'S GAME TO END..."
                     </p>
                 </div>
             `;
+			gameSocket?.send(JSON.stringify({ type: "current match", matchName: state.match }));
 		break;
 		}
 
@@ -136,7 +169,7 @@ export function renderArena(state: ArenaState) {
 			const btn = document.getElementById("ready-btn") as HTMLButtonElement;
 			const DISABLED_BTN_CLASS = "bg-gray-400 text-gray-700 font-bold uppercase px-6 py-3 border-2 border-black cursor-not-allowed opacity-70 shadow-none text-xl";
 			if (btn) {
-				btn.addEventListener("click", () => {
+				btn.addEventListener("click", async () => {
 					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
 
 					btn.disabled = true;

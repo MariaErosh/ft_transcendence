@@ -62,18 +62,27 @@ export function renderLogin() {
        //     localStorage.setItem("refreshToken", response.refreshToken);
 	   console.log("Response to login call: ", response);
 	   if (response.accessToken) {
-		localStorage.setItem("username", username.value);// I added this two lines because the login wasn't storing username, but not sure if we wanted to be different. Att: Steph
-		localStorage.setItem("refreshToken", response.refreshToken);
             localStorage.removeItem("temp");
-            history.pushState({ view: "main"}, "", "/");
-            renderUserMenu();
-            renderCreateTournamentForm();
-			reconnectChat();
-        } else {
-            msg.textContent = `!! ${response.error || "Login failed"}`;
-        }
-    });
-    main.appendChild(form);
+			if (response.status === "onboarding_2fa") {
+				render2FASetup(response.userId, username.value);
+                //reconnectChat(); //TODO stephanie
+			} 
+			else {
+				localStorage.setItem("username", username.value);
+                localStorage.setItem("refreshToken", response.refreshToken);
+				history.pushState({ view: "main"}, "", "/");
+				renderUserMenu();
+				renderCreateTournamentForm();
+			}
+		} 
+		else if (response.twoFactorRequired) {
+			render2FA(response.userId);
+		}
+		else {
+			msg.textContent = `!! ${response.error || "Login failed"}`;
+		}
+	});
+	main.appendChild(form);
 }
 
 export function renderRegister() {
@@ -210,10 +219,22 @@ export async function render2FASetup(userId: number, username: string) {
     verifyBtn.addEventListener("click", async () => {
         const verified = await verify2FA(userId, tokenInput.value);
         if (verified.success) {
-			set2FAenabled(userId, username);
+			await set2FAenabled(userId, username);
+            
+            // Store the tokens from the verify response
+            if (verified.data.accessToken) {
+                localStorage.setItem("accessToken", verified.data.accessToken);
+                localStorage.setItem("refreshToken", verified.data.refreshToken);
+                localStorage.setItem("refreshExpiresAt", verified.data.refreshExpiresAt);
+                localStorage.removeItem("tempToken"); // Clean up temp token
+                localStorage.setItem("username", username);
+            }
+            
             msg.className = "text-green-600 text-xs font-bold uppercase";
-            msg.textContent = "2FA ACTIVE. Redirecting to login...";
-            setTimeout(() => renderLogin(), 2000);
+            msg.textContent = "2FA ACTIVE. Redirecting...";
+            setTimeout(() => {
+                window.location.href = "/"; // Redirect to home/main page
+            }, 1500);
         } else {
             msg.textContent = "!! INVALID CODE. TRY AGAIN !!";
         }

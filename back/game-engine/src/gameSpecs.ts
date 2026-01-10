@@ -28,6 +28,7 @@ export interface PlayerSocket {
 	alias: string;
 	gameId?: number;
 	ready: boolean;
+	current_match: string | null;
 }
 
 export interface GameObject {

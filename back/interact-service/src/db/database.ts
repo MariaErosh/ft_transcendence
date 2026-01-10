@@ -6,8 +6,6 @@ export const db = new sqlite3.Database(dbPath);
 
 // Promisify database methods for easier async/await usage
 const dbRun = promisify(db.run.bind(db));
-const dbGet = promisify(db.get.bind(db));
-const dbAll = promisify(db.all.bind(db));
 
 /**
  * Execute a query that doesn't return results (CREATE, INSERT, UPDATE, DELETE)

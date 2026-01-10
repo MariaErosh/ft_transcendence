@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import metricsPlugin from 'fastify-metrics';
 import { initDB } from './db/database';
 import { registerFriendRoutes } from './routes/friends';
 import { registerProfileRoutes } from './routes/profiles';
@@ -7,13 +8,27 @@ const PORT = parseInt(process.env.PORT || '3006');
 const HOST = process.env.HOST || '0.0.0.0';
 
 const server = Fastify({
-	logger: true
+	logger: {
+		level: 'info',
+		transport: {
+			targets: [
+				{ target: 'pino/file', options: { destination: 1 } },
+				{
+					target: 'pino-socket',
+					options: { address: 'logstash', port: 5000, mode: 'tcp', reconnect: true }
+				}
+			]
+		}
+	}
 });
 
 async function start() {
 	try {
 		// Initialize database
 		await initDB();
+
+		// Register plugins
+		await server.register(metricsPlugin, { endpoint: '/metrics' });
 
 		// Register routes
 		registerFriendRoutes(server);

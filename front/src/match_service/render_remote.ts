@@ -50,19 +50,25 @@ export async function renderNewRemoteTournament() {
 	async function refreshMatches() {
 		listBox.innerHTML = "<div class='text-purple-600 animate-pulse'>SCANNING FOR TOURNAMENTS...</div>";
         try {
-            const matches: string[] = await getOpenMatches();
+            const matches: {name: string; started: boolean }[] = await getOpenMatches();
             listBox.innerHTML = "";
 
             for (const match of matches) {
                 const btn = document.createElement("button");
-                btn.textContent = `> ${match.toUpperCase()}`;
+                btn.textContent = `> ${match.name.toUpperCase()}`;
                 btn.className = `
                     bg-gray-100 text-black font-bold text-xl p-3 border-2 border-black
                     text-left flex justify-between items-center
                     hover:bg-pink-100 hover:border-pink-500 transition-colors
                 `;
-                btn.innerHTML = `<span>> ${match.toUpperCase()}</span> <span class="text-xs bg-black text-white px-2 py-1">JOIN</span>`;
-                btn.addEventListener("click", () => joinRoom(match));
+                btn.innerHTML = `<span>> ${match.name.toUpperCase()}</span>
+				 <span class="text-xs ${match.started ? 'bg-gray-500' : 'bg-black'} text-white px-2 py-1">
+                     ${match.started ? 'IN PROGRESS' : 'JOIN'}</span>`;
+
+				if (!match.started)
+					btn.addEventListener("click", () => joinRoom(match.name));
+				else
+					btn.classList.add("cursor-not-allowed", "opacity-50");
                 listBox.appendChild(btn);
             }
             if (matches.length === 0) listBox.innerHTML = "<div class='text-gray-500 italic uppercase text-sm'>No open tournaments available.</div>";
@@ -106,11 +112,11 @@ export async function renderNewRemoteTournament() {
 
 			try {
 				// Fetch current matches
-				const currentMatches: string[] = await getOpenMatches();
+				const currentMatches:  {name: string; started: boolean }[] = await getOpenMatches();
 
 				// Check if the name already exists
 				const nameExists = currentMatches.some(
-					(m) => m.toLowerCase() === name.toLowerCase()
+					(m) => m.name.toLowerCase() === name.toLowerCase()
 				);
 				if (nameExists) {
 					alert("A match with this name already exists. Choose a different name.");
@@ -130,11 +136,11 @@ export async function renderNewRemoteTournament() {
 		});
 
 	});
+}
 
-
-async function joinRoom(matchName: string) {
-
-		blackBox.innerHTML = "";
+export async function joinRoom(matchName: string) {
+	const blackBox = document.getElementById("black-box")!;
+	blackBox.innerHTML = "";
 
 		const headerGroup = document.createElement('div');
         headerGroup.className = "w-3/5 mb-6";
@@ -173,40 +179,55 @@ async function joinRoom(matchName: string) {
 			}))
 		});
 
-		let players: string[] = await getMatchPlayers(matchName) || [];
-		console.log("Players from gateway: ", players);
-		refreshPlayers();
-		await connectGameWS();
+		let players: string[] = [];
 
-		lobbySocket?.addEventListener("message", async (ev) => {
-			const msg = JSON.parse(ev.data);
-			console.log ("Message: ", msg);
+	// Connect both lobby and game WebSockets
+	console.log("About to connect lobby WebSocket...");
+	await connectWS();
+	console.log("Lobby socket connected, now connecting game WebSocket...");
+	await connectGameWS();
+	console.log("Game socket connected, sending join request...");
 
-			if (msg.type === "player_joined" && msg.name === matchName) {
-				if (players.indexOf(msg.alias) === -1){
-					players.push(msg.alias);
-					refreshPlayers();
-				}
+	// Send join request
+	console.log("Sending join_match for:", matchName);
+	lobbySocket?.send(JSON.stringify({
+		type: "join_match",
+		match_type: "REMOTE",
+		name: matchName,
+	}));
+
+	lobbySocket?.addEventListener("message", async (ev) => {
+		const msg = JSON.parse(ev.data);
+		console.log ("Message: ", msg);
+
+		if (msg.type === "player_joined" && msg.name === matchName) {
+			console.log("Player joined:", msg.alias, "Current players:", players);
+			if (players.indexOf(msg.alias) === -1){
+				players.push(msg.alias);
+				console.log("Updated players:", players);
+				refreshPlayers();
 			}
-			if (msg.type === "start_match" && msg.matchName === matchName) {
-				renderArena({ type: "waiting", match: matchName });
-				console.log("Ready to start the match: ", msg);
-			}
-			if (msg.type === "game_ready"){
-				console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
-				// await connectGameWS();
-				gameSocket?.send(JSON.stringify({
-					type:"new_game",
-					gameId:msg.gameId
-				}))
-				//await renderGameBoard();
-				renderArena({ type: "start", matchName: matchName})
-			}
-			if (msg.type == "end_match"){
-				console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
-				renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
-			}
-		})
+		}
+		if (msg.type === "start_match" && msg.matchName === matchName) {
+			console.log("Match starting, waiting for game_ready message...", msg);
+			// Don't render arena yet - wait for game_ready to avoid websocket disconnection
+		}
+		if (msg.type === "game_ready"){
+			console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
+			// await connectGameWS();
+			gameSocket?.send(JSON.stringify({
+				type:"new_game",
+				gameId: msg.gameId,
+				matchName: msg.matchName
+			}))
+			//await renderGameBoard();
+			renderArena({ type: "start", matchName: matchName})
+		}
+		if (msg.type == "end_match"){
+			console.log(`End of the tournament ${msg.matchName}, winner: ${msg.winner}`);
+			renderArena({ type: "end", matchName: msg.matchName, winner: msg.winner });
+		}
+	})
 		function refreshPlayers() {
 			playersList.innerHTML = "";
 			for (const p of players) {
@@ -224,11 +245,15 @@ async function joinRoom(matchName: string) {
                 startButton.className = "bg-gray-400 text-gray-700 font-black w-1/3 h-16 text-2xl border-4 border-black cursor-not-allowed opacity-50";
             }
 		}
+}
 
-		lobbySocket?.send(JSON.stringify({
-			type: "join_match",
-			match_type: "REMOTE",
-			name: matchName,
-		}))
-	}
+/**
+ * Join a match directly (used when accepting game invitations)
+ */
+export async function joinMatchDirectly(matchName: string) {
+	// Navigate to the remote view with the matchName in the state
+	history.pushState({ view: "remote", autoJoin: matchName }, "", "remote");
+
+	// Directly call joinRoom (it will handle setting up the UI)
+	await joinRoom(matchName);
 }

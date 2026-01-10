@@ -2,7 +2,7 @@
 // Main orchestration module
 
 import { initializeChatUI } from './uiRenderer.js';
-import { connectChat, disconnectChat, reconnectChat } from './websocket.js';
+import { disconnectChat, reconnectChat } from './websocket.js';
 
 /**
  * Initialize and render the chat UI (starts as bubble)

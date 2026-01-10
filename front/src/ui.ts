@@ -1,4 +1,3 @@
-import { authorisedRequest } from "./api.js";
 import { logout, renderLogin, renderRegister } from "./forms.js";
 import { disconnectChat } from "./chat_service/chat.js";
 
@@ -100,5 +99,3 @@ export function renderUserMenu() {
 	container.appendChild(menu);
 	//menuWrapper.appendChild(menu);
 }
-
-

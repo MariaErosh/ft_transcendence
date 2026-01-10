@@ -21,21 +21,6 @@ const GENGINE_URL = process.env.GENGINE_URL!;
 const MATCH_SERVICE_URL = process.env.MATCH_SERVICE_URL!;
 const CHAT_URL = process.env.CHAT_URL!;
 
-// const onlineUsers = new Map<number, number>(); TODO in interact?
-
-// function markUserOnline(userId: number) {
-// 	onlineUsers.set(userId, Date.now());
-// }
-
-// function getOnlineUsers(): number[] {
-// 	const cutoff = Date.now() - 120_000; // 2 minutes timeout
-// 	for (const [id, lastSeen] of onlineUsers.entries()) {
-// 		if (lastSeen < cutoff) onlineUsers.delete(id);
-// 	}
-// 	return [...onlineUsers.keys()];
-// }
-
-
 async function buildServer() {
 	const server = Fastify({
 		logger: {

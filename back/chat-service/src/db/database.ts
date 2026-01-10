@@ -1,5 +1,4 @@
 import sqlite3 from "sqlite3";
-import path from "path";
 
 // Enable verbose debug output
 sqlite3.verbose();
@@ -52,7 +51,6 @@ export async function initDB(): Promise<void> {
 		await createConversationsTable();
 		await createConversationParticipantsTable();
 		await createMessagesTable();
-		await createGameInvitationsTable();
 		await createNotificationsTable();
 		await createBlocksTable();
 		await createIndexes();
@@ -95,25 +93,14 @@ function createMessagesTable(): Promise<void> {
 			conversation_id INTEGER NOT NULL,
 			sender_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
+			message_type TEXT DEFAULT 'text',
+			metadata TEXT,
 			created_at TEXT DEFAULT CURRENT_TIMESTAMP,
 			is_read INTEGER DEFAULT 0,
 			read_at TEXT
 		)
 	`;
 	return executeQuery(query, 'messages');
-}
-
-function createGameInvitationsTable(): Promise<void> {
-	const query = `
-		CREATE TABLE IF NOT EXISTS game_invitations (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			sender_id INTEGER NOT NULL,
-			receiver_id INTEGER NOT NULL,
-			status TEXT CHECK(status IN ('pending', 'accepted', 'declined')) DEFAULT 'pending',
-			created_at TEXT DEFAULT CURRENT_TIMESTAMP
-		)
-	`;
-	return executeQuery(query, 'game_invitations');
 }
 
 function createNotificationsTable(): Promise<void> {
@@ -156,9 +143,8 @@ async function createIndexes(): Promise<void> {
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)', name: 'idx_messages_conversation_id' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id)', name: 'idx_messages_sender_id' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)', name: 'idx_messages_created_at' },
+		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(message_type)', name: 'idx_messages_type' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_conversation_participants_user ON conversation_participants(user_id)', name: 'idx_conversation_participants_user' },
-		{ query: 'CREATE INDEX IF NOT EXISTS idx_game_invitations_sender ON game_invitations(sender_id)', name: 'idx_game_invitations_sender' },
-		{ query: 'CREATE INDEX IF NOT EXISTS idx_game_invitations_receiver ON game_invitations(receiver_id)', name: 'idx_game_invitations_receiver' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)', name: 'idx_notifications_user' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read)', name: 'idx_notifications_unread' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_blocks_blocker ON blocks(blocker_id)', name: 'idx_blocks_blocker' },

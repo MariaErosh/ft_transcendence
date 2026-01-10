@@ -32,3 +32,5 @@ scrape_configs:
         - 'game-engine:3003'
         - 'match:3004'
         - 'gateway:3000'
+        - 'chat:3005'
+        - 'interact:3006'
