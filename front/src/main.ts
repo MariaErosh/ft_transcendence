@@ -10,6 +10,7 @@ import { renderChat } from "./chat_service/chat.js";
 import { initializeProfileUI } from "./profile_front/profile.js";
 import { renderFooterLinks } from "./policies/render_footer_links.js";
 
+
 const app = document.getElementById("app")!;
 
 app.innerHTML = `

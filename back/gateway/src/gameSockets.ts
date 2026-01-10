@@ -3,6 +3,7 @@ import websocketPlugin from "@fastify/websocket";
 //import { WebSocket } from "ws";
 import WebSocket from 'ws';
 import { PlayerPayload } from "./lobbySockets";
+import { requiredEnv } from "./index.js";
 
 const gameConnections = new Map<
 	number,                                 // playerId
@@ -12,6 +13,8 @@ const gameConnections = new Map<
 		pendingMessages: string[];
 	}
 >();
+
+const GAME_URL = requiredEnv("GAME_SERVICE") + requiredEnv("GAME_PORT");
 
 export async function registerGameWebSocket(server: FastifyInstance) {
 	server.get("/game/ws", { websocket: true }, async (connection, req) => {
@@ -38,11 +41,11 @@ export async function registerGameWebSocket(server: FastifyInstance) {
 		playerSockets.frontendWs.add(frontendWs);
 
 		if (!playerSockets.engineWs) {
-			console.log("Gateway attempting to connect socket on ", `ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+			console.log("Gateway attempting to connect socket on ", `ws://${GAME_URL.replace(/^https?:\/\//, "")}/ws` +
 				`?player=${player.username}`);
 
 			const engineWs = new WebSocket(
-				`ws://${process.env.GENGINE_URL!.replace(/^https?:\/\//, "")}/ws` +
+				`ws://${GAME_URL.replace(/^https?:\/\//, "")}/ws` +
 				`?player=${player.username}`
 			);
 
