@@ -23,7 +23,7 @@ const gameMeta = new Map<number, GameMeta>();
 
 dotenv.config(); //loads the credentials from the .env file insto process.env
 const PORT = Number(requiredEnv("GAME_PORT"));
-const GATEWAY = requiredEnv("GATEWAY_SERVICE") + requiredEnv("GATEWAY_PORT");
+const GATEWAY = requiredEnv("GATEWAY_SERVICE") + ":" + requiredEnv("GATEWAY_PORT");
 
 export const server = Fastify({
 	logger: {
