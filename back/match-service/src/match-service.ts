@@ -18,7 +18,7 @@ const logger = pino({
 });
 
 
-const GATEWAY_URL = requiredEnv("GATEWAY_SERVICE") + requiredEnv("GATEWAY_PORT");
+const GATEWAY_URL = `${requiredEnv("GATEWAY_SERVICE")}:${requiredEnv("GATEWAY_PORT")}`;
 
 export class MatchService {
 	constructor(private db: Database) { }
