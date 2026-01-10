@@ -3,7 +3,6 @@ import { renderNewRemoteTournament } from "./render_remote.js";
 import { userLoggedIn } from "../api.js";
 import { logout } from "../forms.js";
 // import { insideMatch, setInsideMatch } from "../arena.js";
-import { gameSocket } from "./gameSocket.js";
 import { renderBlackBox, renderMatchMenu } from "../elements.js";
 
 export function renderStartView() {
@@ -61,6 +60,7 @@ export function renderStartView() {
 }
 
 export function renderChooseMode() {
+	if (localStorage.getItem("temp") === "temp") logout();
 	let blackBox = document.getElementById("black-box") as HTMLElement | null;
 	if (!blackBox) {
 		blackBox = renderBlackBox();
@@ -94,10 +94,8 @@ export function renderChooseMode() {
 			remoteButton.addEventListener("click", async () => {
 				if (localStorage.getItem("temp") === "temp") {
 					msg.textContent = "!! AUTH REQUIRED FOR REMOTE !!";
-                	setTimeout(() => logout(), 1000);
-                	return;
 				}
-				if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
+				else if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
 					renderNewRemoteTournament();
 					history.pushState({ view: "remote" }, "", "remote");
 				}

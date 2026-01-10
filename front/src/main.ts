@@ -19,8 +19,8 @@ app.innerHTML = `
 	<div id="profile-window" class="hidden"></div>`;
 
 renderFooterLinks();
-renderUserMenu();
 renderStartView();
+renderUserMenu();
 renderChat();
 initializeProfileUI();
 

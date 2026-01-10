@@ -307,7 +307,4 @@ export async function logout() {
     localStorage.removeItem("userid");
     disconnectGameWS();
     disconnectWS();
-
-    renderUserMenu();
-    renderStartView();
 }
