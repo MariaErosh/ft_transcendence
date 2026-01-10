@@ -107,6 +107,7 @@ function setupModalHandlers(
             await createAndSendInvitation(currentUserId, currentUsername, recipientUserId, recipientUsername);
             modal.remove();
             showSuccess(`Game invitation sent to @${recipientUsername}`);
+
         } catch (error) {
             console.error('Failed to send invitation:', error);
             showError('Failed to send invitation');
@@ -150,16 +151,21 @@ async function createAndSendInvitation(
 
     ws.send(JSON.stringify(invitationMessage));
     console.log('Game invitation sent:', invitationMessage);
-
-    // Auto-join the sender to the match lobby!!
-    await joinMatchDirectly(matchName);
 }
 
 export function isInvitationExpired(expiresAt: number): boolean {
     return Date.now() > expiresAt;
 }
 
-export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number) {
+/**
+ * Check if user has already joined this match
+ */
+export function isInvitationJoined(matchName: string): boolean {
+    const joinedMatches = JSON.parse(localStorage.getItem('joinedMatches') || '[]');
+    return joinedMatches.includes(matchName);
+}
+
+export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number, buttonElement?: HTMLElement) {
     if (expiresAt && isInvitationExpired(expiresAt)) {
         return;
     }
@@ -170,6 +176,29 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
         // Join the match lobby
         try {
             await joinMatchDirectly(matchName);
+            
+            // Store joined match in localStorage for persistence
+            const joinedMatches = JSON.parse(localStorage.getItem('joinedMatches') || '[]');
+            if (!joinedMatches.includes(matchName)) {
+                joinedMatches.push(matchName);
+                localStorage.setItem('joinedMatches', JSON.stringify(joinedMatches));
+            }
+            
+            // Mark invitation as expired/joined in the UI
+            if (buttonElement) {
+                const messageContainer = buttonElement.closest('div[class*="bg-gradient-to-r"]');
+                if (messageContainer) {
+                    // Add expired styling
+                    messageContainer.classList.add('opacity-50');
+                    // Replace button with "Joined" text
+                    buttonElement.replaceWith(
+                        Object.assign(document.createElement('span'), {
+                            className: 'text-green-400 text-sm font-bold',
+                            textContent: '✓ Joined'
+                        })
+                    );
+                }
+            }
         } catch (error) {
             console.error('Failed to join match:', error);
             showError('Failed to join match. Please try again.');

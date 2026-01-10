@@ -209,40 +209,45 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 					const match = matches.get(matchName)!;
 					const isNewPlayer = !Array.from(match.players).some(p => p.sub === player.sub);
-					match.players.add(player);
-
-				server.log.info(`User ${userId} (${player.username}) joined match ${matchName}`);
-
-			// First, send all existing players to the joining player
-			const allPlayers = Array.from(match.players);
-			for (const existingPlayer of allPlayers) {
-				userSockets.get(player.sub)?.forEach((s) => {
-					if (s.readyState === WebSocket.OPEN) {
-						s.send(JSON.stringify({
-							type: "player_joined",
-							name: matchName,
-							alias: existingPlayer.username,
-							match_type: match.type
-						}));
+					
+					if (isNewPlayer) {
+						match.players.add(player);
 					}
-				});
-			}
 
-				// Then, notify OTHER players (not the joiner) about the new player
-				for (const p of allPlayers) {
-					if (p.sub !== player.sub) { // Don't send to the joiner again
-						userSockets.get(p.sub)?.forEach((s) => {
+					server.log.info(`User ${userId} (${player.username}) joined match ${matchName}`);
+
+					// First, send all existing players to the joining player
+					const allPlayers = Array.from(match.players);
+					for (const existingPlayer of allPlayers) {
+						userSockets.get(player.sub)?.forEach((s) => {
 							if (s.readyState === WebSocket.OPEN) {
 								s.send(JSON.stringify({
 									type: "player_joined",
 									name: matchName,
-									alias: player.username,
+									alias: existingPlayer.username,
 									match_type: match.type
 								}));
 							}
 						});
 					}
-				}
+
+					// Then, notify OTHER players (not the joiner) about the new player
+					if (isNewPlayer) {
+						for (const p of allPlayers) {
+							if (p.sub !== player.sub) {
+								userSockets.get(p.sub)?.forEach((s) => {
+									if (s.readyState === WebSocket.OPEN) {
+										s.send(JSON.stringify({
+											type: "player_joined",
+											name: matchName,
+											alias: player.username,
+											match_type: match.type
+										}));
+									}
+								});
+							}
+						}
+					}
 			} else if (data.type === "start_match") {
 				const playerData = matches.get(data.name)?.players;
 					if (!playerData || playerData.size < 2) return;

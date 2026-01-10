@@ -305,6 +305,7 @@ export async function logout() {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("temp");
     localStorage.removeItem("userid");
+    localStorage.removeItem("joinedMatches");
     disconnectGameWS();
     disconnectWS();
 }

@@ -94,7 +94,7 @@ export function renderUserMenu() {
 			logout();
 			renderUserMenu();
 			renderStartView();
-			console.log("User logged out, called to disconnect chat");
+			//console.log("User logged out, called to disconnect chat");
 			disconnectChat();
 		});
 		menu.appendChild(logoutBtn);
