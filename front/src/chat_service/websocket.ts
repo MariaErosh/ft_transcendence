@@ -87,7 +87,7 @@ function handleMessage(event: MessageEvent) {
 		// Handle game invitation messages
 		if (message.type === 'game_invitation') {
 			console.log('[WebSocket] Game invitation received:', message);
-			console.trace('[WebSocket] Invitation received from:');
+			console.debug('[WebSocket] Invitation received from:', message.sender_id);
 
 			const currentRecipient = ChatData.getCurrentRecipient();
 			const currentUserId = getCurrentUserId();
