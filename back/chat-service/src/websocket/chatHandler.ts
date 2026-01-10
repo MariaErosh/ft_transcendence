@@ -121,25 +121,17 @@ export async function handleGameInvitation(
 
         const conversationId = await conversationRepo.getOrCreateConversation(userId, recipientId);
         const content = `${invitationData.match_name || invitationData.tournament_name || 'Game'}`;
-
-        // Build invitation data from trusted sources only
-        // Client should only send game/match details, NOT sender information
         const storedInvitationData = {
-            // Backend-provided (trusted)
             sender_id: userId,
             sender_username: username,
-            // Client-provided (game details only)
             match_id: invitationData.match_id,
             match_name: invitationData.match_name,
             tournament_id: invitationData.tournament_id,
             tournament_name: invitationData.tournament_name,
             expires_at: invitationData.expires_at,
             game_mode: invitationData.game_mode,
-            // Any other game-specific data
-            ...(invitationData.custom_data && { custom_data: invitationData.custom_data })
+            invitation_type: invitationData.invitation_type
         };
-
-        // Save as special message with metadata
         const messageId = await messageRepo.createMessage({
             conversationId,
             senderId: userId,
@@ -188,7 +180,7 @@ export async function handleTypingIndicator(
         // Check if users have blocked each other
         const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
         if (blocked) {
-            return; // Silently ignore typing from blocked users
+            return;
         }
 
         // Clear existing timeout for this user->recipient pair
