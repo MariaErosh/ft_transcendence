@@ -180,7 +180,12 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
     const confirmed = confirm(`Join game with ${senderUsername}?`);
     if (confirmed) {
         // Join the match lobby
-        joinMatchDirectly(matchName);
+        try {
+            await joinMatchDirectly(matchName);
+        } catch (error) {
+            console.error('Failed to join match:', error);
+            showError('Failed to join match. Please try again.');
+        }
     }
 }
 
