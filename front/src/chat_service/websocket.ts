@@ -4,12 +4,15 @@ import { ChatData } from './chatData.js';
 import { displayMessage, loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
-// Use window location to construct WebSocket URL dynamically
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const GATEWAY_WS_URL = `${protocol}//${window.location.host}/api/chat/ws`;
 
 let chatSocket: WebSocket | null = null;
 let shouldReconnect = false;
+
+export function getWebSocket(): WebSocket | null {
+	return chatSocket;
+}
 
 /**
  * Connect to the chat WebSocket
@@ -81,9 +84,35 @@ function handleMessage(event: MessageEvent) {
 	try {
 		const message: ChatMessage = JSON.parse(event.data);
 
-		// Handle different message types
-		if (message.type === 'game_invitation' || message.type === 'invitation_response') {
-			console.log('Game invitation received:', message);
+		// Handle game invitation messages
+		if (message.type === 'game_invitation') {
+			console.log('[WebSocket] Game invitation received:', message);
+			console.debug('[WebSocket] Invitation received from:', message.sender_id);
+
+			const currentRecipient = ChatData.getCurrentRecipient();
+			const currentUserId = getCurrentUserId();
+
+			// Check if this invitation belongs to the current open conversation
+			const isForCurrentConversation = currentRecipient &&
+				(
+					// Message from the person we're chatting with
+					message.sender_id === currentRecipient.userId ||
+					// Message sent by us to the person we're chatting with
+					(message.sender_id === currentUserId && message.conversation_id)
+				);
+
+			// Always store the invitation in history if it's for current conversation
+			if (isForCurrentConversation) {
+				console.log('[WebSocket] Adding invitation to history, chat open:', ChatData.isChatOpen());
+				ChatData.addMessage(message);
+				// Display if chat is open
+				if (ChatData.isChatOpen()) {
+					console.log('[WebSocket] Displaying invitation immediately');
+					displayMessage(message);
+				}
+			} else {
+				console.log('[WebSocket] Invitation NOT for current conversation');
+			}
 			return;
 		}
 
@@ -168,8 +197,6 @@ function handleReadReceipt(message: ChatMessage) {
 	}
 
 	const currentRecipient = ChatData.getCurrentRecipient();
-
-	// Get current user ID from localStorage or stored state
 	const currentUserId = getCurrentUserId();
 	if (!currentUserId) {
 		console.log('Cannot determine current user ID');
@@ -192,7 +219,6 @@ function handleReadReceipt(message: ChatMessage) {
 	console.log(`Updated ${updatedCount} messages to read status`);
 	ChatData.setMessageHistory(updatedMessages);
 
-	// If we're currently viewing this conversation, update the UI
 	if (currentRecipient) {
 		// Check if any message in the current view matches this conversation
 		const isCurrentConversation = messages.some(msg =>
@@ -280,7 +306,7 @@ export function sendMessage(content: string) {
 		return;
 	}
 
-  // Prevent sending messages to blocked users
+  // check if blocked
   const blockedUsers = ChatData.getBlockedUsers();
 	if (blockedUsers.includes(currentRecipient.userId)) {
 		updateStatus("Cannot send messages to blocked users", "error");
@@ -354,7 +380,6 @@ export function typingHandler() {
 
 	// Throttle: only send if enough time has passed since last typing event
 	if (now - lastTypingTime < TYPING_THROTTLE_MS) {
-		// Still within throttle window, just reset the stop timer
 		resetTypingStopTimer(currentRecipient.userId);
 		return;
 	}
@@ -374,7 +399,6 @@ export function typingHandler() {
 		console.error("Failed to send typing indicator:", err);
 	}
 
-	// Reset the stop timer
 	resetTypingStopTimer(currentRecipient.userId);
 }
 
@@ -382,7 +406,6 @@ export function typingHandler() {
  * Reset the typing stop timer
  */
 function resetTypingStopTimer(recipientId: number) {
-	// Clear existing timer
 	if (typingStopTimer !== null) {
 		clearTimeout(typingStopTimer);
 	}
@@ -409,7 +432,7 @@ function stopTyping(recipientId: number) {
 		ChatData.setTyping(false);
 		console.log('Stopped typing indicator sent');
 	} catch (err) {
-		console.error("Failed to send stop typing indicator:", err);
+		console.error('Failed to send stop typing indicator:', err);
 	}
 }
 

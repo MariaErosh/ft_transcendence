@@ -90,11 +90,11 @@ export function renderUserMenu() {
             active:shadow-none active:translate-x-[1px] active:translate-y-[1px]
             transition-all font-bold uppercase text-sm
 			`;
-		logoutBtn.addEventListener("click", () => {
-			logout();
+		logoutBtn.addEventListener("click", async () => {
+			await logout();
 			renderUserMenu();
 			renderStartView();
-			console.log("User logged out, called to disconnect chat");
+			//console.log("User logged out, called to disconnect chat");
 			disconnectChat();
 		});
 		menu.appendChild(logoutBtn);
