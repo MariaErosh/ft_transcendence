@@ -308,6 +308,23 @@ This project was brought to life by a team of 5 dedicated developers.
 
 ---
 
+## 📅 Project Management
+
+**Organization & Workflow**
+- **Kick-off:** We started with an in-person meeting at school to brainstorm, define the architecture, and break down the project into modular microservices.
+- **Task Distribution:** Tasks were distributed based on individual interests and learning goals.
+- **Tracking:** We used **GitHub Issues** to track progress, assign tasks, and manage the backlog.
+
+**Quality Assurance & CI/CD**
+- **Code Review:** We enforced a strict workflow where no Pull Request (PR) could be merged without at least one approval from another team member.
+- **CI/CD:** Automated pipelines were set up to run checks on every push, ensuring code quality and build stability.
+
+**Tools & Communication**
+- **Miro:** Used for brainstorming, designing the microservices architecture, and mapping out database schemas.
+- **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
+
+---
+
 ## Resources
 
 - **Fastify Documentation:** https://fastify.dev/docs/latest/
