@@ -256,10 +256,10 @@ CREATE TABLE IF NOT EXISTS games (
    ```
 
 2. **Configure Environment:**
-   Create the `.env` file from the example and copy it to each microservice directory.
+   Create the `.env` file from the example and copy it to infrastructure directory.
    ```bash
    cp .env.example .env
-   # Copy .env to back/gateway, back/auth-service, back/user-service, back/match-service, back/game-engine, back/chat-service, infrastructure
+   # Copy .env to  infrastructure
    # Fill in your credentials in .env
    ```
 
