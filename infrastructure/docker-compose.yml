@@ -123,6 +123,8 @@ services:
       - "9090:9090"
     networks:
       - internal
+    logging:
+      driver: "none"
 
   grafana:
     image: grafana/grafana:latest
@@ -142,6 +144,8 @@ services:
       - .env
     networks:
       - internal
+    logging:
+      driver: "none"
 
   node_exporter:
     image: prom/node-exporter:latest
@@ -156,6 +160,8 @@ services:
       - /:/rootfs:ro
     networks:
       - internal
+    logging:
+      driver: "none"
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.22
@@ -171,6 +177,8 @@ services:
       - "9200:9200"
     networks:
       - internal
+    logging:
+      driver: "none"
 
   logstash:
     image: docker.elastic.co/logstash/logstash:7.17.22
@@ -197,6 +205,8 @@ services:
       - .env
     networks:
       - internal
+    logging:
+      driver: "none"
 
   elasticsearch-exporter:
     image: quay.io/prometheuscommunity/elasticsearch-exporter:latest
@@ -216,6 +226,8 @@ services:
       - .env
     networks:
       - internal
+    logging:
+      driver: "none"
 
   logstash-exporter:
     image: kuskoman/logstash-exporter:v1.1.0
@@ -232,6 +244,8 @@ services:
       - .env
     networks:
       - internal
+    logging:
+      driver: "none"
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.22
@@ -247,6 +261,8 @@ services:
       - .env
     networks:
       - internal
+    logging:
+      driver: "none"
 
   frontend:
     build:
