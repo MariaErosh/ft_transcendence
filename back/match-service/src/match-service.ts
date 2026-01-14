@@ -56,6 +56,11 @@ export class MatchService {
 			}
 
 			await dbRunQuery(this.db, "COMMIT");
+
+			// Notify players they joined the match
+			const playerIds = players.map(p => p.id).filter((id): id is number => id !== null);
+			await this.notifyMatchJoined(matchId, "", matchType, playerIds);
+
 			return matchId;
 		} catch (err) {
 			await dbRunQuery(this.db, "ROLLBACK");
@@ -96,7 +101,9 @@ export class MatchService {
 		await this.recordGameResults(gameId, loser.alias, winner.alias);
 
 		// Notify players about game result via chat
-		await this.notifyGameResult(winner.id, loser.id, gameId);
+		if (winner.id !== null && loser.id !== null) {
+			await this.notifyGameResult(winner.id, loser.id, gameId);
+		}
 
 		let match = await this.getMatchById(matchId);
 		let gamesLeft = await this.checkGamesLeft(match.id, match.round);
@@ -266,7 +273,7 @@ export class MatchService {
 
 	private async notifyGameResult(winnerId: number, loserId: number, gameId: number) {
 		try {
-			await fetch(`${GATEWAY}/chat/notifications/game-result`, {
+			await fetch(`${GATEWAY_URL}/chat/notifications/game-result`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -288,7 +295,7 @@ export class MatchService {
 			const players = await this.getMatchPlayers(matchId);
 			const playerIds = players.map((p: any) => p.user_id);
 
-			await fetch(`${GATEWAY}/chat/notifications/tournament-round`, {
+			await fetch(`${GATEWAY_URL}/chat/notifications/tournament-round`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -310,6 +317,26 @@ export class MatchService {
 			"SELECT DISTINCT user_id FROM players WHERE match_id = ?",
 			[matchId]
 		);
+	}
+
+	private async notifyMatchJoined(matchId: number, matchName: string, matchType: string, playerIds: number[]) {
+		try {
+			await fetch(`${GATEWAY_URL}/chat/notifications/match-joined`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+				},
+				body: JSON.stringify({
+					matchId,
+					matchName,
+					matchType,
+					playerIds
+				})
+			});
+		} catch (error) {
+			logger.error({ error }, 'Failed to send match joined notification');
+		}
 	}
 }
 

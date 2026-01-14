@@ -1,7 +1,10 @@
 // Chat type definitions
 
+// System user ID for game notifications
+export const SYSTEM_USER_ID = 0;
+
 export interface ChatMessage {
-  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "typing" | "read_receipt";
+  type: "message" | "system" | "error" | "game_invitation" | "invitation_response" | "typing" | "read_receipt" | "system_notification";
   id?: number;
   conversation_id?: number;
   sender_id?: number;
@@ -37,6 +40,7 @@ export interface ChatMessage {
     sender_id?: number;
   };
   join_url?: string;
+  metadata?: string; // JSON metadata for system notifications
 }
 
 export interface User {
@@ -59,7 +63,7 @@ export interface Tournament {
 
 export type StatusType = "success" | "error" | "info";
 
-export type ChatView = 'home' | 'dm';
+export type ChatView = 'home' | 'dm' | 'system';
 
 export interface ChatData {
 	isConnected: boolean;
@@ -75,4 +79,6 @@ export interface ChatData {
 	isTyping: boolean;
 	lastTypingTime: number;
 	recipientIsTyping: boolean;
+	systemMessages: ChatMessage[];
+	systemUnreadCount: number;
 }

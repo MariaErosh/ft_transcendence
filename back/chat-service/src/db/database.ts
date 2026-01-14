@@ -54,12 +54,16 @@ export async function initDB(): Promise<void> {
 		await createNotificationsTable();
 		await createBlocksTable();
 		await createIndexes();
+		await createSystemUserConversations();
 		console.log('✓ Database initialization complete');
 	} catch (err) {
 		console.error('✗ Database initialization failed:', err);
 		throw err;
 	}
 }
+
+//this is the user for game notifications
+export const SYSTEM_USER_ID = 0;
 
 // ============================================================================
 // Table Creation Functions
@@ -160,4 +164,20 @@ async function createIndexes(): Promise<void> {
 		console.error('Failed to create indexes:', err);
 		throw err;
 	}
+}
+
+/**
+ * Create system user conversations table
+ * This table tracks each user's conversation with the system
+ */
+async function createSystemUserConversations(): Promise<void> {
+	const query = `
+		CREATE TABLE IF NOT EXISTS system_conversations (
+			user_id INTEGER PRIMARY KEY,
+			conversation_id INTEGER NOT NULL,
+			created_at TEXT DEFAULT CURRENT_TIMESTAMP
+		)
+	`;
+	await executeQuery(query, 'system_conversations');
+	console.log('✓ System conversations table ready');
 }

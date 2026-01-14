@@ -4,7 +4,7 @@ import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend } from './userManager.js';
-import { displayStoredMessages } from './messageHandler.js';
+import { displayStoredMessages, displayMessage } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
 import { renderLogin } from '../forms.js';
@@ -257,9 +257,44 @@ function renderFooter(isConnected: boolean): string {
 	`;
 }
 
+function renderSystemMessagesSection(): string {
+	const systemUnreadCount = ChatData.getSystemUnreadCount();
+
+	return `
+		<div class="border-b-4 border-black bg-gradient-to-r from-purple-600 to-indigo-600">
+			<button
+				id="open-system-messages"
+				class="w-full text-left px-4 py-3 hover:bg-purple-700 transition-all flex items-center gap-3"
+			>
+				<div class="text-2xl">🎮</div>
+				<div class="flex-1">
+					<div class="font-bold text-white text-sm uppercase tracking-wide">
+						Game System
+					</div>
+					<div class="text-xs text-purple-200 font-mono">
+						Match & game notifications
+					</div>
+				</div>
+				${systemUnreadCount > 0 ? `
+					<span class="
+						px-3 py-1 text-xs font-bold
+						bg-pink-500 text-white
+						rounded-full
+						border-2 border-black
+						shadow-[2px_2px_0_0_#000000]
+					">
+						${systemUnreadCount}
+					</span>
+				` : ''}
+			</button>
+		</div>
+	`;
+}
+
 function renderHomeContent(data: ReturnType<typeof getChatViewData>): string {
 	return `
 		<div class="flex-1 overflow-y-auto bg-gray-800">
+		${renderSystemMessagesSection()}
 		${renderFriendsSection(data)}
 		${renderAllUsersSection(data)}
 		</div>
@@ -400,6 +435,10 @@ function setupHeaderHandlers() {
 	document.getElementById("refresh-status")?.addEventListener("click", async () => {
 		await refreshOnlineStatus();
 		renderHomeView();
+	});
+
+	document.getElementById("open-system-messages")?.addEventListener("click", () => {
+		renderSystemMessagesView();
 	});
 }
 
@@ -594,9 +633,15 @@ function renderDMFooter(recipient: User, isConnected: boolean): string {
 function setupDMHeaderHandlers(recipient: User) {
 	document.getElementById("chat-minimize")?.addEventListener("click", closeChat);
 
-	document.getElementById("back-button")?.addEventListener("click", () => {
-	goBackToHome();
-	renderHomeView();
+	document.getElementById("back-button")?.addEventListener("click", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		try {
+			goBackToHome();
+		} catch (error) {
+			console.error('Error navigating back to home:', error);
+			renderHomeView();
+		}
 	});
 }
 
@@ -664,4 +709,62 @@ function handleDMMenuAction(action: string | undefined, recipient: User) {
 			showGameInvitationModal(recipient.username, recipient.userId);
 			break;
 	}
+}
+
+/**
+ * Render System Messages View
+ */
+export function renderSystemMessagesView() {
+	if (!chatContainer) return;
+
+	ChatData.setCurrentView('system');
+	ChatData.clearSystemUnread();
+
+	chatContainer.innerHTML = `
+	<div class="
+		bg-gray-200
+		border-4 border-black
+		w-96 h-[500px] flex flex-col
+		shadow-[8px_8px_0_0_#000000]
+	">
+		<!-- Header -->
+		<div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-3 border-b-4 border-black flex justify-between items-center">
+			<div class="flex items-center gap-2">
+				<button id="back-home" class="hover:text-pink-400 text-xl">←</button>
+				<div class="text-2xl">🎮</div>
+				<div>
+					<h3 class="font-bold text-sm uppercase tracking-wide">Game System</h3>
+					<div class="text-xs text-purple-200 font-mono">System Notifications</div>
+				</div>
+			</div>
+			<button id="chat-minimize" class="text-xl hover:text-pink-400">✕</button>
+		</div>
+
+		<!-- Messages -->
+		<div id="chat-messages" class="
+			flex-1
+			overflow-y-auto
+			bg-gray-800
+			p-4
+			space-y-3
+		">
+			<!-- Messages will be inserted here -->
+		</div>
+
+		<!-- Footer -->
+		<div class="border-t-4 border-black p-3 bg-gray-300">
+			<div class="text-xs font-mono text-gray-600 text-center italic">
+				// Read-only system messages
+			</div>
+		</div>
+	</div>
+	`;
+
+	// Setup handlers
+	document.getElementById("back-home")?.addEventListener("click", goBackToHome);
+	document.getElementById("chat-minimize")?.addEventListener("click", closeChat);
+
+	// Display system messages
+	const systemMessages = ChatData.getSystemMessages();
+	systemMessages.forEach(msg => displayMessage(msg));
 }

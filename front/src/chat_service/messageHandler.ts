@@ -2,6 +2,7 @@
 
 import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
+import { SYSTEM_USER_ID } from './types.js';
 import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
 import { handleInvitationClick, isInvitationExpired, isInvitationJoined } from './gameInvitation.js';
@@ -90,6 +91,32 @@ export function displayMessage(message: ChatMessage) {
 
   const messageEl = document.createElement("div");
   const time = formatTime(message.created_at || message.timestamp);
+
+  // Handle system notification messages
+  if (message.sender_id === SYSTEM_USER_ID || message.type === 'system_notification') {
+    console.log('[displayMessage] Processing system notification:', message);
+
+    const notificationIcon = getNotificationIcon(message);
+
+    messageEl.className = "bg-gradient-to-r from-purple-900 to-indigo-900 p-4 rounded-lg shadow-lg border-2 border-purple-400";
+    messageEl.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="text-3xl">${notificationIcon}</div>
+        <div class="flex-1">
+          <div class="font-bold text-purple-300 text-xs mb-1 uppercase tracking-wide">
+            🎮 Game System
+          </div>
+          <div class="text-white text-sm">
+            ${escapeHtml(message.content || "")}
+          </div>
+          <div class="text-xs text-gray-400 mt-2">${time}</div>
+        </div>
+      </div>
+    `;
+    messagesContainer.appendChild(messageEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return;
+  }
 
   // Handle game invitation messages
   if (message.type === "game_invitation") {
@@ -289,4 +316,33 @@ export async function markConversationAsRead(conversationId: number) {
 	} catch (err) {
 		console.error('Failed to mark conversation as read:', err);
 	}
+}
+
+/**
+ * Get icon for system notification based on metadata
+ */
+function getNotificationIcon(message: ChatMessage): string {
+	if (!message.metadata) return '🎮';
+
+	try {
+		const metadata = typeof message.metadata === 'string'
+			? JSON.parse(message.metadata)
+			: message.metadata;
+
+		const notificationType = metadata.notificationType || '';
+
+		if (notificationType.includes('victory') || notificationType.includes('won')) {
+			return '🎉';
+		} else if (notificationType.includes('defeat') || notificationType.includes('lost')) {
+			return '😔';
+		} else if (notificationType.includes('tournament') || notificationType.includes('round')) {
+			return '🏆';
+		} else if (notificationType.includes('match')) {
+			return '🎮';
+		}
+	} catch (e) {
+		console.error('Failed to parse notification metadata:', e);
+	}
+
+	return '🎮';
 }

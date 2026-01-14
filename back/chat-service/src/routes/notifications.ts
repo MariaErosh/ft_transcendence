@@ -1,95 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import * as notificationRepo from '../repositories/notificationRepository';
+import * as conversationRepo from '../repositories/conversationRepository';
+import * as messageRepo from '../repositories/messageRepository';
 import { GATEWAY_SECRET } from "../index.js";
+import { SYSTEM_USER_ID } from '../db/database';
 
 export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUser: (userId: number, message: any) => boolean) {
-    // Get user notifications
-    app.get('/chat/notifications', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
-
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const unreadOnly = (request.query as any).unreadOnly === 'true';
-
-            const notifications = unreadOnly
-                ? await notificationRepo.getUnreadNotifications(userId)
-                : await notificationRepo.getUserNotifications(userId);
-
-            return reply.send({ notifications });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get notifications');
-            return reply.code(500).send({ error: 'Failed to fetch notifications' });
-        }
-    });
-
-    // Get unread notification count
-    app.get('/chat/notifications/unread/count', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
-
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const count = await notificationRepo.getUnreadCount(userId);
-
-            return reply.send({ count });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get unread count');
-            return reply.code(500).send({ error: 'Failed to fetch count' });
-        }
-    });
-
-    // Mark notification as read
-    app.put('/chat/notifications/:id/read', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
-
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const notificationId = parseInt((request.params as any).id);
-
-            // Verify notification belongs to user
-            const notification = await notificationRepo.getNotificationById(notificationId);
-            if (!notification) {
-                return reply.code(404).send({ error: 'Notification not found' });
-            }
-
-            if (notification.user_id !== userId) {
-                return reply.code(403).send({ error: 'Not authorized' });
-            }
-
-            await notificationRepo.markAsRead(notificationId);
-            return reply.send({ success: true });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to mark notification as read');
-            return reply.code(500).send({ error: 'Failed to update notification' });
-        }
-    });
-
-    // Mark all notifications as read
-    app.put('/chat/notifications/read-all', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
-
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            await notificationRepo.markAllAsRead(userId);
-            return reply.send({ success: true });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to mark all as read');
-            return reply.code(500).send({ error: 'Failed to update notifications' });
-        }
-    });
-
-    // Game result notification (called by match-service via gateway)
     app.post('/chat/notifications/game-result', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
@@ -99,40 +15,8 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
 
             const { winnerId, loserId, gameId } = request.body;
 
-            // Send to winner
-            const sentToWinner = sendMessageToUser(winnerId, {
-                type: 'game_notification',
-                subType: 'victory',
-                gameId,
-                message: '🎉 You won the game!',
-                timestamp: Date.now()
-            });
-
-            // Send to loser
-            const sentToLoser = sendMessageToUser(loserId, {
-                type: 'game_notification',
-                subType: 'defeat',
-                gameId,
-                message: '😔 You lost the game',
-                timestamp: Date.now()
-            });
-
-            // Store notifications in DB for offline users
-            if (!sentToWinner) {
-                await notificationRepo.createNotification({
-                    userId: winnerId,
-                    type: 'game_result',
-                    payload: { result: 'victory', gameId }
-                });
-            }
-
-            if (!sentToLoser) {
-                await notificationRepo.createNotification({
-                    userId: loserId,
-                    type: 'game_result',
-                    payload: { result: 'defeat', gameId }
-                });
-            }
+            await sendSystemMessage(winnerId, '🎉 You won the game!', 'game_result', { result: 'victory', gameId }, sendMessageToUser);
+            await sendSystemMessage(loserId, '😔 You lost the game', 'game_result', { result: 'defeat', gameId }, sendMessageToUser);
 
             return reply.send({ success: true });
         } catch (error: any) {
@@ -141,7 +25,6 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
         }
     });
 
-    // Tournament round notification
     app.post('/chat/notifications/tournament-round', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
@@ -152,23 +35,13 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
             const { matchId, round, playerIds } = request.body;
 
             for (const playerId of playerIds) {
-                const sent = sendMessageToUser(playerId, {
-                    type: 'game_notification',
-                    subType: 'tournament_round',
-                    matchId,
-                    round,
-                    message: `🏆 Tournament Round ${round} completed!`,
-                    timestamp: Date.now()
-                });
-
-                // Store in DB if user is offline
-                if (!sent) {
-                    await notificationRepo.createNotification({
-                        userId: playerId,
-                        type: 'tournament_round',
-                        payload: { matchId, round }
-                    });
-                }
+                await sendSystemMessage(
+                    playerId,
+                    `🏆 Tournament Round ${round} completed!`,
+                    'tournament_round',
+                    { matchId, round },
+                    sendMessageToUser
+                );
             }
 
             return reply.send({ success: true });
@@ -178,41 +51,74 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
         }
     });
 
-    // Match starting soon notification
-    app.post('/chat/notifications/match-starting', async (request: any, reply: any) => {
+    app.post('/chat/notifications/match-joined', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
             if (gatewaySecret !== process.env.GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
-            const { playerIds, matchId, matchName, timeUntilStart } = request.body;
+            const { playerIds, matchId, matchName, matchType } = request.body;
+            const message = matchType === 'tournament'
+                ? `🎮 You joined the tournament "${matchName}"!`
+                : `🎮 You joined the match "${matchName}"!`;
 
             for (const playerId of playerIds) {
-                const sent = sendMessageToUser(playerId, {
-                    type: 'game_notification',
-                    subType: 'match_starting',
-                    matchId,
-                    matchName,
-                    timeUntilStart,
-                    message: `⏰ Match "${matchName}" starts in ${timeUntilStart} seconds!`,
-                    timestamp: Date.now()
-                });
-
-                // Store in DB if user is offline
-                if (!sent) {
-                    await notificationRepo.createNotification({
-                        userId: playerId,
-                        type: 'match_starting',
-                        payload: { matchId, matchName, timeUntilStart }
-                    });
-                }
+                await sendSystemMessage(
+                    playerId,
+                    message,
+                    'match_joined',
+                    { matchId, matchName, matchType },
+                    sendMessageToUser
+                );
             }
 
             return reply.send({ success: true });
         } catch (error: any) {
-            app.log.error({ error }, 'Failed to send match starting notification');
+            app.log.error({ error }, 'Failed to send match joined notification');
             return reply.code(500).send({ error: 'Failed to send notification' });
         }
     });
+}
+
+async function sendSystemMessage(
+    userId: number,
+    content: string,
+    notificationType: string,
+    payload: any,
+    sendMessageToUser: (userId: number, message: any) => boolean
+): Promise<void> {
+    try {
+        const conversationId = await conversationRepo.CreateSystemConversation(userId);
+
+        const messageId = await messageRepo.createMessage({
+            conversationId,
+            senderId: SYSTEM_USER_ID,
+            content,
+            messageType: 'system_notification',
+            metadata: JSON.stringify({ notificationType, ...payload })
+        });
+
+        sendMessageToUser(userId, {
+            type: 'system_notification',
+            id: messageId,
+            conversation_id: conversationId,
+            sender_id: SYSTEM_USER_ID,
+            sender_username: '🎮 Game System',
+            content,
+            created_at: new Date().toISOString(),
+            metadata: JSON.stringify({ notificationType, ...payload })
+        });
+    } catch (error: any) {
+        console.error('Failed to send system message:', error);
+        try {
+            await notificationRepo.createNotification({
+                userId,
+                type: notificationType,
+                payload
+            });
+        } catch (fallbackError) {
+            console.error('Critical failure: Fallback notification also failed', fallbackError);
+        }
+    }
 }
