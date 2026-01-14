@@ -3,21 +3,10 @@ import * as conversationRepo from '../repositories/conversationRepository';
 import * as messageRepo from '../repositories/messageRepository';
 import * as blockRepo from '../repositories/blockRepository';
 import { requiredEnv } from "../index.js";
-
+import { validateGatewayAuth } from './conversations.js';
 const USER_URL = requiredEnv("USER_SERVICE") + ":" + requiredEnv("USER_PORT");
 const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
-/**
- * Validate gateway authentication and extract user ID
- */
-function validateGatewayAuth(request: any, reply: any): number | null {
-    const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-    if (gatewaySecret !== GATEWAY_SECRET) {
-        reply.code(401).send({ error: 'Unauthorized' });
-        return null;
-    }
-    return parseInt((request.headers as any)['x-user-id']);
-}
 
 /**
  * Fetch username for a given user ID from user-service

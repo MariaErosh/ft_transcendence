@@ -6,7 +6,7 @@ import { GATEWAY_SECRET } from "../index.js"
 /**
  * Validate gateway authentication and extract user ID
  */
-function validateGatewayAuth(request: any, reply: any): number | null {
+export function validateGatewayAuth(request: any, reply: any): number | null {
 	const gatewaySecret = (request.headers as any)['x-gateway-secret'];
 	if (gatewaySecret !== GATEWAY_SECRET) {
 		reply.code(401).send({ error: 'Unauthorized' });
