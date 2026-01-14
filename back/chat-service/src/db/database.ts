@@ -51,7 +51,6 @@ export async function initDB(): Promise<void> {
 		await createConversationsTable();
 		await createConversationParticipantsTable();
 		await createMessagesTable();
-		await createNotificationsTable();
 		await createBlocksTable();
 		await createIndexes();
 		await createSystemUserConversations();
@@ -107,20 +106,6 @@ function createMessagesTable(): Promise<void> {
 	return executeQuery(query, 'messages');
 }
 
-function createNotificationsTable(): Promise<void> {
-	const query = `
-		CREATE TABLE IF NOT EXISTS notifications (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id INTEGER NOT NULL,
-			type TEXT NOT NULL,
-			payload TEXT NOT NULL,
-			is_read INTEGER DEFAULT 0,
-			created_at TEXT DEFAULT CURRENT_TIMESTAMP
-		)
-	`;
-	return executeQuery(query, 'notifications');
-}
-
 function createBlocksTable(): Promise<void> {
 	const query = `
 		CREATE TABLE IF NOT EXISTS blocks (
@@ -149,8 +134,6 @@ async function createIndexes(): Promise<void> {
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC)', name: 'idx_messages_created_at' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(message_type)', name: 'idx_messages_type' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_conversation_participants_user ON conversation_participants(user_id)', name: 'idx_conversation_participants_user' },
-		{ query: 'CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)', name: 'idx_notifications_user' },
-		{ query: 'CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read)', name: 'idx_notifications_unread' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_blocks_blocker ON blocks(blocker_id)', name: 'idx_blocks_blocker' },
 		{ query: 'CREATE INDEX IF NOT EXISTS idx_blocks_blocked ON blocks(blocked_id)', name: 'idx_blocks_blocked' }
 	];
