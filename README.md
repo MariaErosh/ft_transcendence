@@ -115,7 +115,7 @@ This project was brought to life by a team of 5 dedicated developers.
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
 
-## 👥 Individual Contrubutions 
+## 👥 Individual Contributions 
 
 | @AnnLvu     | `alvutina` |
 | @auspens    | `auspensk` |
