@@ -4,7 +4,7 @@ import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend } from './userManager.js';
-import { displayStoredMessages, displayMessage } from './messageHandler.js';
+import { displayStoredMessages, displayMessage, loadSystemMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
 import { renderLogin } from '../forms.js';
@@ -52,7 +52,7 @@ export async function chatOpened() {
 	ChatData.setCurrentView('home');
 	const connected = await connectChat();
 	if (connected) {
-		Promise.all([loadUsers(), loadFriends(), loadBlockedUsers()]).then(() => {
+		Promise.all([loadUsers(), loadFriends(), loadBlockedUsers(), loadSystemMessages()]).then(() => {
 			renderHomeView();
 		});
 	} else {

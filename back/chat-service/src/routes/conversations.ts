@@ -47,28 +47,6 @@ export function registerConversationRoutes(
 		}
 	});
 
-	// Get messages from a specific conversation
-	app.get('/chat/conversations/:id/messages', async (request: any, reply: any) => {
-		try {
-			const userId = validateGatewayAuth(request, reply);
-			if (userId === null) return;
-
-			const conversationId = parseInt((request.params as any).id);
-			const limit = parseInt((request.query as any).limit || '50');
-
-			// Verify user is participant in this conversation
-			const isParticipant = await conversationRepo.isUserInConversation(conversationId, userId);
-			if (!isParticipant) {
-				return reply.code(403).send({ error: 'Not a participant in this conversation' });
-			}
-
-			const messages = await messageRepo.getMessagesByConversation(conversationId, limit);
-			return reply.send({ messages });
-		} catch (error: any) {
-			app.log.error({ error }, 'Failed to get conversation messages');
-			return reply.code(500).send({ error: 'Failed to fetch messages' });
-		}
-	});
 
 	app.post('/chat/conversations/:conversationId/read', async (request: any, reply: any) => {
 		try {
