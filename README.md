@@ -12,7 +12,14 @@
 
 ## Description
 
-**ft_transcendence** is our final project at 42. We wanted to do more than just build a game; we wanted to build it the right way, using modern tools. Instead of a single, large application, we built it as a set of small, independent microservices that talk to each other. This includes everything from user login to the game's physics. Our goal was to create a smooth, real-time multiplayer game that's also secure, fast, and easy to monitor.
+**ft_transcendence** is our final project at 42 Berlin. It consists of building a Single Page Application that allows users to play PONG, the classic game from the 1970s. The subject offers several optional modules, allowing teams to decide the direction and scope of their implementation.
+
+Our team chose to focus primarily on the backend, placing less emphasis on frontend complexity. As a result, the user interface remains simple, while the backend is designed to be robust and scalable. The application is built using a microservices architecture with integrated databases, supporting both local and remote Pong tournaments, enabling players on different machines within the same network to compete.
+
+Users can sign up and log in securely using JWT-based authentication. The platform also includes social features such as real-time chat, friend management, and the ability to invite other players to matches. In addition, we implemented a comprehensive monitoring and observability stack using ELK, Grafana, and Prometheus to track system health and performance.
+
+As required by the project specifications, the frontend is developed using TypeScript with Tailwind CSS, while the backend is built with Node.js and Fastify.
+
 
 ## 🏗️ Architecture & Microservices
 
@@ -44,10 +51,13 @@ The tournament organizer.
 - **State Persistence:** Stores detailed history of matches, rounds, and player performance.
 - **Event Driven:** Reacts to game results to automatically generate next-round pairings or declare tournament winners, communicating updates back to the Gateway.
 
-### 🎮 Gengine (Game Engine)
-The physics server.
-- **Fair Play:** Calculates all ball movements and collisions on the server to prevent cheating.
-- **Modes:** Supports both online multiplayer and local play on the same keyboard.
+### 🎮 Game Engine
+The game engine is the core service responsible for running a single match within a tournament. It communicates with the frontend via WebSockets and with the match service through REST API requests.
+
+When a new game is about to start, the game engine requests the necessary game data from the match service and triggers the rendering of the game board on the frontend. It then sends the state of the paddles and the ball at a rate of 60 updates per second to the WebSocket connections of the participants in the respective game, allowing the frontend to continuously update the game board.
+
+The frontend sends keyboard input events to the backend, which maps each input to the corresponding player and game instance and updates the game state accordingly. All collision detection, hit calculations, and speed calculations are handled on the backend. Game results, including wins and losses, are then communicated both to the frontend and back to the match service for processing and persistence.
+
 
 ### 💬 Chat Service
 **The Social Hub.**
@@ -88,8 +98,8 @@ Tools we use to monitor the app.
    docker-compose up --build
    ```
 
-The application will be available at `https://localhost` on the host machine 
-and on any other machine in the same network at `https://< ipaddress_of_hostmachine >`
+The application will be available at `https://localhost:8443` on the host machine 
+and on any other machine in the same network at `https://<ipaddress_of_hostmachine>:8443`
 
 ---
 
@@ -102,6 +112,21 @@ This project was brought to life by a team of 5 dedicated developers.
 | @AnnLvu     | `alvutina` |
 | @auspens    | `auspensk` |
 | @Henrizz    | `hzimmerm` |
+| @MariaErosh | `meroshen` |
+| @StephNova  | `smanriqu` |
+
+## 👥 Individual Contrubutions 
+
+| @AnnLvu     | `alvutina` |
+| @auspens    | `auspensk` |
+
+| @Henrizz    | `hzimmerm` |
+- game engine service and game board rendering in the frontend 
+- SPA navigation with the back and forth arrows of the browser through history push state
+- functionality of the arena section of the frontend, which acts as a waiting room before and after a game of the tournament
+- setup of https and nginx config so that clients on other machines than the host machine can be forwarded to the local gateway by nginx
+- challenges faced: it was tricky to avoid race conditions in the communication between frontend and the backend services, so that the game board would not be rendered without having received the specs, or a new game not started without having received the new game data. this was solved with async functions and await calls, as well as a message buffer for the game engine websockets that could store a message until the socket is open, so the input does not get lost. 
+
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
 
