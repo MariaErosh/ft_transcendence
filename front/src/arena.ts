@@ -161,7 +161,9 @@ export function renderArena(state: ArenaState) {
                     </p>
                 </div>
             `;
-			gameSocket?.send(JSON.stringify({ type: "current match", matchName: state.match }));
+			if (gameSocket && gameSocket.readyState === WebSocket.OPEN) {
+				gameSocket.send(JSON.stringify({ type: "current match", matchName: state.match }));
+			}
 		break;
 		}
 
@@ -170,11 +172,15 @@ export function renderArena(state: ArenaState) {
 			const DISABLED_BTN_CLASS = "bg-gray-400 text-gray-700 font-bold uppercase px-6 py-3 border-2 border-black cursor-not-allowed opacity-70 shadow-none text-xl";
 			if (btn) {
 				btn.addEventListener("click", async () => {
-					gameSocket?.send(JSON.stringify({ type: "PLAYER_READY" }));
-
-					btn.disabled = true;
-					btn.innerText = "waiting for opponent to be ready";
-					btn.className = DISABLED_BTN_CLASS;
+					if (gameSocket && gameSocket.readyState === WebSocket.OPEN) {
+						gameSocket.send(JSON.stringify({ type: "PLAYER_READY" }));
+						btn.disabled = true;
+						btn.innerText = "waiting for opponent to be ready";
+						btn.className = DISABLED_BTN_CLASS;
+					} else {
+						console.error("Game socket not connected");
+						alert("Connection error. Please try again.");
+					}
 				});
 			}
 		}
