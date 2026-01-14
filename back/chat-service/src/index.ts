@@ -7,7 +7,6 @@ import metricsPlugin from 'fastify-metrics';
 import { initDB } from './db/database';
 import { registerConversationRoutes } from './routes/conversations';
 import { registerBlockRoutes } from './routes/blocks';
-import { registerInvitationRoutes } from './routes/invitations';
 import { registerNotificationRoutes } from './routes/notifications';
 import { registerMessageRoutes } from './routes/messages';
 import { sendMessageToUser, handleIncomingMessage, clearUserTypingTimeouts } from './websocket/chatHandler';
@@ -222,7 +221,6 @@ async function start() {
     registerMessageRoutes(app);
     registerConversationRoutes(app, sendToUser);
     registerBlockRoutes(app);
-    registerInvitationRoutes(app, sendToUser);
     registerNotificationRoutes(app, sendToUser);
 
     // Register WebSocket
