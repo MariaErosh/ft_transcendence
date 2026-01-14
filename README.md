@@ -121,11 +121,11 @@ This project was brought to life by a team of 5 dedicated developers.
 | @auspens    | `auspensk` |
 
 | @Henrizz    | `hzimmerm` |
-- game engine service and game board rendering in the frontend 
-- SPA navigation with the back and forth arrows of the browser through history push state
-- functionality of the arena section of the frontend, which acts as a waiting room before and after a game of the tournament
-- setup of https and nginx config so that clients on other machines than the host machine can be forwarded to the local gateway by nginx
-- challenges faced: it was tricky to avoid race conditions in the communication between frontend and the backend services, so that the game board would not be rendered without having received the specs, or a new game not started without having received the new game data. this was solved with async functions and await calls, as well as a message buffer for the game engine websockets that could store a message until the socket is open, so the input does not get lost. 
+- Game engine service and game board rendering in the frontend.
+- SPA navigation with the back and forth arrows of the browser through history push state.
+- Functionality of the arena section of the frontend, which acts as a waiting room before and after a game of the tournament.
+- Setup of HTTPS and Nginx config so that clients on other machines than the host machine can be forwarded to the local gateway by Nginx.
+- Challenges faced: It was tricky to avoid race conditions in the communication between frontend and the backend services, so that the game board would not be rendered without having received the specs, or a new game not started without having received the new game data. This was solved with async functions and await calls, as well as a message buffer for the game engine WebSockets that could store a message until the socket is open, so the input does not get lost.
 
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
