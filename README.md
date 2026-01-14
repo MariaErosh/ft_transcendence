@@ -99,7 +99,7 @@ Tools we use to monitor the app.
    ```
 
 The application will be available at `https://localhost:8443` on the host machine 
-and on any other machine in the same network at `https://<ipaddress_of_hostmachine>:8443`
+and on any other machine in the same network at `https://<ip_address_of_host_machine>:8443`
 
 ---
 
