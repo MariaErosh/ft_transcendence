@@ -3,9 +3,9 @@ import { renderNewRemoteTournament } from "./render_remote.js";
 import { userLoggedIn } from "../api.js";
 import { logout } from "../forms.js";
 // import { insideMatch, setInsideMatch } from "../arena.js";
-import { gameSocket } from "./gameSocket.js";
+import { renderBlackBox, renderMatchMenu } from "../elements.js";
 
-export function renderCreateTournamentForm() {
+export function renderStartView() {
 	if (localStorage.getItem("temp") === "temp") logout();
 	const main = document.getElementById("main")!;
 	main.innerHTML = "";
@@ -22,25 +22,13 @@ export function renderCreateTournamentForm() {
 
 	let wrapper = document.getElementById("match-menu") as HTMLElement | null
 	if (!wrapper) {
-		wrapper = document.createElement('div');
-		wrapper.id = 'match-menu';
-		wrapper.className = "fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm";
-		main.appendChild(wrapper);
+		wrapper = renderMatchMenu();
 	} else {
 		wrapper.innerHTML = "";
 	}
 	let blackBox = document.getElementById("black-box") as HTMLElement | null;
 	if (!blackBox) {
-		blackBox = document.createElement("div");
-		blackBox.id = "black-box";
-		blackBox.className = `
-        	bg-gray-200
-        	w-2/3 h-2/3
-        	border-8 border-black
-        	shadow-[16px_16px_0_0_#000000]
-        	flex flex-col items-center justify-center
-        	z-40 font-mono relative
-    	`;
+		blackBox = renderBlackBox();
 		wrapper.appendChild(blackBox);
 	} else {
 		blackBox.innerHTML = "";
@@ -65,13 +53,29 @@ export function renderCreateTournamentForm() {
 		blackBox.appendChild(playBtn);
 
 		playBtn.addEventListener("click", () => {
-			blackBox!.innerHTML = "";
+			renderChooseMode();
+			history.pushState({ view: "mode" }, "", "mode")
+		});
+	}
+}
 
-			const header = document.createElement("h2");
-			header.textContent = ">> SELECT MODE";
-			header.className = "text-4xl font-black mb-8 border-b-4 border-black";
-			blackBox.appendChild(header);
-
+export function renderChooseMode() {
+	if (localStorage.getItem("temp") === "temp") logout();
+	let blackBox = document.getElementById("black-box") as HTMLElement | null;
+	if (!blackBox) {
+		blackBox = renderBlackBox();
+		let wrapper = document.getElementById("match-menu") as HTMLElement | null;
+		if (!wrapper) {
+			wrapper = renderMatchMenu();
+		}
+		wrapper!.appendChild(blackBox);
+	} else {
+		blackBox.innerHTML = "";
+	}
+	const header = document.createElement("h2");
+	header.textContent = ">> SELECT MODE";
+	header.className = "text-4xl font-black mb-8 border-b-4 border-black";
+	blackBox.appendChild(header);
 			const msg = document.createElement("div");
 			msg.className = "text-red-600 font-bold mb-4 uppercase text-sm";
 			blackBox.appendChild(msg);
@@ -90,10 +94,8 @@ export function renderCreateTournamentForm() {
 			remoteButton.addEventListener("click", async () => {
 				if (localStorage.getItem("temp") === "temp") {
 					msg.textContent = "!! AUTH REQUIRED FOR REMOTE !!";
-                	setTimeout(() => logout(), 1000);
-                	return;
 				}
-				if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
+				else if (localStorage.getItem("refreshToken") && await userLoggedIn()) {
 					renderNewRemoteTournament();
 					history.pushState({ view: "remote" }, "", "remote");
 				}
@@ -111,13 +113,12 @@ export function renderCreateTournamentForm() {
 				active:shadow-none active:translate-x-[3px] active:translate-y-[3px]
 				transition-all cursor-pointer
 			`;
-			consoleButton.addEventListener("click", () => {
-				renderNewConsoleTournament();
-				history.pushState({ view: "console" }, "", "console");
-			});
-
-			blackBox.appendChild(remoteButton);
-			blackBox.appendChild(consoleButton);
-		});
-	}
+				consoleButton.addEventListener("click", () => {
+		renderNewConsoleTournament();
+		history.pushState({ view: "console" }, "", "console");
+	});
+	blackBox.appendChild(remoteButton);
+	blackBox.appendChild(consoleButton);
 }
+
+

@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import * as friendRepo from '../repositories/friendRepository';
+import { GATEWAY_SECRET, USER_URL } from "../index.js";
 
 export function registerFriendRoutes(app: FastifyInstance) {
     // Get user's friends
     app.get('/interact/friends', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -21,9 +22,9 @@ export function registerFriendRoutes(app: FastifyInstance) {
             const friends = await Promise.all(
                 friendIds.map(async (friendId) => {
                     try {
-                        const response = await fetch(`http://user:3002/users/${friendId}`, {
+                        const response = await fetch(`${USER_URL}/users/${friendId}`, {
                             headers: {
-                                'x-gateway-secret': process.env.GATEWAY_SECRET || ''
+                                'x-gateway-secret': GATEWAY_SECRET
                             }
                         });
                         if (response.ok) {
@@ -48,7 +49,7 @@ export function registerFriendRoutes(app: FastifyInstance) {
     app.post('/interact/friends', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -82,7 +83,7 @@ export function registerFriendRoutes(app: FastifyInstance) {
     app.delete('/interact/friends/:friendId', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -105,7 +106,7 @@ export function registerFriendRoutes(app: FastifyInstance) {
     app.get('/interact/friends/:friendId/status', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 

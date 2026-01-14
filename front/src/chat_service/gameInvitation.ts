@@ -10,7 +10,6 @@ const INVITATION_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
  * Show game invitation confirmation modal and create match
  */
 export async function showGameInvitationModal(recipientUsername: string, recipientUserId: number) {
-    // Get current user info
     const currentUserId = getCurrentUserId();
     const currentUsername = getCurrentUsername();
 
@@ -97,28 +96,23 @@ function setupModalHandlers(
     recipientUserId: number,
     recipientUsername: string
 ) {
-    // Close button
     modal.querySelector('#modal-close')?.addEventListener('click', () => {
         modal.remove();
     });
-
-    // Cancel button
     modal.querySelector('#cancel-btn')?.addEventListener('click', () => {
         modal.remove();
     });
-
-    // Send invitation button
     modal.querySelector('#send-invitation-btn')?.addEventListener('click', async () => {
         try {
             await createAndSendInvitation(currentUserId, currentUsername, recipientUserId, recipientUsername);
             modal.remove();
             showSuccess(`Game invitation sent to @${recipientUsername}`);
+
         } catch (error) {
             console.error('Failed to send invitation:', error);
             showError('Failed to send invitation');
         }
     });
-
     // Click outside to close
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
@@ -143,43 +137,35 @@ async function createAndSendInvitation(
     }
 
     // Generate unique match name
-    const matchName = `${senderUsername}_vs_${recipientUsername}_${Date.now()}`;
+    const matchName = `${senderUsername} vs ${recipientUsername} (#${Math.floor(Math.random() * 1000)})`; //TODO steph improve name of the match
 
-    // Send invitation through chat websocket (match will be created later)
     const invitationMessage = {
         type: 'game_invitation',
         recipientId: recipientId,
         invitationData: {
             invitation_type: 'direct_match',
             match_name: matchName,
-            sender_username: senderUsername,
-            sender_id: senderId,
-            recipient_id: recipientId,
-            recipient_username: recipientUsername,
             expires_at: Date.now() + INVITATION_EXPIRATION_MS,
-            created_at: Date.now(),
         }
     };
 
     ws.send(JSON.stringify(invitationMessage));
     console.log('Game invitation sent:', invitationMessage);
-
-    // Auto-join the sender to the match lobby
-    await joinMatchDirectly(matchName);
 }
 
-/**
- * Check if invitation is expired (for UI rendering)
- */
 export function isInvitationExpired(expiresAt: number): boolean {
     return Date.now() > expiresAt;
 }
 
 /**
- * Handle clicking on an invitation (recipient side)
+ * Check if user has already joined this match
  */
-export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number) {
-    // Safety check (button should already be hidden if expired)
+export function isInvitationJoined(matchName: string): boolean {
+    const joinedMatches = JSON.parse(localStorage.getItem('joinedMatches') || '[]');
+    return joinedMatches.includes(matchName);
+}
+
+export async function handleInvitationClick(matchName: string, senderUsername: string, expiresAt?: number, buttonElement?: HTMLElement) {
     if (expiresAt && isInvitationExpired(expiresAt)) {
         return;
     }
@@ -188,7 +174,35 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
     const confirmed = confirm(`Join game with ${senderUsername}?`);
     if (confirmed) {
         // Join the match lobby
-        joinMatchDirectly(matchName);
+        try {
+            await joinMatchDirectly(matchName);
+            
+            // Store joined match in localStorage for persistence
+            const joinedMatches = JSON.parse(localStorage.getItem('joinedMatches') || '[]');
+            if (!joinedMatches.includes(matchName)) {
+                joinedMatches.push(matchName);
+                localStorage.setItem('joinedMatches', JSON.stringify(joinedMatches));
+            }
+            
+            // Mark invitation as expired/joined in the UI
+            if (buttonElement) {
+                const messageContainer = buttonElement.closest('div[class*="bg-gradient-to-r"]');
+                if (messageContainer) {
+                    // Add expired styling
+                    messageContainer.classList.add('opacity-50');
+                    // Replace button with "Joined" text
+                    buttonElement.replaceWith(
+                        Object.assign(document.createElement('span'), {
+                            className: 'text-green-400 text-sm font-bold',
+                            textContent: '✓ Joined'
+                        })
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Failed to join match:', error);
+            showError('Failed to join match. Please try again.');
+        }
     }
 }
 
@@ -212,11 +226,8 @@ function getCurrentUserId(): number | null {
  * Get current username from localStorage or token
  */
 function getCurrentUsername(): string | null {
-    // Try localStorage first
     const username = localStorage.getItem('username');
     if (username) return username;
-
-    // Try token
     const token = localStorage.getItem('accessToken');
     if (!token) return null;
 

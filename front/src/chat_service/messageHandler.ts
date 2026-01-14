@@ -4,7 +4,7 @@ import { authorisedRequest } from "../api.js";
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
 import { escapeHtml, formatTime } from './utils.js';
-import { handleInvitationClick, isInvitationExpired } from './gameInvitation.js';
+import { handleInvitationClick, isInvitationExpired, isInvitationJoined } from './gameInvitation.js';
 
 /**
  * Load message history from server
@@ -96,16 +96,17 @@ export function displayMessage(message: ChatMessage) {
     console.log('[displayMessage] Processing game_invitation:', message);
     const invitationData = message.invitation_data || {};
     const matchName = invitationData.match_name || invitationData.tournament_name || "Game";
-    const senderUsername = invitationData.sender_username || message.sender_username || "Someone";
+    const senderUsername = message.sender_username || "Someone";
     const expiresAt = invitationData.expires_at;
-    const isExpired = expiresAt ? isInvitationExpired(expiresAt) : false;
+    const isExpired = (expiresAt ? isInvitationExpired(expiresAt) : false) || isInvitationJoined(matchName);
 
     console.log('[displayMessage] Rendering game invitation:', {
       messageId: message.id,
       matchName,
       senderUsername,
       invitationData,
-      isExpired
+      isExpired,
+      isJoined: isInvitationJoined(matchName)
     });
 
     messageEl.className = `${isExpired ? 'opacity-50' : ''} bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-lg shadow-lg border-2 border-pink-500`;
@@ -165,7 +166,7 @@ export function displayMessage(message: ChatMessage) {
           console.log('Join button clicked:', { matchName, senderUsername, expiresAt });
 
           if (matchName) {
-            handleInvitationClick(matchName, senderUsername, expiresAt ? Number(expiresAt) : undefined);
+            handleInvitationClick(matchName, senderUsername, expiresAt ? Number(expiresAt) : undefined, acceptBtn);
           } else {
             console.error('Invalid match name:', matchName);
           }
@@ -250,7 +251,6 @@ export function displayStoredMessages() {
  */
 export function clearMessages() {
   console.log('[clearMessages] Clearing all messages');
-  console.trace('[clearMessages] Called from:');
   const messagesContainer = document.getElementById("chat-messages");
   if (!messagesContainer) return;
   messagesContainer.innerHTML = "";

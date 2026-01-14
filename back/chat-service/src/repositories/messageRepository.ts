@@ -1,6 +1,33 @@
 import { db } from '../db/database';
 
 // ============================================================================
+// Utilities
+// ============================================================================
+
+/**
+ * Convert SQLite datetime format to ISO 8601 format
+ * SQLite: "YYYY-MM-DD HH:MM:SS" -> ISO: "YYYY-MM-DDTHH:MM:SS.000Z"
+ */
+function normalizeTimestamp(timestamp: string): string {
+    if (!timestamp) return timestamp;
+    // If already in ISO format (contains 'T'), return as-is
+    if (timestamp.includes('T')) return timestamp;
+    // Convert SQLite format to ISO format
+    return timestamp.replace(' ', 'T') + '.000Z';
+}
+
+/**
+ * Normalize message timestamps from database
+ */
+function normalizeMessage(msg: any): any {
+    return {
+        ...msg,
+        created_at: normalizeTimestamp(msg.created_at),
+        read_at: msg.read_at ? normalizeTimestamp(msg.read_at) : null
+    };
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -29,14 +56,16 @@ export interface CreateMessageParams {
  */
 export function createMessage(params: CreateMessageParams): Promise<number> {
     return new Promise((resolve, reject) => {
+        const timestamp = new Date().toISOString();
         db.run(
-            'INSERT INTO messages (conversation_id, sender_id, content, message_type, metadata) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO messages (conversation_id, sender_id, content, message_type, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)',
             [
                 params.conversationId, 
                 params.senderId, 
                 params.content,
                 params.messageType || 'text',
-                params.metadata || null
+                params.metadata || null,
+                timestamp
             ],
             function(err) {
                 if (err) {
@@ -64,7 +93,8 @@ export function getMessagesByConversation(conversationId: number, limit: number 
                 if (err) {
                     reject(new Error(`Failed to get messages: ${err.message}`));
                 } else {
-                    resolve(rows.reverse()); // Reverse to get chronological order
+                    const normalized = rows.map(normalizeMessage);
+                    resolve(normalized.reverse()); // Reverse to get chronological order
                 }
             }
         );
@@ -83,7 +113,7 @@ export function getMessageById(messageId: number): Promise<Message | null> {
                 if (err) {
                     reject(new Error(`Failed to get message: ${err.message}`));
                 } else {
-                    resolve(row || null);
+                    resolve(row ? normalizeMessage(row) : null);
                 }
             }
         );
@@ -127,7 +157,7 @@ export function getUserRecentMessages(userId: number, limit: number = 50): Promi
             if (err) {
                 reject(new Error(`Failed to get user messages: ${err.message}`));
             } else {
-                resolve(rows);
+                resolve(rows.map(normalizeMessage));
             }
         });
     });
@@ -135,13 +165,14 @@ export function getUserRecentMessages(userId: number, limit: number = 50): Promi
 
 export function markMessageAsRead(messageId: number): Promise<void> {
 	return new Promise((resolve, reject) => {
+		const timestamp = new Date().toISOString();
 		const query = `
 			UPDATE messages
 			SET is_read = 1,
-				read_at = CURRENT_TIMESTAMP
+				read_at = ?
 			WHERE id = ?
 		`;
-		db.run(query, [messageId], function(err) {
+		db.run(query, [timestamp, messageId], function(err) {
 			if (err) {
 				reject(new Error(`Failed to mark message as read: ${err.message}`));
 			} else {
@@ -157,15 +188,16 @@ export function markMessageAsRead(messageId: number): Promise<void> {
  */
 export function markConversationAsRead(conversationId: number, userId: number): Promise<void> {
 	return new Promise((resolve, reject) => {
+		const timestamp = new Date().toISOString();
 		const query = `
 			UPDATE messages
 			SET is_read = 1,
-				read_at = CURRENT_TIMESTAMP
+				read_at = ?
 			WHERE conversation_id = ?
 				AND sender_id != ?
 				AND is_read = 0
 		`;
-		db.run(query, [conversationId, userId], function(err) {
+		db.run(query, [timestamp, conversationId, userId], function(err) {
 			if (err) {
 				reject(new Error(`Failed to mark conversation as read: ${err.message}`));
 			} else {

@@ -101,7 +101,7 @@ export async function handleChatMessage(
 }
 
 /**
- * Handle game invitation - simplified version
+ * Handle game invitation
  */
 export async function handleGameInvitation(
     userId: number,
@@ -120,17 +120,28 @@ export async function handleGameInvitation(
         }
 
         const conversationId = await conversationRepo.getOrCreateConversation(userId, recipientId);
-        const content = `🎮 ${invitationData.match_name || invitationData.tournament_name || 'Game'} invitation`;
-
-        // Save as special message with metadata
+        const content = `${invitationData.match_name || invitationData.tournament_name || 'Game'}`;
+        const storedInvitationData = {
+            sender_id: userId,
+            sender_username: username,
+            match_id: invitationData.match_id,
+            match_name: invitationData.match_name,
+            tournament_id: invitationData.tournament_id,
+            tournament_name: invitationData.tournament_name,
+            expires_at: invitationData.expires_at,
+            game_mode: invitationData.game_mode,
+            invitation_type: invitationData.invitation_type
+        };
         const messageId = await messageRepo.createMessage({
             conversationId,
             senderId: userId,
             content,
             messageType: 'game_invitation',
-            metadata: JSON.stringify(invitationData)
+            metadata: JSON.stringify(storedInvitationData)
         });
 
+        const savedMessage = await messageRepo.getMessageById(messageId);
+        
         const message = {
             type: 'game_invitation',
             id: messageId,
@@ -138,8 +149,8 @@ export async function handleGameInvitation(
             sender_id: userId,
             sender_username: username,
             content,
-            created_at: new Date().toISOString(),
-            invitation_data: invitationData
+            created_at: savedMessage?.created_at || new Date().toISOString(),
+            invitation_data: storedInvitationData
         };
 
         logger.info({ userId, recipientId }, 'Game invitation sent');
@@ -169,7 +180,7 @@ export async function handleTypingIndicator(
         // Check if users have blocked each other
         const blocked = await blockRepo.areUsersBlocked(userId, recipientId);
         if (blocked) {
-            return; // Silently ignore typing from blocked users
+            return;
         }
 
         // Clear existing timeout for this user->recipient pair
@@ -235,7 +246,6 @@ export async function handleTypingIndicator(
 export function clearUserTypingTimeouts(userId: number) {
     const userTimeouts = typingTimeouts.get(userId);
     if (userTimeouts) {
-        // Clear all timeouts
         for (const timeout of userTimeouts.values()) {
             clearTimeout(timeout);
         }

@@ -1,5 +1,6 @@
 import { logout, renderLogin, renderRegister } from "./forms.js";
 import { disconnectChat } from "./chat_service/chat.js";
+import { renderStartView } from "./match_service/start_page.js";
 
 export function renderUserMenu() {
 	console.log("Rendering user menu");
@@ -26,7 +27,7 @@ export function renderUserMenu() {
 
 	const username = localStorage.getItem("username");
 
-	if (!username) {
+	if (!username || localStorage.getItem("temp") === "temp"){
 
 		const loginBtn = document.createElement("button");
 		loginBtn.textContent = "LOGIN";
@@ -89,9 +90,11 @@ export function renderUserMenu() {
             active:shadow-none active:translate-x-[1px] active:translate-y-[1px]
             transition-all font-bold uppercase text-sm
 			`;
-		logoutBtn.addEventListener("click", () => {
-			logout();
-			console.log("User logged out, called to disconnect chat");
+		logoutBtn.addEventListener("click", async () => {
+			await logout();
+			renderUserMenu();
+			renderStartView();
+			//console.log("User logged out, called to disconnect chat");
 			disconnectChat();
 		});
 		menu.appendChild(logoutBtn);

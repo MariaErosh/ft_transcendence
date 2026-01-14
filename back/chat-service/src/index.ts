@@ -14,7 +14,15 @@ import { sendMessageToUser, handleIncomingMessage, clearUserTypingTimeouts } fro
 
 dotenv.config();
 
-const PORT = parseInt(process.env.PORT || '3005');
+
+export function requiredEnv(key: string): string {
+	const v = process.env[key];
+	if (!v) throw new Error(`Missing required environment variable: ${key}`);
+	return v;
+}
+
+const PORT = Number(requiredEnv("CHAT_PORT"));
+export const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 interface ConnectedUser {
     socket: WebSocket;
@@ -65,7 +73,7 @@ function validateConnection(request: any): { userId: number; username: string } 
 
     // Verify request is from gateway
     const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-    if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+    if (gatewaySecret !== GATEWAY_SECRET) {
         return null;
     }
 
@@ -198,7 +206,7 @@ async function start() {
     // Get online users
     app.get('/chat/users/online', async (request: any, reply: any) => {
         const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-        if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+        if (gatewaySecret !== GATEWAY_SECRET) {
             return reply.code(401).send({ error: 'Unauthorized' });
         }
 

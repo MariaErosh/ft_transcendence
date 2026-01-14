@@ -1,11 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { UserService } from "../services/userService";
-import dotenv from "dotenv";
+import { requiredEnv } from "../index.js";
 
-dotenv.config();
-
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET;
-const MATCH_SECRET = process.env.MATCH_SECRET
+const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
+//const MATCH_SECRET = requiredEnv("MATCH_SECRET");
 
 function ensureFromGateway(req: FastifyRequest, reply: FastifyReply) {
 	const gw = (req.headers as any)['x-gateway-secret'];
@@ -22,15 +20,15 @@ function ensureInternalRequest(req: FastifyRequest, reply: FastifyReply) {
 	const gw = (req.headers as any)['x-gateway-secret'];
 	const ms = (req.headers as any)['x-match-secret'];
 
-	if (gw === process.env.GATEWAY_SECRET) {
+	if (gw === GATEWAY_SECRET) {
 		req.log.info("User-service: Request verified: Gateway");
 		return true;
 	}
 
-	if (ms === process.env.MATCH_SECRET) {
-		req.log.info("User-service: Request verified: Match-service");
-		return true;
-	}
+	// if (ms === MATCH_SECRET) {
+	// 	req.log.info("User-service: Request verified: Match-service");
+	// 	return true;
+	// }
 
 	reply.status(401).send({ error: "User-service: Unauthorized (internal only)" });
 	req.log.warn("Unauthorized request");
@@ -180,9 +178,9 @@ export async function userRoutes(fastify: FastifyInstance, service: UserService)
 
 		//Check request from match-service
 		const matchSecret = (req.headers as any)['x-match-secret'];
-		if (matchSecret !== MATCH_SECRET) {
-			return reply.code(403).send({ error: "Forbidden: only Match-service can update stats" });
-		}
+		// if (matchSecret !== MATCH_SECRET) {
+		// 	return reply.code(403).send({ error: "Forbidden: only Match-service can update stats" });
+		// }
 
 		const { auth_user_id } = req.params as { auth_user_id: string };
 		const { playedDelta, wonDelta } = req.body as { playedDelta: number; wonDelta: number };

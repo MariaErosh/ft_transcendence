@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import * as notificationRepo from '../repositories/notificationRepository';
+import { GATEWAY_SECRET } from "../index.js";
 
 export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUser: (userId: number, message: any) => boolean) {
     // Get user notifications
     app.get('/chat/notifications', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -28,7 +29,7 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
     app.get('/chat/notifications/unread/count', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -46,7 +47,7 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
     app.put('/chat/notifications/:id/read', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 
@@ -75,7 +76,7 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
     app.put('/chat/notifications/read-all', async (request: any, reply: any) => {
         try {
             const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+            if (gatewaySecret !== GATEWAY_SECRET) {
                 return reply.code(401).send({ error: 'Unauthorized' });
             }
 

@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import { Player, PlayerPayload, GamePayload } from "./models";
 import { dbAll, dbGet, dbRunQuery, shuffle } from "./helpers";
-import dotenv from "dotenv";
+import { requiredEnv } from "./match-service-controllers";
 import pino from "pino";
 
 const logger = pino({
@@ -17,9 +17,8 @@ const logger = pino({
 	}
 });
 
-dotenv.config();
 
-const GATEWAY = process.env.GATEWAY_URL;
+const GATEWAY_URL = `${requiredEnv("GATEWAY_SERVICE")}:${requiredEnv("GATEWAY_PORT")}`;
 
 export class MatchService {
 	constructor(private db: Database) { }
@@ -228,7 +227,7 @@ export class MatchService {
 			owner: game.owner
 		}
 		try {
-			await fetch(`${GATEWAY}/end_match`, {
+			await fetch(`${GATEWAY_URL}/end_match`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(payload)
@@ -243,7 +242,7 @@ export class MatchService {
 
 	async sendGames(matchName: string, games: any[]) {
 		logger.info({ games }, "Games of the round");
-		await fetch(`${GATEWAY}/newround`, {
+		await fetch(`${GATEWAY_URL}/newround`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ matchName: matchName, games: games })
@@ -256,7 +255,7 @@ export class MatchService {
 		logger.info({ gamesLeft }, "gamesLeft");
 		if (gamesLeft.length > 0){
 			const game = gamesLeft[0];
-			await fetch(`${GATEWAY}/newgame`, {
+			await fetch(`${GATEWAY_URL}/newgame`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({matchName: matchName,  game: game })
