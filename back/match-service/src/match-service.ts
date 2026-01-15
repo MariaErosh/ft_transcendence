@@ -57,9 +57,9 @@ export class MatchService {
 
 			await dbRunQuery(this.db, "COMMIT");
 
-			// Notify players they joined the match
+			// Notify players they joined the match via chat
 			const playerIds = players.map(p => p.id).filter((id): id is number => id !== null);
-			await this.notifyMatchJoined(matchId, "", matchType, playerIds);
+			await this.notifyMatchJoined(matchId, `Match #${matchId}`, matchType, playerIds);
 
 			return matchId;
 		} catch (err) {
@@ -319,7 +319,7 @@ export class MatchService {
 		);
 	}
 
-	private async notifyMatchJoined(matchId: number, matchName: string, matchType: string, playerIds: number[]) {
+	async notifyMatchJoined(matchId: number, matchName: string, matchType: string, playerIds: number[]) {
 		try {
 			await fetch(`${GATEWAY_URL}/chat/notifications/match-joined`, {
 				method: 'POST',
