@@ -237,7 +237,7 @@ export async function joinRoom(matchName: string) {
 		}
 		if (msg.type === "game_ready"){
 			console.log(`Game ready, game id: ${msg.gameId}, match: ${msg.matchName}, side: ${msg.side}, opponent: ${msg.opponent}`)
-			await connectGameWS();
+			//await connectGameWS();
 			gameSocket?.send(JSON.stringify({
 				type:"new_game",
 				gameId: msg.gameId,
