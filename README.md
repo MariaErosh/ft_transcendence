@@ -73,6 +73,187 @@ Tools we use to monitor the app.
 
 ---
 
+## 🗄️ Database Schemas
+
+Here are the SQLite schemas for our microservices. Click to expand.
+
+<details>
+<summary><b>🔐 Auth Service</b></summary>
+
+Manages user credentials and session tokens.
+- **users**: Stores authentication data and 2FA settings.
+- **refresh_tokens**: Linked to users (One-to-Many) for secure session management.
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    two_factor_secret TEXT,
+    two_factor_enabled BOOLEAN DEFAULT 0,
+    two_factor_set BOOLEAN DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+</details>
+
+<details>
+<summary><b>👤 User Service</b></summary>
+
+Stores public user profiles and game statistics.
+- **users**: Maps authentication IDs to public profiles.
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    auth_user_id INTEGER NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    games_played INTEGER NOT NULL DEFAULT 0,
+    games_won INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+</details>
+
+<details>
+<summary><b>💬 Chat Service</b></summary>
+
+Handles real-time messaging and social interactions.
+- **conversations** & **participants**: Manage chat rooms and their members (Many-to-Many).
+- **messages**: Stores message content and metadata.
+- **notifications**: Asynchronous user alerts.
+- **blocks**: User blocking relationships.
+
+```sql
+CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS conversation_participants (
+    conversation_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    PRIMARY KEY (conversation_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL,
+    sender_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    message_type TEXT DEFAULT 'text',
+    metadata TEXT,
+    created_at TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    read_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS blocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    blocker_id INTEGER NOT NULL,
+    blocked_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(blocker_id, blocked_id)
+);
+```
+</details>
+
+<details>
+<summary><b>🤝 Interact Service</b></summary>
+
+Manages the social graph and extended profiles.
+- **friends**: Tracks friendships between users.
+- **profiles**: Stores bios, avatars, and online status.
+
+```sql
+CREATE TABLE IF NOT EXISTS friends (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    friend_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, friend_id)
+);
+
+CREATE TABLE IF NOT EXISTS profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    bio TEXT,
+    avatar_url TEXT,
+    status TEXT DEFAULT 'online',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+</details>
+
+<details>
+<summary><b>⚔️ Match Service</b></summary>
+
+Orchestrates tournaments and match history.
+- **matches**: Top-level tournament or match entities.
+- **players**: Participants linked to matches.
+- **games**: Individual game sessions and results within a match.
+
+```sql
+CREATE TABLE IF NOT EXISTS matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    status TEXT NOT NULL,
+    type TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    round INTEGER,
+    owner TEXT
+);
+
+CREATE TABLE IF NOT EXISTS players (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    alias TEXT NOT NULL,
+    match_id INTEGER NOT NULL,
+    status TEXT,
+    FOREIGN KEY(match_id) REFERENCES matches(id)
+);
+
+CREATE TABLE IF NOT EXISTS games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    left_player_id INTEGER,
+    left_player_alias TEXT NOT NULL,
+    right_player_id INTEGER,
+    right_player_alias TEXT NOT NULL,
+    match_id INTEGER NOT NULL,
+    round INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    winner TEXT,
+    loser TEXT,
+    owner TEXT,
+    FOREIGN KEY(match_id) REFERENCES matches(id)
+);
+```
+</details>
+
+---
+
 ## Instructions
 
 
@@ -85,10 +266,10 @@ Tools we use to monitor the app.
    ```
 
 2. **Configure Environment:**
-   Create the `.env` file from the example and copy it to each microservice directory.
+   Create the `.env` file from the example and copy it to infrastructure directory.
    ```bash
    cp .env.example .env
-   # Copy .env to back/gateway, back/auth-service, back/user-service, back/match-service, back/game-engine, back/chat-service, infrastructure
+   # Copy .env to  infrastructure
    # Fill in your credentials in .env
    ```
 
@@ -149,6 +330,23 @@ This project was brought to life by a team of 5 dedicated developers.
 `SQLite` • `Elasticsearch` • `Logstash` • `Kibana` • `Prometheus` • `Grafana` • `Docker`
 
 </div>
+
+---
+
+## 📅 Project Management
+
+**Organization & Workflow**
+- **Kick-off:** We started with an in-person meeting at school to brainstorm, define the architecture, and break down the project into modular microservices.
+- **Task Distribution:** Tasks were distributed based on individual interests and learning goals.
+- **Tracking:** We used **GitHub Issues** to track progress, assign tasks, and manage the backlog.
+
+**Quality Assurance & CI/CD**
+- **Code Review:** We enforced a strict workflow where no Pull Request (PR) could be merged without at least one approval from another team member.
+- **CI/CD:** Automated pipelines were set up to run checks on every push, ensuring code quality and build stability.
+
+**Tools & Communication**
+- **Miro:** Used for brainstorming, designing the microservices architecture, and mapping out database schemas.
+- **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
 
 ---
 
