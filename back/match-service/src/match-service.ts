@@ -109,7 +109,7 @@ export class MatchService {
 		let gamesLeft = await this.checkGamesLeft(match.id, match.round);
 		if (gamesLeft.length === 0) {
 			// Notify about tournament round completion
-			await this.notifyRoundComplete(matchId, match.round);
+			await this.notifyRoundComplete(matchId, match.round, match.name, winner.alias);
 
 			await this.createNewRound(match.id, match.name);
 			match = await this.getMatchById(matchId);
@@ -290,7 +290,7 @@ export class MatchService {
 		}
 	}
 
-	private async notifyRoundComplete(matchId: number, round: number) {
+	private async notifyRoundComplete(matchId: number, round: number, matchName: string, winnerAlias: string) {
 		try {
 			const players = await this.getMatchPlayers(matchId);
 			const playerIds = players.map((p: any) => p.user_id);
@@ -304,7 +304,9 @@ export class MatchService {
 				body: JSON.stringify({
 					matchId,
 					round,
-					playerIds
+					matchName,
+					playerIds,
+					winnerAlias
 				})
 			});
 		} catch (error) {

@@ -30,14 +30,16 @@ export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUs
 				return reply.code(401).send({ error: 'Unauthorized' });
 			}
 
-			const { matchId, round, playerIds } = request.body;
+			const { matchId, round, playerIds, matchName, winnerAlias } = request.body;
 
 			for (const playerId of playerIds) {
 				await sendSystemMessage(
 					playerId,
-					`🏆 Tournament Round ${round} completed!`,
+					`🏆 ${matchName} | Round ${round}
+						───────────────────
+						Winner: ${winnerAlias} 👑`,
 					'tournament_round',
-					{ matchId, round },
+					{ matchId, round, matchName, winnerAlias },
 					sendMessageToUser
 				);
 			}
