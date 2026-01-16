@@ -300,6 +300,12 @@ This project was brought to life by a team of 5 dedicated developers.
 
 | @AnnLvu     | `alvutina` |
 | @auspens    | `auspensk` |
+- Game management service and its connection to game engine service and frontend.
+- Lobby for the players during the tournament creation.
+- Websockets between frontend and gateway for tournament management and for frontend-gateway-game engine connection
+- Temp user creation and token management for console tournament
+- 2FA flow setup on the frontend
+- Challenges faced: at the very start of the preparation to the project it took a while to grasp the concept of frontend-backend interaction and specifically of how the tokens and user authentication works. Understanding Java Script (async/await call specifically) also required some effort. Later on there were a few stumbles with the websokets, specifically when checking if the socket was connected successfully. In the end I made a seprate endpoint on the gateway for checking if the user is authenticated, so that the attemt to open the socket is only made with logged in user.
 
 | @Henrizz    | `hzimmerm` |
 - Game engine service and game board rendering in the frontend.
