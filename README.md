@@ -326,17 +326,14 @@ This project was brought to life by a team of 5 dedicated developers.
 - Setup of HTTPS and Nginx config so that clients on other machines than the host machine can be forwarded to the local gateway by Nginx.
 - Challenges faced: It was tricky to avoid race conditions in the communication between frontend and the backend services, so that the game board would not be rendered without having received the specs, or a new game not started without having received the new game data. This was solved with async functions and await calls, as well as a message buffer for the game engine WebSockets that could store a message until the socket is open, so the input does not get lost.
 
-| @MariaErosh | `meroshen` |<br>
-| @StephNova  | `smanriqu` | <br>
-When I joined the project, the core infrastructure (Auth, Gateway, and Game Engine) was already in place. My mission was to build the chat and later one I decided to add the Interact service.
+| @MariaErosh | `meroshen` |
 
-Chat Service: Developed using WebSockets, managing everything from backend logic to the frontend interface. To maintain security standards, I ensured all WebSocket traffic was routed through the Gateway and validated via the existing JWT system.
-
-Interact Service: Designed and implemented the user profile and friend systems.
-
-Challenges and insights: After having a basic chat where the backend updated the database and communicated via WebSockets, the real challenge was the user experience. Integrating the friend system, real-time game invitations, and a cohesive notification system required careful planning to ensure everything felt reactive and interconnected rather than a set of isolated features.
-
-I also spent a significant amount of time architecting the chat's "state." It was important to me that users could switch between the Home view and DMs without losing their place or data. Adopting an "event → action → render" workflow was key. It allowed me to implement all the features and synchronize these parts into one smooth, integrated application.
+| @StephNova  | `smanriqu` | 
+- When I joined the project, the core infrastructure (Auth, Gateway, and Game Engine) was already in place. My mission was to build the chat and later one I decided to add the Interact service.
+- Chat Service: Developed using WebSockets, managing everything from backend logic to the frontend interface. To maintain security standards, I ensured all WebSocket traffic was routed through the Gateway and validated via the existing JWT system.
+- Interact Service: Designed and implemented the user profile and friend systems.
+- Challenges and insights: After having a basic chat where the backend updated the database and communicated via WebSockets, the real challenge was the user experience. Integrating the friend system, real-time game invitations, and a cohesive notification system required careful planning to ensure everything felt reactive and interconnected rather than a set of isolated features.
+- I also spent a significant amount of time architecting the chat's "state." It was important to me that users could switch between the Home view and DMs without losing their place or data. Adopting an "event → action → render" workflow was key. It allowed me to implement all the features and synchronize these parts into one smooth, integrated application.
 
 ---
 
