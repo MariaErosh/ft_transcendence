@@ -48,37 +48,16 @@ export async function loadUsers() {
 }
 
 /**
- * Refresh online status for all users and friends
- * Lighter than loadUsers - only updates online status
+ * Refresh all users, friends, and online status
+ * Reloads complete user and friend lists with updated online status
  */
-export async function refreshOnlineStatus() {
-  try {
-    //console.log('Refreshing online status...');
-
-    // Get current online users
-    const onlineData = await authorisedRequest('/chat/users/online');
-    const onlineUsernames = new Set((onlineData.users || []).map((u: any) => u.username));
-
-    // Update allUsers with new online status
-    const allUsers = ChatData.getAllUsers();
-    const updatedUsers = allUsers.map(user => ({
-      ...user,
-      isOnline: onlineUsernames.has(user.username),
-    }));
-    ChatData.setAllUsers(updatedUsers);
-
-    // Update friends with new online status
-    const friends = ChatData.getFriends();
-    const updatedFriends = friends.map(friend => ({
-      ...friend,
-      isOnline: onlineUsernames.has(friend.username),
-    }));
-    ChatData.setFriends(updatedFriends);
-
-    console.log('Online status refreshed');
-  } catch (err) {
-    console.error('Failed to refresh online status:', err);
-  }
+export async function refreshUsers() {
+	try {
+	await loadUsers();
+	await loadFriends();
+	} catch (err) {
+	console.error('Failed to refresh online status:', err);
+	}
 }
 
 /**
@@ -156,43 +135,33 @@ export async function openDM(user: User) {
  * Action: User clicked back button in DM view
  */
 export async function goBackToHome() {
-  //console.log('Going back to home view');
+	//console.log('Going back to home view');
 
-  // Clear typing indicator before switching
-  clearTypingIndicator();
-  ChatData.setRecipientIsTyping(false);
-
-  // Clear current recipient
-  ChatData.setCurrentRecipient(null);
-
-  // Clear messages
-  ChatData.clearMessages();
-
-  // Switch to home view
-  ChatData.setCurrentView('home');
-
-  // Refresh data when returning to home
-  await Promise.all([loadUsers(), loadFriends(), refreshOnlineStatus()]);
-
-  // Render home view
-  renderHomeView();
+	// Clear typing indicator before switching
+	clearTypingIndicator();
+	ChatData.setRecipientIsTyping(false);
+	ChatData.setCurrentRecipient(null);
+	ChatData.clearMessages();
+	ChatData.setCurrentView('home');
+	await refreshUsers();
+	renderHomeView();
 }
 
 /**
  * Load blocked users list from backend
  */
 export async function loadBlockedUsers() {
-  try {
-    const response = await authorisedRequest('/chat/blocks');
+	try {
+	const response = await authorisedRequest('/chat/blocks');
 
-    const blockedUsers = response.blockedUsers || [];
-    ChatData.setBlockedUsers(blockedUsers);
+	const blockedUsers = response.blockedUsers || [];
+	ChatData.setBlockedUsers(blockedUsers);
 
-    //console.log('Blocked users loaded:', blockedUsers);
-  } catch (err) {
-    console.error('Failed to load blocked users:', err);
-    ChatData.setBlockedUsers([]);
-  }
+	//console.log('Blocked users loaded:', blockedUsers);
+	} catch (err) {
+	console.error('Failed to load blocked users:', err);
+	ChatData.setBlockedUsers([]);
+	}
 }
 
 /**
@@ -201,7 +170,6 @@ export async function loadBlockedUsers() {
  */
 export async function blockUser(userId: number) {
   try {
-    console.log('Blocking user:', userId);
 
     const response = await authorisedRequest('/chat/blocks', {
       method: 'POST',
@@ -231,8 +199,6 @@ export async function blockUser(userId: number) {
  */
 export async function unblockUser(userId: number) {
   try {
-    console.log('Unblocking user:', userId);
-
     const response = await authorisedRequest(`/chat/blocks/${userId}`, {
       method: 'DELETE',
     });
@@ -258,8 +224,6 @@ export async function unblockUser(userId: number) {
 
 export async function addFriend(friendId: number) {
 	try {
-		console.log('Adding friend:', friendId);
-
 		const response = await authorisedRequest('/interact/friends', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
