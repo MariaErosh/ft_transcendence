@@ -20,7 +20,7 @@ const logger = pino({
 
 const GATEWAY_URL = `${requiredEnv("GATEWAY_SERVICE")}:${requiredEnv("GATEWAY_PORT")}`;
 const USER_SERVICE_URL = `${requiredEnv("USER_SERVICE")}:${requiredEnv("USER_PORT")}`;
-const GATEWAY_SECRET = process.env.GATEWAY_SECRET || '';
+const GATEWAY_SECRET = requiredEnv("GATEWAY_SECRET");
 
 export class MatchService {
 	constructor(private db: Database) { }
@@ -133,11 +133,11 @@ export class MatchService {
 			await this.setPlayerStatus(loser.id, "LOST");
 			await this.setPlayerStatus(winner.id, "WON");
 			await dbRunQuery(this.db, "UPDATE games SET status = ?, winner = ?, loser = ? WHERE id = ?", ["CLOSED", winnerAlias, loserAlias, gameId]);
-			
+
 			// Update stats in user-service
 			const winnerPlayer = await dbGet(this.db, "SELECT user_id FROM players WHERE id = ?", [winner.id]);
 			const loserPlayer = await dbGet(this.db, "SELECT user_id FROM players WHERE id = ?", [loser.id]);
-			
+
 			if (winnerPlayer?.user_id) {
 				await this.updateUserStats(winnerPlayer.user_id, 1, 1); // played +1, won +1
 			}
