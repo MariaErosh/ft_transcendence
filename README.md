@@ -306,6 +306,11 @@ This project was brought to life by a team of 5 dedicated developers.
 ## 👥 Individual Contributions
 
 | @AnnLvu     | `alvutina` |
+- Monitoring: Set up ELK, Prometheus, and Grafana to keep track of system health and logs.
+- Logs: Configured Logstash to collect logs from all services so they are easy to read in Kibana.
+- Documentation: Wrote the README to explain how the project works and how to install it.
+- Challenges faced: Mastering the ELK stack was challenging, as my previous experience was with OpenTelemetry and Datadog. Additionally, creating and configuring the Grafana dashboards in JSON format required a significant amount of time. It was also difficult to switch back and forth between Python (at work) and TypeScript (for this project).
+
 | @auspens    | `auspensk` |
 - Game management service and its connection to game engine service and frontend.
 - Lobby for the players during the tournament creation.
