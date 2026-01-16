@@ -58,12 +58,22 @@ When a new game is about to start, the game engine requests the necessary game d
 
 The frontend sends keyboard input events to the backend, which maps each input to the corresponding player and game instance and updates the game state accordingly. All collision detection, hit calculations, and speed calculations are handled on the backend. Game results, including wins and losses, are then communicated both to the frontend and back to the match service for processing and persistence.
 
+### 🤝 Interact Service
+Together with the chat is the social layer of the application.
+Like the other services was built with **Fastify** and **SQLite**, it includes two systems:
+- **Profile System:** Creates a "Master View" of the user. It combines basic info (username/email) with game stats pulled from the Matchmaking Service.
+- **Friend System:** Implements friend relationship management with add/remove capabilities. Integrated with the chat service to display friend lists and enable quick direct messaging.
+
+**Frontend Integration:** Profile viewing is accessible throughout the application, from chat conversations. Friend management is primarily handled through the chat interface with future expansion planned for profile-based management.
 
 ### 💬 Chat Service
-**The Social Hub.**
-- **Advanced Messaging:** Features typing indicators, read receipts, and message history persistence.
-- **Game Integration:** Send direct game invites and receive tournament notifications directly within the chat.
-- **User Control:** Includes blocking capabilities and direct access to user profiles from the chat interface.
+Handles all live communication. Uses **Fastify** and **WebSockets** for "instant-on" communication without refreshing the page.
+- **Messaging:** Includes modern features like typing indicators and read receipts.
+	Persistence: If a friend is offline, messages are saved to the database and delivered the moment they log back in.
+- **Game Integration:** In-chat game invitations with match details and expiration tracking. Players can challenge other users directly from conversations, creating instant 1v1 matches. System notifications deliver tournament updates (match joined, round completion, game results) directly to user inboxes.
+- **Social Features:** User blocking system prevents unwanted communication bidirectionally. Direct profile access from conversations. Friend list integration for quick messaging access.
+- **Security:** Gateway-authenticated WebSocket connections and REST endpoints protected with headers.
+- **Frontend:** Minimizable chat bubble interface with conversation list, direct messaging, and system notification inbox. Supports reconnection on token changes and maintains state across page navigation.
 
 ### 📊 Observability Stack
 Tools we use to monitor the app.
@@ -130,10 +140,10 @@ CREATE TABLE IF NOT EXISTS users (
 <summary><b>💬 Chat Service</b></summary>
 
 Handles real-time messaging and social interactions.
-- **conversations** & **participants**: Manage chat rooms and their members (Many-to-Many).
-- **messages**: Stores message content and metadata.
-- **notifications**: Asynchronous user alerts.
-- **blocks**: User blocking relationships.
+- **conversations** & **conversation_participants**: Manage direct messages and their members (Many-to-Many relationship).
+- **messages**: Stores all message types including text, game invitations, and system notifications. Uses `message_type` field to distinguish between types.
+- **system_conversations**: Maps each user to their dedicated conversation with the system user (ID: 0) for receiving tournament and game notifications.
+- **blocks**: User blocking relationships with bidirectional enforcement.
 
 ```sql
 CREATE TABLE IF NOT EXISTS conversations (
@@ -159,12 +169,9 @@ CREATE TABLE IF NOT EXISTS messages (
     read_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    type TEXT NOT NULL,
-    payload TEXT NOT NULL,
-    is_read INTEGER DEFAULT 0,
+CREATE TABLE IF NOT EXISTS system_conversations (
+    user_id INTEGER PRIMARY KEY,
+    conversation_id INTEGER NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -279,7 +286,7 @@ CREATE TABLE IF NOT EXISTS games (
    docker-compose up --build
    ```
 
-The application will be available at `https://localhost:8443` on the host machine 
+The application will be available at `https://localhost:8443` on the host machine
 and on any other machine in the same network at `https://<ip_address_of_host_machine>:8443`
 
 ---
@@ -296,7 +303,7 @@ This project was brought to life by a team of 5 dedicated developers.
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
 
-## 👥 Individual Contributions 
+## 👥 Individual Contributions
 
 | @AnnLvu     | `alvutina` |
 | @auspens    | `auspensk` |
@@ -310,6 +317,15 @@ This project was brought to life by a team of 5 dedicated developers.
 
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
+When I joined the project, the core infrastructure (Auth, Gateway, and Game Engine) was already in place. My mission was to build the chat and later one I decided to add the Interact service.
+
+Chat Service: Developed using WebSockets, managing everything from backend logic to the frontend interface. To maintain security standards, I ensured all WebSocket traffic was routed through the Gateway and validated via the existing JWT system.
+
+Interact Service: Designed and implemented the user profile and friend systems.
+
+- Challenges and insights: After having a basic chat where the backend updated the database and communicated via WebSockets, the real challenge was the user experience. Integrating the friend system, real-time game invitations, and a cohesive notification system required careful planning to ensure everything felt reactive and interconnected rather than a set of isolated features.
+
+I also spent a significant amount of time architecting the chat's "state." It was important to me that users could switch between the Home view and DMs without losing their place or data. Adopting an "event → action → render" workflow was key. It allowed me to implement all the features and synchronize these parts into one smooth, integrated application.
 
 ---
 
