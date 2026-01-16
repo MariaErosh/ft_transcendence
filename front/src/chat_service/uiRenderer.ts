@@ -3,7 +3,7 @@
 import type { StatusType, User } from './types.js';
 import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
-import { loadUsers, openDM, goBackToHome, loadFriends, refreshOnlineStatus, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend } from './userManager.js';
+import { loadUsers, openDM, goBackToHome, loadFriends, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend, refreshUsers } from './userManager.js';
 import { displayStoredMessages, displayMessage, loadSystemMessages } from './messageHandler.js';
 import { escapeHtml } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
@@ -433,7 +433,7 @@ function setupHeaderHandlers() {
 	document.getElementById("chat-minimize")?.addEventListener("click", closeChat);
 
 	document.getElementById("refresh-status")?.addEventListener("click", async () => {
-		await refreshOnlineStatus();
+		await refreshUsers();
 		renderHomeView();
 	});
 
@@ -458,7 +458,7 @@ function setupFriendHandlers(friends: User[]) {
 		const userId = Number(btn.getAttribute("data-userid"));
 		if (!userId) return;
 		await unblockUser(userId);
-		await refreshOnlineStatus();
+		await refreshUsers();
 		renderHomeView();
 		});
 	});
@@ -482,7 +482,7 @@ function setupUserHandlers(users: User[]) {
 		const userId = Number(btn.getAttribute("data-userid"));
 		if (!userId) return;
 		await unblockUser(userId);
-		await refreshOnlineStatus();
+		await refreshUsers();
 		renderHomeView();
 		});
 	});

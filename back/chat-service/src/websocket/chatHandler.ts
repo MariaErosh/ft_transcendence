@@ -201,9 +201,9 @@ async function handleTypingIndicator(
 			timestamp: Date.now(),
 		});
 
-		if (sent) {
-			logger.debug({ userId, recipientId, isTyping }, 'Typing indicator sent');
-		}
+		// if (sent) {
+		// 	logger.debug({ userId, recipientId, isTyping }, 'Typing indicator sent');
+		// }
 
 		// If user is typing, set timeout to auto-stop after 5 seconds
 		if (isTyping) {

@@ -160,7 +160,7 @@ function handleMessage(event: MessageEvent) {
 
 		// Store new messages in history
 		if (message.type === 'message') {
-			console.log('Storing new message:', { id: message.id, is_read: message.is_read, delivered: message.delivered });
+			//console.log('Storing new message:', { id: message.id, is_read: message.is_read, delivered: message.delivered });
 			ChatData.addMessage(message);
 
 			// Mark as read if message is from current open conversation
@@ -292,10 +292,10 @@ function handleClose() {
 
   // Auto-reconnect after 3 seconds
 	if (shouldReconnect) {
-		console.log("Reconnecting in 3 seconds...");
+		//console.log("Reconnecting in 3 seconds...");
 		setTimeout(connectChat, 3000);
 	} else {
-		console.log("Intentional disconnect - not reconnecting");
+		//console.log("Intentional disconnect - not reconnecting");
 	}
 }
 
@@ -443,7 +443,7 @@ function stopTyping(recipientId: number) {
 		};
 		chatSocket.send(JSON.stringify(payload));
 		ChatData.setTyping(false);
-		console.log('Stopped typing indicator sent');
+		//console.log('Stopped typing indicator sent');
 	} catch (err) {
 		console.error('Failed to send stop typing indicator:', err);
 	}

@@ -20,15 +20,11 @@ export async function loadMessageHistory() {
 	}
 
 	const url = `/chat/messages?recipientId=${currentRecipient.userId}`;
-	console.log('Loading message history from:', url);
+	//console.log('Loading message history from:', url);
 
 	const data = await authorisedRequest(url);
 
 	if (data.messages) {
-		console.log('[loadMessageHistory] Raw messages from server:', data.messages);
-		console.trace('[loadMessageHistory] Called from:');
-
-		// Store messages with type field and normalized format including read status
 		const messages = data.messages.map((msg: any) => {
 		const mappedMsg = {
 			type: msg.type || 'message',
@@ -43,15 +39,15 @@ export async function loadMessageHistory() {
 			invitation_data: msg.invitation_data,
 		};
 
-		if (msg.type === 'game_invitation') {
-			console.log('[loadMessageHistory] Game invitation found:', {
-			id: msg.id,
-			original_type: msg.type,
-			mapped_type: mappedMsg.type,
-			has_invitation_data: !!msg.invitation_data,
-			invitation_data: msg.invitation_data
-			});
-		}
+		// if (msg.type === 'game_invitation') {
+		// 	console.log('[loadMessageHistory] Game invitation found:', {
+		// 	id: msg.id,
+		// 	original_type: msg.type,
+		// 	mapped_type: mappedMsg.type,
+		// 	has_invitation_data: !!msg.invitation_data,
+		// 	invitation_data: msg.invitation_data
+		// 	});
+		// }
 		return mappedMsg;
 		});
 
@@ -59,12 +55,9 @@ export async function loadMessageHistory() {
 
 		// If chat is open, display them immediately
 		const isChatOpen = ChatData.isChatOpen();
-		console.log('[loadMessageHistory] Chat open:', isChatOpen, 'Message count:', messages.length);
 		if (isChatOpen) {
-		console.log('[loadMessageHistory] Clearing and redisplaying messages');
 		clearMessages();
 		messages.forEach((msg: ChatMessage) => {
-			console.log('[loadMessageHistory] Displaying message:', msg.id, msg.type);
 			displayMessage(msg);
 		});
 		}
@@ -86,12 +79,11 @@ export async function loadSystemMessages() {
 	try {
 		// Load messages from the system user (SYSTEM_USER_ID = 0)
 		const url = `/chat/messages?recipientId=${SYSTEM_USER_ID}`;
-		console.log('Loading system messages from:', url);
 
 		const data = await authorisedRequest(url);
 
 		if (data.messages) {
-		console.log('[loadSystemMessages] Raw system messages from server:', data.messages);
+		// console.log('[loadSystemMessages] Raw system messages from server:', data.messages);
 
 		// Store system messages with proper type
 		const messages = data.messages.map((msg: any) => ({
@@ -108,7 +100,6 @@ export async function loadSystemMessages() {
 		}));
 
 		ChatData.setSystemMessages(messages);
-		console.log(`[loadSystemMessages] Loaded ${messages.length} system messages`);
 		}
 	} catch (err) {
 		console.error('Failed to load system messages:', err);
@@ -127,7 +118,6 @@ export function displayMessage(message: ChatMessage) {
 
 	// Handle system notification messages
 	if (message.sender_id === SYSTEM_USER_ID || message.type === 'system_notification') {
-		console.log('[displayMessage] Processing system notification:', message);
 
 		const notificationIcon = getNotificationIcon(message);
 
@@ -153,21 +143,21 @@ export function displayMessage(message: ChatMessage) {
 
 	// Handle game invitation messages
 	if (message.type === "game_invitation") {
-		console.log('[displayMessage] Processing game_invitation:', message);
+
 		const invitationData = message.invitation_data || {};
 		const matchName = invitationData.match_name || invitationData.tournament_name || "Game";
 		const senderUsername = message.sender_username || "Someone";
 		const expiresAt = invitationData.expires_at;
 		const isExpired = (expiresAt ? isInvitationExpired(expiresAt) : false) || isInvitationJoined(matchName);
 
-		console.log('[displayMessage] Rendering game invitation:', {
-		messageId: message.id,
-		matchName,
-		senderUsername,
-		invitationData,
-		isExpired,
-		isJoined: isInvitationJoined(matchName)
-		});
+		// console.log('[displayMessage] Rendering game invitation:', {
+		// messageId: message.id,
+		// matchName,
+		// senderUsername,
+		// invitationData,
+		// isExpired,
+		// isJoined: isInvitationJoined(matchName)
+		// });
 
 		messageEl.className = `${isExpired ? 'opacity-50' : ''} bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-lg shadow-lg border-2 border-pink-500`;
 		messageEl.innerHTML = `
@@ -252,16 +242,15 @@ export function displayMessage(message: ChatMessage) {
 		const currentUserId = getCurrentUserId();
 		const isSentMessage = currentUserId && message.sender_id === currentUserId;
 
-		// Debug logging
-		if (isSentMessage) {
-		console.log('Rendering sent message:', {
-			id: message.id,
-			is_read: message.is_read,
-			delivered: message.delivered,
-			sender_id: message.sender_id,
-			currentUserId
-		});
-		}
+		// if (isSentMessage) {
+		// console.log('Rendering sent message:', {
+		// 	id: message.id,
+		// 	is_read: message.is_read,
+		// 	delivered: message.delivered,
+		// 	sender_id: message.sender_id,
+		// 	currentUserId
+		// });
+		// }
 
 		// Show read indicators only for messages sent by current user
 		if (isSentMessage) {
@@ -310,7 +299,6 @@ export function displayStoredMessages() {
  * Clear all messages from UI
  */
 export function clearMessages() {
-	console.log('[clearMessages] Clearing all messages');
 	const messagesContainer = document.getElementById("chat-messages");
 	if (!messagesContainer) return;
 	messagesContainer.innerHTML = "";
@@ -345,7 +333,7 @@ export async function markConversationAsRead(conversationId: number) {
 		await authorisedRequest(`/chat/conversations/${conversationId}/read`, {
 			method: 'POST'
 		});
-		console.log(`Marked conversation ${conversationId} as read`);
+		//console.log(`Marked conversation ${conversationId} as read`);
 	} catch (err) {
 		console.error('Failed to mark conversation as read:', err);
 	}
