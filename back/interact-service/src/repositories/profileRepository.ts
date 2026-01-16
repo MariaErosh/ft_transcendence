@@ -10,14 +10,6 @@ export interface Profile {
     updated_at: string;
 }
 
-export interface ProfileUpdate {
-    bio?: string;
-    avatar_url?: string;
-    status?: string;
-}
-
-
-
 /**
  * Get user profile by user ID
  */
@@ -61,36 +53,13 @@ export function createProfile(userId: number): Promise<number> {
 }
 
 /**
- * Update user profile
+ * Update user profile bio
  */
-export function updateProfile(userId: number, updates: ProfileUpdate): Promise<void> {
+export function updateProfile(userId: number, bio: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        const fields: string[] = [];
-        const values: any[] = [];
-
-        if (updates.bio !== undefined) {
-            fields.push('bio = ?');
-            values.push(updates.bio);
-        }
-        if (updates.avatar_url !== undefined) {
-            fields.push('avatar_url = ?');
-            values.push(updates.avatar_url);
-        }
-        if (updates.status !== undefined) {
-            fields.push('status = ?');
-            values.push(updates.status);
-        }
-
-        if (fields.length === 0) {
-            return resolve();
-        }
-
-        fields.push('updated_at = CURRENT_TIMESTAMP');
-        values.push(userId);
-
         db.run(
-            `UPDATE profiles SET ${fields.join(', ')} WHERE user_id = ?`,
-            values,
+            'UPDATE profiles SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+            [bio, userId],
             (err) => {
                 if (err) {
                     reject(new Error(`Failed to update profile: ${err.message}`));
