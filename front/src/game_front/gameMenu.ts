@@ -61,7 +61,7 @@ export function waitForInput<T>(expectedType: string): Promise<T> {
 		}
 		const message = JSON.parse(rawData);
 		if (message.type === expectedType) {
-			console.log('receiving input with type ', expectedType);
+			//console.log('receiving input with type ', expectedType);
 			resolve(message.data as T);
 		}
 	}, { once: true }); // makes sure listener only runs once

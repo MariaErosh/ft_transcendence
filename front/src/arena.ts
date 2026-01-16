@@ -26,7 +26,7 @@ export function renderArena(state: ArenaState) {
 	main.innerHTML = "";
 	history.pushState({ view:"arena", arenaState: state}, "", "arena");
 
-	console.log("rendering arena");
+	//console.log("rendering arena");
 	let arena = document.createElement("div");
 	arena.id = "arena";
 	arena.className = `

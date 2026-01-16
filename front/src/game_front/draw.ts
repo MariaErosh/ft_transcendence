@@ -18,7 +18,7 @@ export function draw(canvas: HTMLCanvasElement) {
 	ctx.fillStyle = COLORS.BACKGROUND;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	drawPaddelsAndBall(ctx);
+	drawPaddlesAndBall(ctx);
 	drawCenterLine(ctx);
 	drawScore(ctx);
 }
@@ -37,7 +37,7 @@ export function drawNumber(ctx: CanvasRenderingContext2D, n: number) {
     ctx.fillText(n.toString(), x, y);
 }
 
-function drawPaddelsAndBall(ctx: CanvasRenderingContext2D) {
+function drawPaddlesAndBall(ctx: CanvasRenderingContext2D) {
 	ctx.fillStyle = COLORS.PADDLE;
     ctx.fillRect(gameState.leftPaddle.x, gameState.leftPaddle.y, board.PADDLE_WIDTH, board.PADDLE_HEIGHT);
     ctx.fillRect(gameState.rightPaddle.x, gameState.rightPaddle.y, board.PADDLE_WIDTH, board.PADDLE_HEIGHT);
