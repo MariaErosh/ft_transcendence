@@ -30,9 +30,9 @@ export async function getOwnProfile(): Promise<UserProfile | null> {
 }
 
 /**
- * Update own profile
+ * Update own profile (bio only)
  */
-export async function updateProfile(updates: { bio?: string; avatar_url?: string; status?: string }): Promise<boolean> {
+export async function updateProfile(updates: { bio: string }): Promise<boolean> {
   try {
     const response = await authorisedRequest('/interact/profile', {
       method: 'PUT',

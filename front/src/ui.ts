@@ -1,6 +1,7 @@
 import { logout, renderLogin, renderRegister } from "./forms.js";
 import { disconnectChat } from "./chat_service/chat.js";
 import { renderStartView } from "./match_service/start_page.js";
+import { showOwnProfile } from "./profile_front/profileUI.js";
 
 export function renderUserMenu() {
 	console.log("Rendering user menu");
@@ -70,7 +71,8 @@ export function renderUserMenu() {
             w-10 h-10
             flex items-center justify-center
             border-2 border-black
-            font-bold text-lg`;
+            font-bold text-lg
+			hover:cursor-pointer`;
 		const nameLabel = document.createElement("span");
         nameLabel.textContent = username.toUpperCase();
         nameLabel.className = "font-bold text-sm tracking-tighter";
@@ -98,6 +100,9 @@ export function renderUserMenu() {
 			disconnectChat();
 		});
 		menu.appendChild(logoutBtn);
+		avatarWrapper.addEventListener("click", () => {
+			showOwnProfile();
+		});
 	}
 	container.appendChild(menu);
 	//menuWrapper.appendChild(menu);

@@ -134,14 +134,6 @@ function renderProfile(canEdit: boolean = false) {
             <p class="text-gray-400 text-sm">
               ${escapeHtml(currentProfile.email)}
             </p>
-            <span class="
-              mt-2 px-3 py-1
-              bg-green-500 text-black
-              rounded-full text-xs font-bold
-              border-2 border-black
-            ">
-              ${escapeHtml(currentProfile.status)}
-            </span>
           </div>
 
           <!-- Bio Section -->
@@ -186,7 +178,7 @@ function renderProfile(canEdit: boolean = false) {
             <div class="grid grid-cols-3 gap-4 text-center">
               <div>
                 <div class="text-2xl font-bold text-white">
-                  ${currentProfile.games_played}
+                  ${currentProfile.games_played ?? 0}
                 </div>
                 <div class="text-xs text-gray-400 uppercase">
                   Played
@@ -194,7 +186,7 @@ function renderProfile(canEdit: boolean = false) {
               </div>
               <div>
                 <div class="text-2xl font-bold text-green-400">
-                  ${currentProfile.games_won}
+                  ${currentProfile.games_won ?? 0}
                 </div>
                 <div class="text-xs text-gray-400 uppercase">
                   Won
