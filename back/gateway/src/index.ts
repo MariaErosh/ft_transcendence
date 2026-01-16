@@ -62,7 +62,6 @@ async function buildServer() {
 		"/users",
 		"/auth/2fa/enable",
 		"/auth/2fa/set",
-		"/check",
 		"/chat/messages",
 		"/chat/blocks",
 		"/chat/conversations",
@@ -133,8 +132,15 @@ async function buildServer() {
 		ts: new Date().toISOString(),
 	}));
 
-	server.get("/check", ()=>({ ok: true }));
-
+	server.get("/check", async (req, reply) => {
+		try {
+			await req.jwtVerify();
+			return { ok: true };
+		} catch {
+			return { ok: false };
+		}
+	});
+	
 	await server.register(proxy, {
 		upstream: MATCH_SERVICE_URL,
 		prefix: "/match",
@@ -147,24 +153,24 @@ async function buildServer() {
 	})
 
 	server.post("/players", async (req, response) => {
-		let matchName = (req.body as {matchName:string}).matchName;
+		let matchName = (req.body as { matchName: string }).matchName;
 		return { players: getMatchPlayers(matchName) };
 	})
 
 	server.post("/newround", async (req, response) => {
-		let res = (req.body as {matchName:string, games: any[]});
+		let res = (req.body as { matchName: string, games: any[] });
 		await notifyAboutNewGame(res.games, res.matchName);
 	})
 
 	server.post("/newgame", async (req, response) => {
-		let res = (req.body as {matchName: string, game: any});
+		let res = (req.body as { matchName: string, game: any });
 		server.log.info({ game: res.game }, "New console game received");
 		await notifyAboutNewConsoleGame(res.game, res.matchName);
 	})
 
 
 	server.post("/end_match", async (req, response) => {
-		let res = (req.body as {matchName:string, matchId: number, winnerAlias: string, winnerId: number});
+		let res = (req.body as { matchName: string, matchId: number, winnerAlias: string, winnerId: number });
 		await notifyEndMatch(res.matchName, res.matchId, res.winnerAlias, res.winnerId);
 	})
 	return server;

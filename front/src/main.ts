@@ -11,13 +11,21 @@ import { initializeProfileUI } from "./profile_front/profile.js";
 import { renderFooterLinks, renderPrivacyPolicy, renderTermsOfService } from "./policies/render_footer_links.js";
 
 
+document.documentElement.style.height = "auto";
+document.documentElement.style.overflowY = "auto";
+document.body.style.height = "auto";
+document.body.style.overflowY = "auto";
+document.body.className = "m-0 bg-gray-200 min-h-screen";
+
 const app = document.getElementById("app")!;
 
 app.innerHTML = `
-	<div id="menu" class="fixed top-4 right-4 z-50"></div>
-	<div id="main" class="w-full h-full flex items-center justify-center"></div>
-	<div id="chat"></div>
-	<div id="profile-window" class="hidden"></div>`;
+    <div id="menu" class="fixed top-4 right-4 z-50"></div>
+    <div id="layout" class="w-full min-h-screen flex flex-col overflow-y-auto">
+        <div id="main" class="w-full"></div>
+        <div id="chat" class="relative"></div>
+        <div id="profile-window" class="hidden"></div>
+    </div>`;
 
 renderFooterLinks();
 renderStartView();
@@ -70,7 +78,7 @@ window.addEventListener("popstate", (event) => {
 			if (state.arenaState) {
 				renderArena(state.arenaState);
 			} else {
-				console.warn("No arena state in history, cannot render");
+				console.log("No arena state in history, cannot render");
 			}
 			break;
 			case "privacy":
