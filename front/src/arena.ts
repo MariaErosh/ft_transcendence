@@ -178,4 +178,4 @@ export function renderArena(state: ArenaState) {
 				});
 			}
 		}
-	}
+}

@@ -17,6 +17,8 @@ class ChatDataManager {
     isTyping: false,
     lastTypingTime: 0,
     recipientIsTyping: false,
+		systemMessages: [],
+		systemUnreadCount: 0,
   };  // Getters
 	isConnected(): boolean {
 		return this.state.isConnected;
@@ -68,6 +70,14 @@ class ChatDataManager {
 
   getRecipientIsTyping(): boolean {
     return this.state.recipientIsTyping;
+  }
+
+  getSystemMessages(): ChatMessage[] {
+    return this.state.systemMessages;
+  }
+
+  getSystemUnreadCount(): number {
+    return this.state.systemUnreadCount;
   }
 
   // Setters
@@ -143,6 +153,26 @@ class ChatDataManager {
 
   setUserListOpen(value: boolean): void {
     this.state.isUserListOpen = value;
+  }
+
+  addSystemMessage(message: ChatMessage): void {
+    this.state.systemMessages.push(message);
+    // Increment unread count if not viewing system messages
+    if (this.state.currentView !== 'system') {
+      this.state.systemUnreadCount++;
+    }
+  }
+
+  setSystemMessages(messages: ChatMessage[]): void {
+    this.state.systemMessages = messages;
+  }
+
+  setSystemUnreadCount(count: number): void {
+    this.state.systemUnreadCount = count;
+  }
+
+  clearSystemUnread(): void {
+    this.state.systemUnreadCount = 0;
   }
 }
 

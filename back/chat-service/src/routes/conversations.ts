@@ -6,69 +6,47 @@ import { GATEWAY_SECRET } from "../index.js"
 /**
  * Validate gateway authentication and extract user ID
  */
-function validateGatewayAuth(request: any, reply: any): number | null {
-    const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-    if (gatewaySecret !== GATEWAY_SECRET) {
-        reply.code(401).send({ error: 'Unauthorized' });
-        return null;
-    }
-    return parseInt((request.headers as any)['x-user-id']);
+export function validateGatewayAuth(request: any, reply: any): number | null {
+	const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+	if (gatewaySecret !== GATEWAY_SECRET) {
+		reply.code(401).send({ error: 'Unauthorized' });
+		return null;
+	}
+	return parseInt((request.headers as any)['x-user-id']);
 }
 
 export function registerConversationRoutes(
-    app: FastifyInstance,
-    sendToUser: (userId: number, message: any) => boolean
+	app: FastifyInstance,
+	sendToUser: (userId: number, message: any) => boolean
 ) {
-    // Get all conversations for the current user
-    app.get('/chat/conversations', async (request: any, reply: any) => {
-        try {
-            const userId = validateGatewayAuth(request, reply);
-            if (userId === null) return;
+	// Get all conversations for the current user
+	app.get('/chat/conversations', async (request: any, reply: any) => {
+		try {
+			const userId = validateGatewayAuth(request, reply);
+			if (userId === null) return;
 
-            const conversations = await conversationRepo.getUserConversations(userId);
+			const conversations = await conversationRepo.getUserConversations(userId);
 
-            // Enhance conversation data with other participant info
-            const enhancedConversations = conversations.map(conv => {
-                // Find the other participant (not the current user)
-                const otherParticipantId = conv.participants.find((id: number) => id !== userId);
+			// Enhance conversation data with other participant info
+			const enhancedConversations = conversations.map(conv => {
+				// Find the other participant (not the current user)
+				const otherParticipantId = conv.participants.find((id: number) => id !== userId);
 
-                return {
-                    id: conv.id,
-                    created_at: conv.created_at,
-                    other_user_id: otherParticipantId,
-                    unread_count: conv.unread_count
-                };
-            });
+				return {
+					id: conv.id,
+					created_at: conv.created_at,
+					other_user_id: otherParticipantId,
+					unread_count: conv.unread_count
+				};
+			});
 
-            return reply.send({ conversations: enhancedConversations });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get conversations');
-            return reply.code(500).send({ error: 'Failed to fetch conversations' });
-        }
-    });
+			return reply.send({ conversations: enhancedConversations });
+		} catch (error: any) {
+			app.log.error({ error }, 'Failed to get conversations');
+			return reply.code(500).send({ error: 'Failed to fetch conversations' });
+		}
+	});
 
-    // Get messages from a specific conversation
-    app.get('/chat/conversations/:id/messages', async (request: any, reply: any) => {
-        try {
-            const userId = validateGatewayAuth(request, reply);
-            if (userId === null) return;
-
-            const conversationId = parseInt((request.params as any).id);
-            const limit = parseInt((request.query as any).limit || '50');
-
-            // Verify user is participant in this conversation
-            const isParticipant = await conversationRepo.isUserInConversation(conversationId, userId);
-            if (!isParticipant) {
-                return reply.code(403).send({ error: 'Not a participant in this conversation' });
-            }
-
-            const messages = await messageRepo.getMessagesByConversation(conversationId, limit);
-            return reply.send({ messages });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get conversation messages');
-            return reply.code(500).send({ error: 'Failed to fetch messages' });
-        }
-    });
 
 	app.post('/chat/conversations/:conversationId/read', async (request: any, reply: any) => {
 		try {
