@@ -1,91 +1,115 @@
 import { FastifyInstance } from 'fastify';
-import * as notificationRepo from '../repositories/notificationRepository';
-import { GATEWAY_SECRET } from "../index.js";
+import * as conversationRepo from '../repositories/conversationRepository';
+import * as messageRepo from '../repositories/messageRepository';
+import { SYSTEM_USER_ID } from '../db/database';
 
-export function registerNotificationRoutes(app: FastifyInstance) {
-    // Get user notifications
-    app.get('/chat/notifications', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
+export function registerNotificationRoutes(app: FastifyInstance, sendMessageToUser: (userId: number, message: any) => boolean) {
+	app.post('/chat/notifications/game-result', async (request: any, reply: any) => {
+		try {
+			const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+			if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+				return reply.code(401).send({ error: 'Unauthorized' });
+			}
 
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const unreadOnly = (request.query as any).unreadOnly === 'true';
+			const { winnerId, loserId, gameId } = request.body;
 
-            const notifications = unreadOnly
-                ? await notificationRepo.getUnreadNotifications(userId)
-                : await notificationRepo.getUserNotifications(userId);
+			await sendSystemMessage(winnerId, '🎉 You won the game!', 'game_result', { result: 'victory', gameId }, sendMessageToUser);
+			await sendSystemMessage(loserId, '😔 You lost the game', 'game_result', { result: 'defeat', gameId }, sendMessageToUser);
 
-            return reply.send({ notifications });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get notifications');
-            return reply.code(500).send({ error: 'Failed to fetch notifications' });
-        }
-    });
+			return reply.send({ success: true });
+		} catch (error: any) {
+			app.log.error({ error }, 'Failed to send game result notification');
+			return reply.code(500).send({ error: 'Failed to send notification' });
+		}
+	});
 
-    // Get unread notification count
-    app.get('/chat/notifications/unread/count', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
+	app.post('/chat/notifications/tournament-round', async (request: any, reply: any) => {
+		try {
+			const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+			if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+				return reply.code(401).send({ error: 'Unauthorized' });
+			}
 
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const count = await notificationRepo.getUnreadCount(userId);
+			const { matchId, round, playerIds, matchName, winnerAlias } = request.body;
 
-            return reply.send({ count });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to get unread count');
-            return reply.code(500).send({ error: 'Failed to fetch count' });
-        }
-    });
+			for (const playerId of playerIds) {
+				await sendSystemMessage(
+					playerId,
+					`🏆 ${matchName} | Round ${round}
+						───────────────────
+						Winner: ${winnerAlias} 👑`,
+					'tournament_round',
+					{ matchId, round, matchName, winnerAlias },
+					sendMessageToUser
+				);
+			}
 
-    // Mark notification as read
-    app.put('/chat/notifications/:id/read', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
+			return reply.send({ success: true });
+		} catch (error: any) {
+			app.log.error({ error }, 'Failed to send tournament round notification');
+			return reply.code(500).send({ error: 'Failed to send notification' });
+		}
+	});
 
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            const notificationId = parseInt((request.params as any).id);
+	app.post('/chat/notifications/match-joined', async (request: any, reply: any) => {
+		try {
+			const gatewaySecret = (request.headers as any)['x-gateway-secret'];
+			if (gatewaySecret !== process.env.GATEWAY_SECRET) {
+				return reply.code(401).send({ error: 'Unauthorized' });
+			}
 
-            // Verify notification belongs to user
-            const notification = await notificationRepo.getNotificationById(notificationId);
-            if (!notification) {
-                return reply.code(404).send({ error: 'Notification not found' });
-            }
+			const { playerIds, matchId, matchName, matchType } = request.body;
+			const message = matchType === 'tournament'
+				? `🎮 You joined the tournament "${matchName}"!`
+				: `🎮 You joined the match "${matchName}"!`;
 
-            if (notification.user_id !== userId) {
-                return reply.code(403).send({ error: 'Not authorized' });
-            }
+			for (const playerId of playerIds) {
+				await sendSystemMessage(
+					playerId,
+					message,
+					'match_joined',
+					{ matchId, matchName, matchType },
+					sendMessageToUser
+				);
+			}
 
-            await notificationRepo.markAsRead(notificationId);
-            return reply.send({ success: true });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to mark notification as read');
-            return reply.code(500).send({ error: 'Failed to update notification' });
-        }
-    });
+			return reply.send({ success: true });
+		} catch (error: any) {
+			app.log.error({ error }, 'Failed to send match joined notification');
+			return reply.code(500).send({ error: 'Failed to send notification' });
+		}
+	});
+}
 
-    // Mark all notifications as read
-    app.put('/chat/notifications/read-all', async (request: any, reply: any) => {
-        try {
-            const gatewaySecret = (request.headers as any)['x-gateway-secret'];
-            if (gatewaySecret !== GATEWAY_SECRET) {
-                return reply.code(401).send({ error: 'Unauthorized' });
-            }
+async function sendSystemMessage(
+	userId: number,
+	content: string,
+	notificationType: string,
+	payload: any,
+	sendMessageToUser: (userId: number, message: any) => boolean
+): Promise<void> {
+	try {
+		const conversationId = await conversationRepo.CreateSystemConversation(userId);
 
-            const userId = parseInt((request.headers as any)['x-user-id']);
-            await notificationRepo.markAllAsRead(userId);
-            return reply.send({ success: true });
-        } catch (error: any) {
-            app.log.error({ error }, 'Failed to mark all as read');
-            return reply.code(500).send({ error: 'Failed to update notifications' });
-        }
-    });
+		const messageId = await messageRepo.createMessage({
+			conversationId,
+			senderId: SYSTEM_USER_ID,
+			content,
+			messageType: 'system_notification',
+			metadata: JSON.stringify({ notificationType, ...payload })
+		});
+
+		sendMessageToUser(userId, {
+			type: 'system_notification',
+			id: messageId,
+			conversation_id: conversationId,
+			sender_id: SYSTEM_USER_ID,
+			sender_username: '🎮 Game System',
+			content,
+			created_at: new Date().toISOString(),
+			metadata: JSON.stringify({ notificationType, ...payload })
+		});
+	} catch (error: any) {
+		console.error('Failed to send system message:', error);
+	}
 }

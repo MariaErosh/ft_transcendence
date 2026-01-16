@@ -36,6 +36,12 @@ export async function matchRoutes(fastify: FastifyInstance, matchService: MatchS
 		for (const player of match.players) {
 			await matchService.addPlayer(player, matchId);
 		}
+
+		// Notify players they joined the match via chat
+		const playerIds = match.players.map(p => p.id).filter((id): id is number => id !== null);
+		const matchName = match.name || `Match #${matchId}`;
+		await matchService.notifyMatchJoined(matchId, matchName, match.type, playerIds);
+
 		await matchService.createNewRound(matchId, match.name!);
 		if (match.type === "CONSOLE")
 			matchService.sendNewGame(matchId, 1, match.name!);

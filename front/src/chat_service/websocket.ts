@@ -1,6 +1,7 @@
 // WebSocket connection management
 import type { ChatMessage } from './types.js';
 import { ChatData } from './chatData.js';
+import { SYSTEM_USER_ID } from './types.js';
 import { displayMessage, loadMessageHistory, markConversationAsRead } from './messageHandler.js';
 import { updateStatus } from './uiRenderer.js';
 
@@ -83,6 +84,18 @@ function handleOpen() {
 function handleMessage(event: MessageEvent) {
 	try {
 		const message: ChatMessage = JSON.parse(event.data);
+
+		// Handle system notification messages (from sender_id === 0)
+		if (message.sender_id === SYSTEM_USER_ID || message.type === 'system_notification') {
+			console.log('[WebSocket] System notification received:', message);
+			ChatData.addSystemMessage(message);
+
+			// Display if currently viewing system messages
+			if (ChatData.isChatOpen() && ChatData.getCurrentView() === 'system') {
+				displayMessage(message);
+			}
+			return;
+		}
 
 		// Handle game invitation messages
 		if (message.type === 'game_invitation') {

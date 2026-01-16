@@ -1,16 +1,12 @@
 import { db } from '../db/database';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { SYSTEM_USER_ID } from '../db/database';
 
 export interface Conversation {
-    id: number;
-    created_at: string;
+	id: number;
+	created_at: string;
 }
-
 export interface ConversationWithParticipants extends Conversation {
-    participants: number[];
+	participants: number[];
 }
 
 // ============================================================================
@@ -21,169 +17,216 @@ export interface ConversationWithParticipants extends Conversation {
  * Create a new conversation
  */
 export function createConversation(): Promise<number> {
-    return new Promise((resolve, reject) => {
-        db.run(
-            'INSERT INTO conversations DEFAULT VALUES',
-            function(err) {
-                if (err) {
-                    reject(new Error(`Failed to create conversation: ${err.message}`));
-                } else {
-                    resolve(this.lastID);
-                }
-            }
-        );
-    });
+	return new Promise((resolve, reject) => {
+		db.run(
+			'INSERT INTO conversations DEFAULT VALUES',
+			function(err) {
+				if (err) {
+					reject(new Error(`Failed to create conversation: ${err.message}`));
+				} else {
+					resolve(this.lastID);
+				}
+			}
+		);
+	});
 }
 
 /**
  * Add a participant to a conversation
  */
 export function addParticipant(conversationId: number, userId: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-        db.run(
-            'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
-            [conversationId, userId],
-            (err) => {
-                if (err) {
-                    reject(new Error(`Failed to add participant: ${err.message}`));
-                } else {
-                    resolve();
-                }
-            }
-        );
-    });
+	return new Promise((resolve, reject) => {
+		db.run(
+			'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
+			[conversationId, userId],
+			(err) => {
+				if (err) {
+					reject(new Error(`Failed to add participant: ${err.message}`));
+				} else {
+					resolve();
+				}
+			}
+		);
+	});
 }
 
 /**
  * Find conversation between two users
  */
 export function findConversationBetweenUsers(userId1: number, userId2: number): Promise<number | null> {
-    return new Promise((resolve, reject) => {
-        // Find conversations where both users are participants and there are exactly 2 participants total
-        const query = `
-            SELECT cp1.conversation_id
-            FROM conversation_participants cp1
-            INNER JOIN conversation_participants cp2
-                ON cp1.conversation_id = cp2.conversation_id
-            WHERE cp1.user_id = ?
-                AND cp2.user_id = ?
-                AND cp1.conversation_id IN (
-                    SELECT conversation_id
-                    FROM conversation_participants
-                    GROUP BY conversation_id
-                    HAVING COUNT(*) = 2
-                )
-            LIMIT 1
-        `;
+	return new Promise((resolve, reject) => {
+		// Find conversations where both users are participants and there are exactly 2 participants total
+		const query = `
+			SELECT cp1.conversation_id
+			FROM conversation_participants cp1
+			INNER JOIN conversation_participants cp2
+				ON cp1.conversation_id = cp2.conversation_id
+			WHERE cp1.user_id = ?
+				AND cp2.user_id = ?
+				AND cp1.conversation_id IN (
+					SELECT conversation_id
+					FROM conversation_participants
+					GROUP BY conversation_id
+					HAVING COUNT(*) = 2
+				)
+			LIMIT 1
+		`;
 
-        db.get(query, [userId1, userId2], (err: any, row: any) => {
-            if (err) {
-                console.log(`Error finding conversation between ${userId1} and ${userId2}:`, err);
-                reject(new Error(`Failed to find conversation: ${err.message}`));
-            } else {
-                console.log(`findConversationBetweenUsers(${userId1}, ${userId2}):`, row ? row.conversation_id : null);
-                resolve(row ? row.conversation_id : null);
-            }
-        });
-    });
+		db.get(query, [userId1, userId2], (err: any, row: any) => {
+			if (err) {
+				console.log(`Error finding conversation between ${userId1} and ${userId2}:`, err);
+				reject(new Error(`Failed to find conversation: ${err.message}`));
+			} else {
+				console.log(`findConversationBetweenUsers(${userId1}, ${userId2}):`, row ? row.conversation_id : null);
+				resolve(row ? row.conversation_id : null);
+			}
+		});
+	});
 }
 
 /**
  * Get or create conversation between two users
  */
 export async function getOrCreateConversation(userId1: number, userId2: number): Promise<number> {
-    const existingConversationId = await findConversationBetweenUsers(userId1, userId2);
+	const existingConversationId = await findConversationBetweenUsers(userId1, userId2);
 
-    if (existingConversationId) {
-        return existingConversationId;
-    }
+	if (existingConversationId) {
+		return existingConversationId;
+	}
 
-    // Create new conversation
-    const conversationId = await createConversation();
-    await addParticipant(conversationId, userId1);
-    await addParticipant(conversationId, userId2);
+	// Create new conversation
+	const conversationId = await createConversation();
+	await addParticipant(conversationId, userId1);
+	await addParticipant(conversationId, userId2);
 
-    return conversationId;
+	return conversationId;
 }
 
 /**
  * Get all conversations for a user
  */
 export function getUserConversations(userId: number): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-        const query = `
-            SELECT
-                c.id,
-                c.created_at,
-                GROUP_CONCAT(cp.user_id) as participant_ids,
-                (
-                    SELECT COUNT(*)
-                    FROM messages m
-                    WHERE m.conversation_id = c.id
-                    AND m.sender_id != ?
-                    AND m.is_read = 0
-                ) as unread_count
-            FROM conversations c
-            INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-            WHERE c.id IN (
-                SELECT conversation_id
-                FROM conversation_participants
-                WHERE user_id = ?
-            )
-            GROUP BY c.id, c.created_at
-            ORDER BY c.created_at DESC
-        `;
+	return new Promise((resolve, reject) => {
+		const query = `
+			SELECT
+				c.id,
+				c.created_at,
+				GROUP_CONCAT(cp.user_id) as participant_ids,
+				(
+					SELECT COUNT(*)
+					FROM messages m
+					WHERE m.conversation_id = c.id
+					AND m.sender_id != ?
+					AND m.is_read = 0
+				) as unread_count
+			FROM conversations c
+			INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
+			WHERE c.id IN (
+				SELECT conversation_id
+				FROM conversation_participants
+				WHERE user_id = ?
+			)
+			GROUP BY c.id, c.created_at
+			ORDER BY c.created_at DESC
+		`;
 
-        db.all(query, [userId, userId], (err: any, rows: any[]) => {
-            if (err) {
-                reject(new Error(`Failed to get user conversations: ${err.message}`));
-            } else {
-                const conversations = rows.map(row => ({
-                    id: row.id,
-                    created_at: row.created_at,
-                    participants: row.participant_ids.split(',').map(Number),
-                    unread_count: row.unread_count || 0
-                }));
-                resolve(conversations);
-            }
-        });
-    });
+		db.all(query, [userId, userId], (err: any, rows: any[]) => {
+			if (err) {
+				reject(new Error(`Failed to get user conversations: ${err.message}`));
+			} else {
+				const conversations = rows.map(row => ({
+					id: row.id,
+					created_at: row.created_at,
+					participants: row.participant_ids.split(',').map(Number),
+					unread_count: row.unread_count || 0
+				}));
+				resolve(conversations);
+			}
+		});
+	});
 }
 
 /**
  * Get conversation participants
  */
 export function getConversationParticipants(conversationId: number): Promise<number[]> {
-    return new Promise((resolve, reject) => {
-        db.all(
-            'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
-            [conversationId],
-            (err: any, rows: any[]) => {
-                if (err) {
-                    reject(new Error(`Failed to get participants: ${err.message}`));
-                } else {
-                    resolve(rows.map(row => row.user_id));
-                }
-            }
-        );
-    });
+	return new Promise((resolve, reject) => {
+		db.all(
+			'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+			[conversationId],
+			(err: any, rows: any[]) => {
+				if (err) {
+					reject(new Error(`Failed to get participants: ${err.message}`));
+				} else {
+					resolve(rows.map(row => row.user_id));
+				}
+			}
+		);
+	});
 }
 
 /**
  * Check if user is participant of conversation
  */
 export function isUserInConversation(conversationId: number, userId: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        db.get(
-            'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
-            [conversationId, userId],
-            (err: any, row: any) => {
-                if (err) {
-                    reject(new Error(`Failed to check participant: ${err.message}`));
-                } else {
-                    resolve(!!row);
-                }
-            }
-        );
-    });
+	return new Promise((resolve, reject) => {
+		db.get(
+			'SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?',
+			[conversationId, userId],
+			(err: any, row: any) => {
+				if (err) {
+					reject(new Error(`Failed to check participant: ${err.message}`));
+				} else {
+					resolve(!!row);
+				}
+			}
+		);
+	});
+}
+
+/**
+ * Get or create system conversation for a user
+ * System conversations are 1-on-1 with the system user (ID: 0)
+ */
+export async function CreateSystemConversation(userId: number): Promise<number> {
+	return new Promise((resolve, reject) => {
+		// Check if system conversation already exists
+		db.get(
+			'SELECT conversation_id FROM system_conversations WHERE user_id = ?',
+			[userId],
+			async (err: any, row: any) => {
+				if (err) {
+					return reject(new Error(`Failed to get system conversation: ${err.message}`));
+				}
+
+				if (row) {
+					return resolve(row.conversation_id);
+				}
+
+				try {
+					// Create new conversation
+					const conversationId = await createConversation();
+
+					// Add both participants (user and system)
+					await addParticipant(conversationId, userId);
+					await addParticipant(conversationId, SYSTEM_USER_ID);
+
+					// Store mapping
+					db.run(
+						'INSERT INTO system_conversations (user_id, conversation_id) VALUES (?, ?)',
+						[userId, conversationId],
+						(err) => {
+							if (err) {
+								reject(new Error(`Failed to store system conversation: ${err.message}`));
+							} else {
+								resolve(conversationId);
+							}
+						}
+					);
+				} catch (error: any) {
+					reject(error);
+				}
+			}
+		);
+	});
 }
