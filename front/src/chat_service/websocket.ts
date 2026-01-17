@@ -27,7 +27,7 @@ export function connectChat(): Promise<boolean> {
 		}
 
 		const token = localStorage.getItem("accessToken");
-		if (!token) {
+		if (!token || localStorage.getItem("temp") === "temp") {
 			updateStatus("Not logged in", "error");
 			console.log("No access token - not connecting to chat");
 			shouldReconnect = false;

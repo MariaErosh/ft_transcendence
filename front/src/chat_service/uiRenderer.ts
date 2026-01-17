@@ -5,10 +5,11 @@ import { ChatData } from './chatData.js';
 import { connectChat, sendMessage, typingHandler } from './websocket.js';
 import { loadUsers, openDM, goBackToHome, loadFriends, loadBlockedUsers, blockUser, unblockUser, addFriend, removeFriend, refreshUsers } from './userManager.js';
 import { displayStoredMessages, displayMessage, loadSystemMessages } from './messageHandler.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, isTempUsername } from './utils.js';
 import { showProfile } from '../profile_front/profile.js';
 import { renderLogin } from '../forms.js';
 import { showGameInvitationModal } from './gameInvitation.js';
+
 
 let chatContainer: HTMLElement | null = null;
 
@@ -105,7 +106,7 @@ export function renderHomeView() {
 
 	chatContainer.className = "fixed bottom-6 right-6 z-50";
 
-	if (!username) {
+	if (!username || localStorage.getItem("temp") === "temp") {
 		chatContainer.innerHTML = renderLoggedOutView();
 		setupLoggedOutHandlers();
 		return;
@@ -354,79 +355,81 @@ function renderAllUsersSection(data: {
 }
 
 function renderUserRow(
-  user: User,
-  blockedUsers: number[],
-  context: "friend" | "all"
-): string {
-  const isBlocked =
-    typeof user.userId === "number" && blockedUsers.includes(user.userId);
+	user: User,
+	blockedUsers: number[],
+	context: "friend" | "all"
+	): string {
+	if (isTempUsername(user.username))
+		return "";
+	const isBlocked =
+	typeof user.userId === "number" && blockedUsers.includes(user.userId);
 
-  const isOnline = user.isOnline ?? false;
-  const statusColor = isOnline ? "bg-green-500" : "bg-gray-400";
+	const isOnline = user.isOnline ?? false;
+	const statusColor = isOnline ? "bg-green-500" : "bg-gray-400";
 
-  if (isBlocked) {
-    return `
-      <div class="
-        w-full px-2 py-2
-        text-sm font-mono
-        text-red-400 opacity-70
-        flex items-center gap-2
-      ">
-        <span class="w-2 h-2 rounded-full ${statusColor}"></span>
-        <span class="truncate flex-1">${escapeHtml(user.username)}</span>
-        ${
-          user.userId !== undefined
-            ? `
-              <button
-                data-action="unblock"
-                data-userid="${user.userId}"
-                class="
-                  px-2 py-1 text-xs font-bold
-                  bg-green-500 hover:bg-green-600
-                  text-white rounded
-                  border-2 border-black
-                "
-              >
-                Unblock
-              </button>
-            `
-            : ""
-        }
-      </div>
-    `;
-  }
+	if (isBlocked) {
+	return `
+		<div class="
+		w-full px-2 py-2
+		text-sm font-mono
+		text-red-400 opacity-70
+		flex items-center gap-2
+		">
+		<span class="w-2 h-2 rounded-full ${statusColor}"></span>
+		<span class="truncate flex-1">${escapeHtml(user.username)}</span>
+		${
+			user.userId !== undefined
+			? `
+				<button
+				data-action="unblock"
+				data-userid="${user.userId}"
+				class="
+					px-2 py-1 text-xs font-bold
+					bg-green-500 hover:bg-green-600
+					text-white rounded
+					border-2 border-black
+				"
+				>
+				Unblock
+				</button>
+			`
+			: ""
+		}
+		</div>
+	`;
+	}
 
-  return `
-    <button
-      data-username="${user.username}"
-      data-userid="${user.userId ?? ""}"
-      class="
-        w-full text-left px-2 py-2
-        text-sm font-mono
-        text-gray-200
-        hover:bg-purple-200
+	return `
+	<button
+		data-username="${user.username}"
+		data-userid="${user.userId ?? ""}"
+		class="
+		w-full text-left px-2 py-2
+		text-sm font-mono
+		text-gray-200
+		hover:bg-purple-200
 		hover:text-black
-        flex items-center gap-2
-        border-2 border-transparent
-        hover:border-black
-        transition-all
-      "
-    >
-      <span class="w-2 h-2 rounded-full ${statusColor}"></span>
-      <span class="truncate flex-1">${escapeHtml(user.username)}</span>
-      ${user.unreadCount && user.unreadCount > 0 ? `
-        <span class="
-          px-2 py-0.5 text-xs font-bold
-          bg-pink-500 text-white
-          rounded-full
-          border-2 border-black
-          shadow-[2px_2px_0_0_#000000]
-        ">
-          ${user.unreadCount}
-        </span>
-      ` : ''}
-    </button>
-  `;
+		flex items-center gap-2
+		border-2 border-transparent
+		hover:border-black
+		transition-all
+		"
+	>
+		<span class="w-2 h-2 rounded-full ${statusColor}"></span>
+		<span class="truncate flex-1">${escapeHtml(user.username)}</span>
+		${user.unreadCount && user.unreadCount > 0 ? `
+		<span class="
+			px-2 py-0.5 text-xs font-bold
+			bg-pink-500 text-white
+			rounded-full
+			border-2 border-black
+			shadow-[2px_2px_0_0_#000000]
+		">
+			${user.unreadCount}
+		</span>
+		` : ''}
+	</button>
+	`;
 }
 
 function setupHeaderHandlers() {
