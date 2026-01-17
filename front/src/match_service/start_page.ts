@@ -12,6 +12,7 @@ export function renderStartView() {
 	console.log("Rendering match making menu");
 	history.pushState({ view: "main" }, "", "/");
 
+
 	// if (insideMatch == true) {
 	// 	console.log("sending left match to backend");
 	// 	if (gameSocket && gameSocket.readyState == WebSocket.OPEN) {

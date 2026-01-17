@@ -60,10 +60,10 @@ window.addEventListener("popstate", (event) => {
 
 	switch(state.view) {
 		case "login":
-			renderLogin();
+			renderLogin(true); // true = skip pushState, we're already at this state
 			break;
 		case "signup":
-			renderRegister();
+			renderRegister(true); // true = skip pushState, we're already at this state
 			break;
 		case "remote":
 			renderNewRemoteTournament();
