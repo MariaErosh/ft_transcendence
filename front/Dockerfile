@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 RUN npm install --legacy-peer-deps --verbose --retry 5
 
 COPY tsconfig.json tailwind.config.js ./ 

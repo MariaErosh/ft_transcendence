@@ -79,7 +79,6 @@ export class MatchService {
 		} while (player1 === player2);
 		return [players[player1]!, players[player2]!];
 	}
-	//TO DO: FIGURE OUT HOW TO CONNECT TO USER SERVICE
 	async recordMatchWinner(matchId: number) {
 		let winner = await dbAll(this.db, "SELECT from players WHERE match_id = ? AND status = ?", [matchId, 'WON']);
 		if (winner.length !== 1)
