@@ -450,7 +450,7 @@ All architectural and organizational decisions were made as a team. There were n
 
 --- 
 
-## List of chosen modules
+## 📦 List of Chosen Modules
 
 ### IV.1 Web
 - **Major: Use a framework for both the frontend and backend (2 points)**
