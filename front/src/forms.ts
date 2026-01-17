@@ -23,10 +23,13 @@ function getCenteredContainer() {
     return wrapper;
 }
 
-export function renderLogin() {
+export function renderLogin(skipPushState = false) {
     const wrapper = getCenteredContainer();
 
-    history.pushState({ view:"login"}, "", "login");
+    if (!skipPushState) {
+        history.pushState({ view:"login"}, "", "login");
+    }
+
     const form = document.createElement("form");
     form.className = FORM_CONTAINER_CLASS;
 
@@ -80,7 +83,7 @@ export function renderLogin() {
 			}
 			else {
 				localStorage.setItem("username", username.value);
-                localStorage.setItem("refreshToken", response.refreshToken);
+                		localStorage.setItem("refreshToken", response.refreshToken);
 				history.pushState({ view: "main"}, "", "/");
 				renderUserMenu();
 				renderStartView();
@@ -96,9 +99,12 @@ export function renderLogin() {
 	wrapper.appendChild(form);
 }
 
-export function renderRegister() {
+export function renderRegister(skipPushState = false) {
    const wrapper = getCenteredContainer();
-    history.pushState({ view:"signup"}, "", "signup");
+    if (!skipPushState) {
+        history.pushState({ view:"signup"}, "", "signup");
+    }
+
 
     const form = document.createElement("form");
     form.className = FORM_CONTAINER_CLASS;
@@ -290,6 +296,7 @@ export function render2FA(userId: number) {
 			localStorage.setItem("username", response.data.userName);
 
 			history.pushState({ view: "main"}, "", "/");
+
 			renderUserMenu();
 			renderStartView();
 			reconnectChat();
@@ -306,7 +313,6 @@ export async function logout() {
 		await logoutRequest();
 	} catch {}
 
-	//TODO: remove temp login info
     localStorage.removeItem("username");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");

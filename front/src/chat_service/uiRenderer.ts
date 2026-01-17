@@ -202,7 +202,7 @@ function renderLoggedOutView(): string {
 function setupLoggedOutHandlers() {
   document
     .getElementById("go-login")
-    ?.addEventListener("click", renderLogin);
+    ?.addEventListener("click", () => renderLogin());
 
   document
     .getElementById("chat-close")
