@@ -39,7 +39,7 @@ As required by the project specifications, the frontend is developed using TypeS
    Create the `.env` file from the example and copy it to infrastructure directory.
    ```bash
    cp .env.example .env
-   # Copy .env to  infrastructure
+   # Copy .env to infrastructure
    # Fill in your credentials and service port numbers in .env
    ```
 
