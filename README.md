@@ -523,6 +523,7 @@ All architectural and organizational decisions were made as a team. There were n
   - ⚙️ **Implementation:** We utilize JWTs as a secure method for authentication and authorization, ensuring that user sessions and access to resources are managed securely. Without an active token, the user cannot use the chat, play a remote tournament, or check their profile. We also implemented a "guest token" system, allowing users to play games and tournaments on the console without logging in.
   - 👥 **Team:** auspensk, meroshen
 
+### Total points: 22
 
 ---
 
