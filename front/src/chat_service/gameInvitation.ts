@@ -137,7 +137,7 @@ async function createAndSendInvitation(
     }
 
     // Generate unique match name
-    const matchName = `${senderUsername} vs ${recipientUsername} (#${Math.floor(Math.random() * 1000)})`; //TODO steph improve name of the match
+    const matchName = `Chat_Match: ${senderUsername} vs ${recipientUsername} (#${Math.floor(Math.random() * 1000)})`; //TODO steph improve name of the match
 
     const invitationMessage = {
         type: 'game_invitation',
@@ -176,14 +176,14 @@ export async function handleInvitationClick(matchName: string, senderUsername: s
         // Join the match lobby
         try {
             await joinMatchDirectly(matchName);
-            
+
             // Store joined match in localStorage for persistence
             const joinedMatches = JSON.parse(localStorage.getItem('joinedMatches') || '[]');
             if (!joinedMatches.includes(matchName)) {
                 joinedMatches.push(matchName);
                 localStorage.setItem('joinedMatches', JSON.stringify(joinedMatches));
             }
-            
+
             // Mark invitation as expired/joined in the UI
             if (buttonElement) {
                 const messageContainer = buttonElement.closest('div[class*="bg-gradient-to-r"]');
