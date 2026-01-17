@@ -21,6 +21,40 @@ Users can sign up and log in securely using JWT-based authentication. The platfo
 As required by the project specifications, the frontend is developed using TypeScript with Tailwind CSS, while the backend is built with Node.js and Fastify.
 
 
+## Instructions
+
+
+### Installation
+
+0. **Prerequisites**
+    have Docker installed (otherwise please refer to a Docker install guide for your respective machine)
+
+1. **Clone the repository:**
+   ```bash
+   git clone <URL_of_project_repository>
+   cd ft_transcendence
+   ```
+
+2. **Configure Environment:**
+   Create the `.env` file from the example and copy it to infrastructure directory.
+   ```bash
+   cp .env.example .env
+   # Copy .env to infrastructure
+   # Fill in your credentials and service port numbers in .env
+   ```
+
+3. **Execution:**
+   ```bash
+   cd infrastructure
+   docker-compose up --build
+   ```
+
+The application will be available at `https://localhost:8443` on the host machine
+and on any other machine in the same network at `https://<ip_address_of_host_machine>:8443`
+
+---
+
+
 ## 🏗️ Architecture & Microservices
 
 The system is orchestrated via **Docker Compose**, connecting the following specialized services:
@@ -288,39 +322,10 @@ CREATE TABLE IF NOT EXISTS games (
 
 ---
 
-## Instructions
-
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/MariaErosh/ft_transcendence
-   cd ft_transcendence
-   ```
-
-2. **Configure Environment:**
-   Create the `.env` file from the example and copy it to infrastructure directory.
-   ```bash
-   cp .env.example .env
-   # Copy .env to  infrastructure
-   # Fill in your credentials in .env
-   ```
-
-3. **Execution:**
-   ```bash
-   cd infrastructure
-   docker-compose up --build
-   ```
-
-The application will be available at `https://localhost:8443` on the host machine
-and on any other machine in the same network at `https://<ip_address_of_host_machine>:8443`
-
----
-
 ## 👥 The Team
 
 This project was brought to life by a team of 5 dedicated developers.
+All architectural and organizational decisions were made as a team. There were no dedicated roles other than the focus on the chosen modules and the collaboration in between. 
 
 | GitHub      | 42 Intra |
 | :---        | :---       |
@@ -329,6 +334,27 @@ This project was brought to life by a team of 5 dedicated developers.
 | @Henrizz    | `hzimmerm` |
 | @MariaErosh | `meroshen` |
 | @StephNova  | `smanriqu` |
+
+---
+
+## 📅 Project Management
+
+**Organization & Workflow**
+- **Kick-off:** We started with an in-person meeting at school to brainstorm, define the architecture, and break down the project into modular microservices.
+- **Task Distribution:** Tasks were distributed based on individual interests and learning goals.
+- **Tracking:** We used **GitHub Issues** to track progress, assign tasks, and manage the backlog.
+
+**Quality Assurance & CI**
+- **Code Review:** We enforced a strict workflow where no Pull Request (PR) could be merged without at least one approval from another team member.
+- **CI:** Automated pipelines were set up to run checks on every push, ensuring code quality and build stability.
+
+**Tools & Communication**
+- **42 school:** For on-site meetings and pair programmings sessions.
+- **Miro:** Used for brainstorming, designing the user experience and communication with the microservices architecture.
+- **Miro/Lucidchart** Used for mapping out database schemas.
+- **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
+
+---
 
 ## 👥 Individual Contributions
 
@@ -389,21 +415,114 @@ This project was brought to life by a team of 5 dedicated developers.
 </div>
 
 ---
+## 🚀 List of Features
 
-## 📅 Project Management
+### 🎮 Gameplay & Matchmaking
+- **Real-time Pong Engine:** Basic physics implementation with ball-paddle collision, score tracking, and 60 FPS rendering.
+- **Match Types:** Supports Remote within the same network and Console (local) player modes.
+- **Matchmaking & Lobby:** Systems for creating/joining matches, a “Ready” indicator, and waiting rooms for participants.
+- **Input & Controls:** Keyboard-based paddle movement (Arrow/WASD keys) and responsive canvas sizing.
 
-**Organization & Workflow**
-- **Kick-off:** We started with an in-person meeting at school to brainstorm, define the architecture, and break down the project into modular microservices.
-- **Task Distribution:** Tasks were distributed based on individual interests and learning goals.
-- **Tracking:** We used **GitHub Issues** to track progress, assign tasks, and manage the backlog.
+### 🔐 Authentication & Security
+- **User Access:** Secure registration, login, and session management using JWT and refresh tokens.
+- **Two-Factor Authentication (2FA):** TOTP-based security with QR code generation and verification.
+- **Data Protection:** Bcrypt password hashing, internal gateway secrets, and CORS configuration.
 
-**Quality Assurance & CI/CD**
-- **Code Review:** We enforced a strict workflow where no Pull Request (PR) could be merged without at least one approval from another team member.
-- **CI/CD:** Automated pipelines were set up to run checks on every push, ensuring code quality and build stability.
+### 💬 Social & Interaction
+- **Real-time Chat:** WebSocket-based messaging featuring private conversations, unread tracking, and history.
+- **Friend System:** Functionality to add and delete friends.
+- **Game Invitations:** The ability to send and receive match challenges directly through the chat interface.
+- **User Management:** Presence tracking (Online/Status), typing indicators, and a user blocking system.
 
-**Tools & Communication**
-- **Miro:** Used for brainstorming, designing the microservices architecture, and mapping out database schemas.
-- **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
+### 👤 Profiles & Statistics
+- **User Profiles:** Basic profile information accessible from the menu avatar and the chat. Showing name, email, bio and stats.
+- **Statistics Tracking:** Automatic recording of games played, wins, and win/loss ratio calculations.
+
+### 🛠️ Architecture & Infrastructure
+- **Microservices Architecture:** Seven independent backend services managed via a centralized API Gateway.
+- **Containerization:** Full Docker integration using Docker Compose for service isolation and volume mounting.
+- **Observability:** Centralized logging (Logstash/Pino) and metrics collection (Prometheus/Grafana).
+- **Single Page Application:** Client-side routing for a seamless UI without page reloads.
+
+### 🧪 Testing & Legal
+- **Automated Testing:** Github actions for CI testing.
+- **Policy Pages:** Dedicated sections for Privacy Policy and Terms of Service.
+
+--- 
+
+## 📦 List of Chosen Modules
+
+### IV.1 Web
+- **Major: Use a framework for both the frontend and backend (2 points)**
+  - 📝 **Justification:** In the subject version we worked on, the frontend and backend modules were required to be Node.js with Fastify for the backend and Typescript with Tailwind CSS for the frontend.
+  - ⚙️ **Implementation:** Implemented everywhere.
+  - 👥 **Team:** everyone
+
+- **Major: Implement real-time features using WebSockets or similar technology (2 points)**
+  - 📝 **Justification:** Essential for the high-frequency updates required by the Pong game (60 ticks/sec) and instant chat messaging.
+  - ⚙️ **Implementation:** We utilized the native WebSocket API on the frontend and the 'ws' library on the backend. The API Gateway acts as a secure proxy, routing WebSocket connections to the appropriate microservice (Game or Chat). We have 3 types of sockets: the lobbysocket is used for tournament orchestration (frontend to gateway), the game socket is used to handle and render the game flow (frontend to gateway to game-engine) and the chat socket is used for the chat (frontend to gateway to chat).
+  - 👥 **Team:** auspensk, hzimmerm, smanriqu
+
+- **Major: Allow users to interact with other users (2 points)**
+  - 📝 **Justification:** So users can chat and invite each other to games and see their stats.
+  - ⚙️ **Implementation:** Users can manage friends and block users. This is handled by the Interact Service, which maintains 'friends' and 'blocks' tables in SQLite, ensuring bidirectional relationship enforcement.
+  - 👥 **Team:** smanriqu
+
+### IV.2 Accessibility and Internationalization
+- **Minor: Support for additional browsers (1 point)**
+  - 📝 **Justification:** To ensure accessibility across different platforms.
+  - ⚙️ **Implementation:** We utilized standard HTML5, CSS3 (Tailwind), and TypeScript, ensuring full compatibility and testing on both Google Chrome and Mozilla Firefox.
+  - 👥 **Team:** everyone
+
+### IV.3 User Management
+- **Minor: Implement a complete 2FA (Two-Factor Authentication) system for the users (1 point)**
+  - 📝 **Justification:** To enhance account security.
+  - ⚙️ **Implementation:** We implemented TOTP (Time-based One-Time Password). The Auth Service generates a QR code for setup and validates the user's code against a stored secret before issuing a JWT.
+  - 👥 **Team:** auspensk, meroshen
+
+### IV.6 Gaming and user experience
+- **Major: Implement a complete web-based game where users can play against each other (2 points)**
+  - 📝 **Justification:** The core requirement of the project.
+  - ⚙️ **Implementation:** A server-authoritative architecture where the Game Engine calculates physics and collisions to prevent cheating. The frontend simply renders the state received via WebSockets on an HTML5 Canvas.
+  - 👥 **Team:** auspensk, hzimmerm
+
+- **Major: Remote players — Enable two players on separate computers to play the same game in real-time (2 points)**
+  - 📝 **Justification:** To enable multiplayer gameplay across the network.
+  - ⚙️ **Implementation:** The Gateway and Nginx are configured to accept connections from external IPs. The Game Engine synchronizes state between two remote clients via WebSockets, handling input latency.
+  - 👥 **Team:** auspensk, hzimmerm
+
+- **Minor: Advanced chat features (enhances the basic chat from "User interaction" module) (1 point)**
+  - 📝 **Justification:** To provide a rich user experience comparable to modern messaging apps.
+  - ⚙️ **Implementation:** We implemented typing indicators, read receipts, and interactive game invitations. These are handled via specific WebSocket event types and state management in the frontend.
+  - 👥 **Team:** smanriqu
+
+- **Minor: Implement a tournament system (1 point)**
+  - 📝 **Justification:** To support organized competitive play.
+  - ⚙️ **Implementation:** The Match Service manages tournament brackets and state. It coordinates with the Game Engine to launch matches automatically as players advance through the rounds.
+  - 👥 **Team:** auspensk
+
+### IV.7 Devops
+- **Major: Infrastructure for log management using ELK (Elasticsearch, Logstash, Kibana) (2 points)**
+  - 📝 **Justification:** To aggregate logs from distributed microservices for efficient debugging.
+  - ⚙️ **Implementation:** Services send logs to a Logstash pipeline, which indexes them in Elasticsearch. We use Kibana to visualize and filter logs by service, severity, or message content.
+  - 👥 **Team:** alvutina
+
+- **Major: Monitoring system with Prometheus and Grafana. (2 points)**
+  - 📝 **Justification:** To observe system health and resource usage in real-time.
+  - ⚙️ **Implementation:** Each service exposes metrics via an endpoint. Prometheus scrapes these metrics, and Grafana visualizes them on a dashboard, tracking CPU, RAM, and Event Loop Lag.
+  - 👥 **Team:** alvutina
+
+- **Major: Backend as microservices (2 points)**
+  - 📝 **Justification:** To ensure scalability, maintainability, and separation of concerns.
+  - ⚙️ **Implementation:** The application is divided into specialized services (Auth, User, Chat, Game, Match, Interact), each running in its own Docker container and communicating via the API Gateway.
+  - 👥 **Team:** everyone
+
+### IV.10 Modules of choice
+- **Major: Implement a custom module that is not listed above. (2 points)**
+  - 📝 **Justification:** To enhance security and user authentication by utilizing JSON Web Tokens (JWT).
+  - ⚙️ **Implementation:** We utilize JWTs as a secure method for authentication and authorization, ensuring that user sessions and access to resources are managed securely. Without an active token, the user cannot use the chat, play a remote tournament, or check their profile. We also implemented a "guest token" system, allowing users to play games and tournaments on the console without logging in.
+  - 👥 **Team:** auspensk, meroshen
+
 
 ---
 
@@ -416,10 +535,10 @@ This project was brought to life by a team of 5 dedicated developers.
 - **Grafana Documentation:** https://grafana.com/docs/grafana/latest/
 
 **AI Usage:**
-We used AI tools (Gemini, ChatGPT) to help with:
+We used AI tools (Gemini, ChatGPT, Claude) to help with:
 - **Debugging:** Fixing errors in Docker configurations and TypeScript types.
 - **Boilerplate:** Generating basic code structures for components.
-- **Learning:** Understanding how to implement JWT rotation, 2FA, and the monitoring and logging stack.
+- **Learning:** The tech stack was new for all of us, so after learning the basics with online tutorials, we leaned on AI as an assistant and tutor to clarify details and further questions.
 
 ## 📝 License
 
