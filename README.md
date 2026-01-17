@@ -26,7 +26,7 @@ As required by the project specifications, the frontend is developed using TypeS
 
 ### Installation
 
-0. **Prerequisites**
+0. **Prerequisites**:
     have Docker installed (otherwise please refer to a Docker install guide for your respective machine)
 
 1. **Clone the repository:**
