@@ -351,7 +351,7 @@ All architectural and organizational decisions were made as a team. There were n
 **Tools & Communication**
 - **42 school:** For on-site meetings and pair programmings sessions.
 - **Miro:** Used for brainstorming, designing the user experience and communication with the microservices architecture.
-- **Miro/Lucidchart**  Used for mapping out database schemas.
+- **Miro/Lucidchart** Used for mapping out database schemas.
 - **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
 
 ---
