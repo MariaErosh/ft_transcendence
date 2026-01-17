@@ -327,6 +327,12 @@ This project was brought to life by a team of 5 dedicated developers.
 - Challenges faced: It was tricky to avoid race conditions in the communication between frontend and the backend services, so that the game board would not be rendered without having received the specs, or a new game not started without having received the new game data. This was solved with async functions and await calls, as well as a message buffer for the game engine WebSockets that could store a message until the socket is open, so the input does not get lost.
 
 | @MariaErosh | `meroshen` |
+- API Gateway as the single entry point, handling routing, JWT validation, and internal security headers.
+- Auth Service, including registration, login, JWT access/refresh tokens, and 2FA.
+- User Service for public profiles and game statistics.
+- Designed SQLite schemas for all services I've implemented and used parameterized queries to prevent SQL injection.
+- Configured Docker internal networking to isolate backend services from external access.
+- Challenges faced: Initially, designing a robust microservices architecture from scratch and navigating an entirely new tech stack.
 
 | @StephNova  | `smanriqu` | 
 - When I joined the project, the core infrastructure (Auth, Gateway, and Game Engine) was already in place. My mission was to build the chat and later one I decided to add the Interact service.
