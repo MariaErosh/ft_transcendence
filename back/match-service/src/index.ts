@@ -3,6 +3,9 @@ import Fastify from 'fastify'
 import { MatchService } from "./match-service";
 import { matchRoutes } from "./match-service-controllers";
 import metricsPlugin from "fastify-metrics";
+import { requiredEnv } from "./match-service-controllers";
+
+const MATCH_PORT = Number(requiredEnv("MATCH_PORT"));
 
 
 async function runMatchService() {
@@ -28,7 +31,7 @@ async function runMatchService() {
 
 	await matchRoutes(fastify, matchService);
 
-	fastify.listen({ port: 3004, host: "0.0.0.0" }, (err, address) => {
+	fastify.listen({ port: MATCH_PORT, host: "0.0.0.0" }, (err, address) => {
 		if (err) {
 			fastify.log.error(err);
 			process.exit(1);

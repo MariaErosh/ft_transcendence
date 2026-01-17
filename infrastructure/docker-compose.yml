@@ -115,10 +115,29 @@ services:
     volumes:
       - ../observability/monitoring/prometheus/:/etc/prometheus/
       - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
+    environment:
+      - AUTH_PORT=${AUTH_PORT}
+      - USER_PORT=${USER_PORT}
+      - GAME_PORT=${GAME_PORT}
+      - MATCH_PORT=${MATCH_PORT}
+      - GATEWAY_PORT=${GATEWAY_PORT}
+      - CHAT_PORT=${CHAT_PORT}
+      - INTERACT_PORT=${INTERACT_PORT}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        sed -e 's/\$${AUTH_PORT}/'"$$AUTH_PORT"'/g' \
+            -e 's/\$${USER_PORT}/'"$$USER_PORT"'/g' \
+            -e 's/\$${GAME_PORT}/'"$$GAME_PORT"'/g' \
+            -e 's/\$${MATCH_PORT}/'"$$MATCH_PORT"'/g' \
+            -e 's/\$${GATEWAY_PORT}/'"$$GATEWAY_PORT"'/g' \
+            -e 's/\$${CHAT_PORT}/'"$$CHAT_PORT"'/g' \
+            -e 's/\$${INTERACT_PORT}/'"$$INTERACT_PORT"'/g' \
+            /etc/prometheus/prometheus.yml > /tmp/prometheus.yml && \
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml \
+            --storage.tsdb.path=/prometheus \
+            --storage.tsdb.retention.time=15d
     ports:
       - "9090:9090"
     networks:
