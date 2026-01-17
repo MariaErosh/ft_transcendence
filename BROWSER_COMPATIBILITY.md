@@ -24,9 +24,8 @@ The following core features have been manually and automatically tested on all s
 | Feature Module | Chrome | Firefox | Safari | Edge |
 | :--- | :---: | :---: | :---: | :---: |
 | Authentication (Login/SSO) | Pass | Pass | Pass | Pass | |
-| Dashboard Rendering | Pass | Pass | Pass | Pass | |
-| Data Visualization (Charts) | Pass | Pass | Pass | Pass | |
-| File Uploads | Pass | Pass | Pass | Pass | |
+| Chat Rendering | Pass | Pass | Pass | Pass | |
+| Data Visualization | Pass | Pass | Pass | Pass | |
 | Real-time Pong Game | Pass | Pass | Pass | Pass | |
 
 ## 3. UI/UX Consistency & Deviations
