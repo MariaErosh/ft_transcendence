@@ -77,13 +77,40 @@ Handles all live communication. Uses **Fastify** and **WebSockets** for "instant
 
 ### 📊 Observability Stack
 Tools we use to monitor the app.
-- **ELK Stack:** Collects logs from all services so we can search through them easily.
-- **Prometheus:** Collects metrics like CPU usage and request counts.
-- **Grafana:** Shows graphs and dashboards based on the data from Prometheus.
+- **ELK Stack:** Collects logs from all services so we can search through them easily. [Elastic/Kibana](http://localhost:5601)
+- **Prometheus:** Collects metrics like CPU usage and request counts. [Prometheus Targets](http://localhost:9090/targets)
+- **Grafana:** Shows graphs and dashboards based on the data from Prometheus. [Grafana](http://localhost:3100)
+
+#### 🪵 ELK Stack (Logs)
+**Access:** [Kibana](http://localhost:5601)
+
+**1. Initial Setup:**
+- Go to **Management → Stack Management → Index Patterns**.
+- Create a new pattern named `logstash-*` (or `ft_transcendence-*`) and select `@timestamp`.
+
+**2. Viewing Logs:**
+- Go to **Analytics → Discover**.
+- Use filters (KQL):
+  - `service.name : "auth-service"`
+  - `level : "ERROR"`
+  - `msg : "user created"`
+
+#### 📈 Prometheus & Grafana (Metrics)
+**Access:** Grafana | Prometheus Targets
+
+**Key Features:**
+- **Infrastructure:** Prometheus (15d retention), Grafana (auto-provisioning), and Node Exporter.
+- **Dashboard:** "FT_Transcendence Overview" displays Service Status, CPU/RAM usage, RPS, and Event Loop Lag.
+- **Alerting:** Active alerts (e.g., `InstanceDown`) if services are unreachable.
+
+**How to Test:**
+1. **Verify:** Ensure all targets are UP in Prometheus.
+2. **Visualize:** Log in to Grafana (admin/admin) and check the dashboard.
+3. **Alert:** Run `docker stop match` and watch the dashboard status turn red.
 
 ---
 
-## 🗄️ Database Schemas
+## ️🗄️ Database Schemas
 
 Here are the SQLite schemas for our microservices. Click to expand.
 
