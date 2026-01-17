@@ -100,8 +100,19 @@ jobs:
       - name: Build frontend image
         run: docker build -t ft_frontend ./front
 
+      - name: Create .env file
+        run: |
+          echo "AUTH_PORT=3002" >> infrastructure/.env
+          echo "USER_PORT=3003" >> infrastructure/.env
+          echo "GAME_PORT=3004" >> infrastructure/.env
+          echo "MATCH_PORT=3005" >> infrastructure/.env
+          echo "GATEWAY_PORT=3001" >> infrastructure/.env
+          echo "CHAT_PORT=3006" >> infrastructure/.env
+          echo "INTERACT_PORT=3007" >> infrastructure/.env
+          echo "ELASTIC_PASSWORD=password" >> infrastructure/.env
+          echo "GRAFANA_ADMIN_USER=admin" >> infrastructure/.env
+          echo "GRAFANA_ADMIN_PASSWORD=admin" >> infrastructure/.env
+
 # Infrastructure
       - name: Build infrastructure (optional)
         run: docker compose -f infrastructure/docker-compose.yml build
-
-
