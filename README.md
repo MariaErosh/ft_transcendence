@@ -27,7 +27,7 @@ As required by the project specifications, the frontend is developed using TypeS
 ### Installation
 
 0. **Prerequisites**
-    have docker installed (otherwise please refer to a docker install guide for your respective machine)
+    have Docker installed (otherwise please refer to a Docker install guide for your respective machine)
 
 1. **Clone the repository:**
    ```bash
@@ -39,7 +39,7 @@ As required by the project specifications, the frontend is developed using TypeS
    Create the `.env` file from the example and copy it to infrastructure directory.
    ```bash
    cp .env.example .env
-   # Copy .env to  infrastructure
+   # Copy .env to infrastructure
    # Fill in your credentials and service port numbers in .env
    ```
 
@@ -344,14 +344,14 @@ All architectural and organizational decisions were made as a team. There were n
 - **Task Distribution:** Tasks were distributed based on individual interests and learning goals.
 - **Tracking:** We used **GitHub Issues** to track progress, assign tasks, and manage the backlog.
 
-**Quality Assurance & CI/CD**
+**Quality Assurance & CI**
 - **Code Review:** We enforced a strict workflow where no Pull Request (PR) could be merged without at least one approval from another team member.
 - **CI:** Automated pipelines were set up to run checks on every push, ensuring code quality and build stability.
 
 **Tools & Communication**
-- **42 school** For on-site meetings and pair programmings sessions.
+- **42 school:** For on-site meetings and pair programmings sessions.
 - **Miro:** Used for brainstorming, designing the user experience and communication with the microservices architecture.
-- **Miro/Lucidchart**  Used for mapping out database schemas.
+- **Miro/Lucidchart** Used for mapping out database schemas.
 - **Slack & Google Meet:** Our primary channels for daily communication, stand-ups, and remote pair programming sessions.
 
 ---
@@ -450,7 +450,7 @@ All architectural and organizational decisions were made as a team. There were n
 
 --- 
 
-## List of chosen modules
+## 📦 List of Chosen Modules
 
 ### IV.1 Web
 - **Major: Use a framework for both the frontend and backend (2 points)**
