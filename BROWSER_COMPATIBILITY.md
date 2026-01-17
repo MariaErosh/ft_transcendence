@@ -30,5 +30,4 @@ The following core features have been manually and automatically tested on all s
 
 ## 3. UI/UX Consistency & Deviations
 
-Per the requirement for “Consistent UI/UX,” the following specific browser behaviors are noted. These are not bugs, but expected deviations due to browser engine differences.
-
+Our project's UI and UX are consistent across all considered browsers. No deviations occur.
