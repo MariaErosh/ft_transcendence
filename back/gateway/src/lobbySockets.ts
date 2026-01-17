@@ -36,7 +36,7 @@ export function getOpenMatches() {
 	const result: {name: string; started: boolean }[] = [];
 
 	for (const [name, match] of matches.entries()) {
-		if (match.type === "REMOTE") {
+		if (match.type === "REMOTE" && !name.startsWith("Chat_Match:")) {
 			result.push({ name, started: match.started });
 		}
 	}
@@ -209,7 +209,7 @@ export async function registerGatewayWebSocket(server: FastifyInstance) {
 
 					const match = matches.get(matchName)!;
 					const isNewPlayer = !Array.from(match.players).some(p => p.sub === player.sub);
-					
+
 					if (isNewPlayer) {
 						match.players.add(player);
 					}
