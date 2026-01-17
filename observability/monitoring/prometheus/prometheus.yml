@@ -27,10 +27,10 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets:
-        - 'auth:3001'
-        - 'user:3002'
-        - 'game-engine:3003'
-        - 'match:3004'
-        - 'gateway:3000'
-        - 'chat:3005'
-        - 'interact:3006'
+        - 'auth:${AUTH_PORT}'
+        - 'user:${USER_PORT}'
+        - 'game-engine:${GAME_PORT}'
+        - 'match:${MATCH_PORT}'
+        - 'gateway:${GATEWAY_PORT}'
+        - 'chat:${CHAT_PORT}'
+        - 'interact:${INTERACT_PORT}'
