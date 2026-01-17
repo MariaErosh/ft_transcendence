@@ -118,15 +118,12 @@ function renderProfile(canEdit: boolean = false) {
               w-32 h-32
               rounded-full
               border-4 border-purple-600
-              bg-gray-700
+              bg-black text-white
               flex items-center justify-center
-              text-5xl
+              text-5xl font-bold
               mb-4
             ">
-              ${currentProfile.avatar_url
-                ? `<img src="${currentProfile.avatar_url}" class="w-full h-full rounded-full object-cover" />`
-                : '👤'
-              }
+              ${currentProfile.username.charAt(0).toUpperCase()}
             </div>
             <h3 class="text-2xl font-bold text-white mb-1">
               ${escapeHtml(currentProfile.username)}
